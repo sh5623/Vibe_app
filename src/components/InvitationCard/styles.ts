@@ -110,8 +110,19 @@ export const DetailText = styled.p`
     font-size: 1.2rem;
   }
   
-  &.location {
+    &.location {
     color: #8c7b75;
+    
+    a {
+      color: #6d6d6d;
+      text-decoration: underline;
+      font-size: 0.9rem;
+      margin-left: 5px;
+      
+      &:hover {
+        color: #4a4a4a;
+      }
+    }
   }
 
   @media (max-width: 480px) {
