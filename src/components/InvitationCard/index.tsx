@@ -14,7 +14,9 @@ export const InvitationCard = () => {
                 <InvitationTitle>Invitation</InvitationTitle>
                 <Divider />
                 <DetailText className="date">2026년 2월 4일(수) 오후 12시</DetailText>
-                <DetailText className="location">안토 우디플레이트</DetailText>
+                <DetailText className="location">
+                    안토 우디플레이트 <a href="https://map.naver.com/p/entry/place/1428814911?c=15.00,0,0,0,dh&placePath=/home?from=map&fromPanelNum=1&additionalHeight=76&timestamp=202602032108&locale=ko&svcName=map_pcv5" target="_blank" rel="noopener noreferrer">(약도보기)</a>
+                </DetailText>
             </Section>
         </Card>
     );
