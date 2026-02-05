@@ -248,13 +248,16 @@ var _s = __turbopack_context__.k.signature();
 ;
 ;
 const Container = (0, /*#__PURE__*/ __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f40$emotion$2f$styled$2f$dist$2f$emotion$2d$styled$2e$browser$2e$development$2e$esm$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["default"])("div", {
-    target: "eh3yaqm0"
-})("min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;");
+    target: "eyyvwaq0"
+})("min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;gap:20px;");
 _c = Container;
 function Home() {
     _s();
     const router = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$navigation$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useRouter"])();
     const [isModalOpen, setIsModalOpen] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])(false);
+    const handelNavigate = ()=>{
+        router.push('/invitation');
+    };
     const handleOpenModal = ()=>{
         setIsModalOpen(true);
     };
@@ -268,12 +271,21 @@ function Home() {
     return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f40$emotion$2f$react$2f$jsx$2d$dev$2d$runtime$2f$dist$2f$emotion$2d$react$2d$jsx$2d$dev$2d$runtime$2e$browser$2e$development$2e$esm$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(Container, {
         children: [
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f40$emotion$2f$react$2f$jsx$2d$dev$2d$runtime$2f$dist$2f$emotion$2d$react$2d$jsx$2d$dev$2d$runtime$2e$browser$2e$development$2e$esm$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$HomeCard$2f$index$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["HomeCard"], {
+                title: "초대장이 도착했습니다.",
+                buttonText: "보러가기",
+                onClick: handelNavigate
+            }, void 0, false, {
+                fileName: "[project]/src/app/page.tsx",
+                lineNumber: 40,
+                columnNumber: 13
+            }, this),
+            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f40$emotion$2f$react$2f$jsx$2d$dev$2d$runtime$2f$dist$2f$emotion$2d$react$2d$jsx$2d$dev$2d$runtime$2e$browser$2e$development$2e$esm$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$HomeCard$2f$index$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["HomeCard"], {
                 title: "편지가 도착했습니다.",
                 buttonText: "보러가기",
                 onClick: handleOpenModal
             }, void 0, false, {
                 fileName: "[project]/src/app/page.tsx",
-                lineNumber: 35,
+                lineNumber: 45,
                 columnNumber: 13
             }, this),
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f40$emotion$2f$react$2f$jsx$2d$dev$2d$runtime$2f$dist$2f$emotion$2d$react$2d$jsx$2d$dev$2d$runtime$2e$browser$2e$development$2e$esm$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$BirthdayModal$2f$index$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["BirthdayModal"], {
@@ -282,13 +294,13 @@ function Home() {
                 onConfirm: handleConfirm
             }, void 0, false, {
                 fileName: "[project]/src/app/page.tsx",
-                lineNumber: 40,
+                lineNumber: 50,
                 columnNumber: 13
             }, this)
         ]
     }, void 0, true, {
         fileName: "[project]/src/app/page.tsx",
-        lineNumber: 34,
+        lineNumber: 39,
         columnNumber: 9
     }, this);
 }
