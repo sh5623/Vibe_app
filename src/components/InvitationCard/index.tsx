@@ -1,3 +1,6 @@
+'use client';
+
+import Image from 'next/image';
 import { Card, Header, ImageContainer, Section, InvitationTitle, DetailText, Divider } from './styles';
 import dohaImage from '../../assets/doha.jpg';
 
@@ -7,7 +10,12 @@ export const InvitationCard = () => {
             <Header>도하의 첫번째 생일</Header>
 
             <ImageContainer>
-                <img src={dohaImage} alt="도하의 사진" />
+                <Image
+                    src={dohaImage}
+                    alt="도하의 사진"
+                    placeholder="blur"
+                    priority
+                />
             </ImageContainer>
 
             <Section>
