@@ -1,3 +1,5 @@
+'use client';
+
 import { Card, Title, Button } from './styles';
 
 interface HomeCardProps {
