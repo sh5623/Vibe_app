@@ -19,9 +19,9 @@ export default function Home() {
     const router = useRouter();
     const [isModalOpen, setIsModalOpen] = useState(false);
 
-    const handelNavigate = () => {
-        router.push('/invitation');
-    }
+    // const handelNavigate = () => {
+    //     router.push('/invitation');
+    // }
 
     const handleOpenModal = () => {
         setIsModalOpen(true);
@@ -37,11 +37,11 @@ export default function Home() {
 
     return (
         <Container>
-            <HomeCard
+            {/* <HomeCard
                 title="초대장이 도착했습니다."
                 buttonText="보러가기"
                 onClick={handelNavigate}
-            />
+            /> */}
             <HomeCard
                 title="편지가 도착했습니다."
                 buttonText="보러가기"
