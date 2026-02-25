@@ -1,12 +1,8 @@
 'use client';
 
-import React from 'react';
-import { useRouter } from 'next/navigation';
 import { Container, Paper, ToSection, ContentSection, FromSection } from './styles';
 
 export default function LetterPage() {
-    const router = useRouter();
-
     return (
         <Container>
             <Paper>
