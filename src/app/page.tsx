@@ -4,16 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { HomeCard } from '../components/HomeCard';
 import { BirthdayModal } from '../components/BirthdayModal';
-import styled from '@emotion/styled';
-
-const Container = styled.div`
-  min-height: 100vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 20px;
-  gap: 20px;
-`;
+import { Container } from './styled';
 
 export default function Home() {
     const router = useRouter();
