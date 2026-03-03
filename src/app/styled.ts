@@ -7,4 +7,8 @@ export const Container = styled.div`
   justify-content: center;
   padding: 20px;
   gap: 20px;
+
+  @media (max-width: 768px) {
+    flex-direction: column;
+  }
 `;
