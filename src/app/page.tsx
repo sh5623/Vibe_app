@@ -14,6 +14,10 @@ export default function Home() {
         router.push('/invitation');
     }
 
+    const handleStockNavigate = () => {
+        router.push('/stock');
+    }
+
     const handleOpenModal = () => {
         setIsModalOpen(true);
     };
@@ -37,6 +41,11 @@ export default function Home() {
                 title="편지가 도착했습니다."
                 buttonText="보러가기"
                 onClick={handleOpenModal}
+            />
+            <HomeCard
+                title="주식 대시보드"
+                buttonText="보러가기"
+                onClick={handleStockNavigate}
             />
             <BirthdayModal
                 isOpen={isModalOpen}
