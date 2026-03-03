@@ -4,16 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { HomeCard } from '../components/HomeCard';
 import { BirthdayModal } from '../components/BirthdayModal';
-import styled from '@emotion/styled';
-
-const Container = styled.div`
-  min-height: 100vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 20px;
-  gap: 20px;
-`;
+import { Container } from './styled';
 
 export default function Home() {
     const router = useRouter();
@@ -21,6 +12,10 @@ export default function Home() {
 
     const handelNavigate = () => {
         router.push('/invitation');
+    }
+
+    const handleStockNavigate = () => {
+        router.push('/stock');
     }
 
     const handleOpenModal = () => {
@@ -46,6 +41,11 @@ export default function Home() {
                 title="편지가 도착했습니다."
                 buttonText="보러가기"
                 onClick={handleOpenModal}
+            />
+            <HomeCard
+                title="주식 대시보드"
+                buttonText="보러가기"
+                onClick={handleStockNavigate}
             />
             <BirthdayModal
                 isOpen={isModalOpen}
