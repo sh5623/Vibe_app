@@ -35,9 +35,9 @@ export async function GET(request: Request) {
                 const searchResult = await yahooFinance.search(symbol);
                 if (searchResult.quotes && searchResult.quotes.length > 0) {
                     // 주식(EQUITY)이나 ETF 우선 적용
-                    const topQuote = searchResult.quotes.find(q => q.quoteType === 'EQUITY' || q.quoteType === 'ETF') || searchResult.quotes[0];
+                    const topQuote: any = searchResult.quotes.find(q => q.quoteType === 'EQUITY' || q.quoteType === 'ETF') || searchResult.quotes[0];
                     if (topQuote?.symbol) {
-                        targetSymbol = topQuote.symbol;
+                        targetSymbol = String(topQuote.symbol);
                     }
                 }
             } catch (searchError) {
