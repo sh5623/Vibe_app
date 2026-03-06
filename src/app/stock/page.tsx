@@ -75,14 +75,14 @@ export default function StockDashboard() {
 
                     <Card style={{ padding: '1.5rem', flex: 1 }}>
                         <h2 style={{ borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '1rem', marginBottom: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <form className="search-form" onSubmit={(e) => { e.preventDefault(); setSearchSymbol(inputValue); }} style={{ margin: 0, flex: 1, width: '100%', maxWidth: '300px' }}>
+                            <form className="search-form" onSubmit={(e) => { e.preventDefault(); setSearchSymbol(inputValue); }} style={{ margin: 0, flex: 1, width: '100%', maxWidth: '320px' }}>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'rgba(255, 255, 255, 0.05)', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '8px', padding: '0.25rem 0.5rem', width: '100%' }}>
                                     <Search size={16} color="#94a3b8" />
                                     <input
                                         type="text"
                                         value={inputValue}
                                         onChange={(e) => setInputValue(e.target.value)}
-                                        placeholder="종목명을 입력해 주세요."
+                                        placeholder="종목명이나 코드를 입력해 주세요."
                                         style={{
                                             background: 'transparent',
                                             border: 'none',
@@ -117,7 +117,7 @@ export default function StockDashboard() {
                             <SearchableStockChart symbol={searchSymbol} />
                         ) : (
                             <div style={{ height: 260, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#94a3b8' }}>
-                                검색창에 종목명을 입력하여 차트를 확인해보세요.
+                                검색창에 종목명이나 종목코드(6자리)를 입력하여 차트를 확인해보세요.
                             </div>
                         )}
                     </Card>

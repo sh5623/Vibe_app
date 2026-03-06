@@ -30,18 +30,39 @@ export async function GET(request: Request) {
         if (mappedSymbol) {
             targetSymbol = mappedSymbol;
         } else {
-            // 영문명 또는 일반 검색어 처리
+            // 6자리 숫자만 입력한 경우 먼저 .KS 또는 .KQ 확인
+            if (/^\d{6}$/.test(symbol.trim())) {
+                targetSymbol = `${symbol.trim()}.KS`; // 기본값
+
+                // 코스피 검색 실패 시 코스닥으로 전환할 수 있도록 플래그
+                // 실제 확인은 아래 quote()에서 에러가 나면 코스닥을 시도하는 방식으로 처리할 수 있으나,
+                // 여기서는 search API를 통해 KQ/KS 여부를 확인합니다.
+            }
+
+            // 영문명, 숫자 일반 검색어 처리
             try {
-                const searchResult = await yahooFinance.search(symbol);
+                const searchResult = await yahooFinance.search(symbol, {
+                    quotesCount: 3,
+                });
                 if (searchResult.quotes && searchResult.quotes.length > 0) {
-                    // 주식(EQUITY)이나 ETF 우선 적용
                     const topQuote: any = searchResult.quotes.find(q => q.quoteType === 'EQUITY' || q.quoteType === 'ETF') || searchResult.quotes[0];
                     if (topQuote?.symbol) {
                         targetSymbol = String(topQuote.symbol);
                     }
                 }
-            } catch (searchError) {
-                console.log('Search fallback failed for:', symbol);
+            } catch (searchError: any) {
+                // Yahoo Finance API의 Validation Error의 경우 결과값을 에러 객체 안에 담아서 보냄
+                if (searchError.result && searchError.result.quotes && searchError.result.quotes.length > 0) {
+                    const topQuote: any = searchError.result.quotes.find((q: any) => q.quoteType === 'EQUITY' || q.quoteType === 'ETF') || searchError.result.quotes[0];
+                    if (topQuote?.symbol) {
+                        targetSymbol = String(topQuote.symbol);
+                    }
+                } else if (/^\d{6}$/.test(symbol.trim())) {
+                    // searchAPI도 완전히 실패하면 KQ를 기본으로 한번 시도해보도록 넘깁니다.
+                    targetSymbol = `${symbol.trim()}.KQ`;
+                } else {
+                    console.log('Search fallback failed for:', symbol, searchError.message);
+                }
             }
         }
 
