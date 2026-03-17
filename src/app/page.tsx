@@ -37,7 +37,7 @@ export default function Home() {
     return (
         <Container>
             <HomeCard
-                title="포트폴리오"
+                title="Bambi Portfolio"
                 buttonText="보러가기"
                 onClick={handlePortfolioNavigate}
             />
