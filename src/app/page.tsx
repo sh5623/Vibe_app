@@ -18,6 +18,10 @@ export default function Home() {
         router.push('/stock');
     }
 
+    const handlePortfolioNavigate = () => {
+        router.push('/portfolio');
+    }
+
     const handleOpenModal = () => {
         setIsModalOpen(true);
     };
@@ -32,6 +36,11 @@ export default function Home() {
 
     return (
         <Container>
+            <HomeCard
+                title="포트폴리오"
+                buttonText="보러가기"
+                onClick={handlePortfolioNavigate}
+            />
             <HomeCard
                 title="초대장이 도착했습니다."
                 buttonText="보러가기"
