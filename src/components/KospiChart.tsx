@@ -32,8 +32,8 @@ export const KospiChart = () => {
     if (isError || chartData.length === 0) return <div style={{ width: '100%', height: 450, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>No KOSPI data available</div>;
 
     return (
-        <div style={{ width: '100%', height: 450 }}>
-            <ResponsiveContainer>
+        <div style={{ width: '100%', height: 450, minWidth: 0 }}>
+            <ResponsiveContainer width="100%" height={450}>
                 <AreaChart
                     data={chartData}
                     margin={{ top: 10, right: 30, left: 0, bottom: 0 }}

@@ -48,8 +48,8 @@ export const SearchableStockChart = ({ symbol }: Props) => {
                     </div>
                 </div>
             </div>
-            <div style={{ width: '100%', height: 250 }}>
-                <ResponsiveContainer>
+            <div style={{ width: '100%', height: 250, minWidth: 0 }}>
+                <ResponsiveContainer width="100%" height={250}>
                     <LineChart data={chartData} margin={{ top: 5, right: 5, left: -20, bottom: 5 }}>
                         <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
                         <XAxis dataKey="name" hide />

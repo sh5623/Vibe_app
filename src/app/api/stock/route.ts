@@ -83,7 +83,8 @@ export async function GET(request: Request) {
 
         let history: any[] = [];
         try {
-            history = await yahooFinance.historical(targetSymbol, { period1, period2, interval: '1d' });
+            const chartData = await yahooFinance.chart(targetSymbol, { period1, period2, interval: '1d' });
+            history = chartData.quotes.filter((q: any) => q.close !== null);
         } catch (e) {
             console.error('History fetch error:', e);
         }
@@ -120,7 +121,8 @@ export async function GET(request: Request) {
 
                 let history: any[] = [];
                 try {
-                    history = await yahooFinance.historical(fallbackSymbol, { period1, period2, interval: '1d' });
+                    const fallbackChart = await yahooFinance.chart(fallbackSymbol, { period1, period2, interval: '1d' });
+                    history = fallbackChart.quotes.filter((q: any) => q.close !== null);
                 } catch (e) {
                     console.error('Fallback History fetch error:', e);
                 }
