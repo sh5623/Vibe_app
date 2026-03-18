@@ -12,14 +12,7 @@ const fadeInUp = keyframes`
   }
 `;
 
-const scrollX = keyframes`
-  from {
-    transform: translateX(0);
-  }
-  to {
-    transform: translateX(calc(-50% - 0.75rem));
-  }
-`;
+// scrollX keyframes removed
 
 export const GlassCard = styled.div`
   background: rgba(255, 255, 255, 0.03);
@@ -70,27 +63,34 @@ export const GalleryTitle = styled.h2`
 export const GallerySliderContainer = styled.div`
   width: 100vw;
   max-width: 100%;
-  overflow: hidden;
+  overflow-x: auto;
+  overflow-y: hidden;
   padding: 1rem 0;
-  mask-image: linear-gradient(to right, transparent, black 10%, black 90%, transparent);
-  -webkit-mask-image: linear-gradient(to right, transparent, black 10%, black 90%, transparent);
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  cursor: grab;
+
+  &:active {
+    cursor: grabbing;
+  }
+  
+  &::-webkit-scrollbar {
+    display: none;
+  }
 `;
 
 export const GalleryTrack = styled.div`
   display: flex;
   gap: 1.5rem;
   width: max-content;
-  animation: ${scrollX} 30s linear infinite;
-
-  &:hover {
-    animation-play-state: paused;
-  }
+  /* Remove side paddings so scrollWidth / 2 math is perfectly precise for looping */
 `;
 
 export const GalleryItem = styled(GlassCard)<{ delay?: number }>`
   flex: 0 0 300px;
   padding: 0.5rem;
   height: 350px;
+  user-select: none;
   animation: ${fadeInUp} 0.8s ease-out ${({ delay }) => delay || 0}s both;
 
   .image-wrapper {
