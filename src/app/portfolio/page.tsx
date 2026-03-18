@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useRef, useEffect } from 'react';
 import Image from 'next/image';
 import { Heart, Stars, Instagram, ExternalLink } from 'lucide-react';
 import BambiImage from '@/assets/Bambi.jpg';
@@ -47,6 +47,7 @@ const galleryImages = [
   { src: Bambi7, alt: '밤비 갤러리 7' },
 ];
 
+// Multiply array to allow infinite scrolling effect
 const sliderImages = [...galleryImages, ...galleryImages];
 
 const workItems = [
@@ -67,6 +68,73 @@ const workItems = [
 ];
 
 export default function Portfolio() {
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const isDragging = useRef(false);
+  const startX = useRef(0);
+  const startScrollLeft = useRef(0);
+
+  // Auto-scroll loop
+  useEffect(() => {
+    const scrollContainer = scrollRef.current;
+    if (!scrollContainer) return;
+
+    let animationId: number;
+    let currentScroll = scrollContainer.scrollLeft;
+
+    const playScroll = () => {
+      // Auto scroll logic when not dragging
+      if (!isDragging.current) {
+        // Detect native mobile scrolling (touch momentum or trackpad)
+        if (Math.abs(scrollContainer.scrollLeft - currentScroll) > 5) {
+          // Native scrolling taking place, sync the tracker
+          currentScroll = scrollContainer.scrollLeft;
+        } else {
+          currentScroll += 2.5; // Auto-scroll speed
+          // Reset scroll position gracefully before hitting the end
+          if (currentScroll >= scrollContainer.scrollWidth / 2) {
+            currentScroll = 0;
+          }
+          scrollContainer.scrollLeft = currentScroll;
+        }
+      } else {
+        // Sync the tracker if the user manually drags via desktop Mouse
+        currentScroll = scrollContainer.scrollLeft;
+      }
+      animationId = requestAnimationFrame(playScroll);
+    };
+
+    animationId = requestAnimationFrame(playScroll);
+    return () => cancelAnimationFrame(animationId);
+  }, []);
+
+  // Desktop Drag Handlers
+  const handleMouseDown = (e: React.MouseEvent) => {
+    if (!scrollRef.current) return;
+    isDragging.current = true;
+    startX.current = e.pageX - scrollRef.current.offsetLeft;
+    startScrollLeft.current = scrollRef.current.scrollLeft;
+  };
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!isDragging.current || !scrollRef.current) return;
+    e.preventDefault();
+    const x = e.pageX - scrollRef.current.offsetLeft;
+    const walk = (x - startX.current) * 1.5;
+    scrollRef.current.scrollLeft = startScrollLeft.current - walk;
+  };
+
+  const handleUpOrLeave = () => {
+    isDragging.current = false;
+  };
+
+  // Mobile Touch Handlers
+  const handleTouchStart = () => {
+    isDragging.current = true;
+  };
+  const handleTouchEnd = () => {
+    isDragging.current = false;
+  };
+
   return (
     <Container>
       <HeroSection>
@@ -145,17 +213,26 @@ export default function Portfolio() {
 
       <GallerySection>
         <GalleryTitle>Photo Gallery</GalleryTitle>
-        <GallerySliderContainer>
+        <GallerySliderContainer 
+          ref={scrollRef}
+          onMouseDown={handleMouseDown}
+          onMouseLeave={handleUpOrLeave}
+          onMouseUp={handleUpOrLeave}
+          onMouseMove={handleMouseMove}
+          onTouchStart={handleTouchStart}
+          onTouchEnd={handleTouchEnd}
+        >
           <GalleryTrack>
             {sliderImages.map((image, index) => (
-              <GalleryItem key={index} delay={0.1 * index}>
-                <div className="image-wrapper">
+              <GalleryItem key={index} delay={0.1 * (index % galleryImages.length)}>
+                <div className="image-wrapper" onDragStart={(e) => e.preventDefault()}>
                   <Image
                     src={image.src}
                     alt={image.alt}
                     fill
                     sizes="300px"
                     style={{ objectFit: 'cover' }}
+                    draggable={false}
                   />
                 </div>
               </GalleryItem>
