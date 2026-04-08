@@ -34,6 +34,7 @@ import Bambi4 from '@/assets/Bambi/Bambi_4.jpeg';
 import Bambi5 from '@/assets/Bambi/Bambi_5.jpeg';
 import Bambi6 from '@/assets/Bambi/Bambi_6.jpeg';
 import Bambi7 from '@/assets/Bambi/Bambi_7.jpeg';
+import Bambi8 from '@/assets/Bambi/Bambi_8.jpeg';
 import Work1 from '@/assets/Bambi/works/work_1.jpg';
 import Work2 from '@/assets/Bambi/works/work_2.jpg';
 
@@ -45,6 +46,7 @@ const galleryImages = [
   { src: Bambi5, alt: '밤비 갤러리 5' },
   { src: Bambi6, alt: '밤비 갤러리 6' },
   { src: Bambi7, alt: '밤비 갤러리 7' },
+  { src: Bambi8, alt: '밤비 갤러리 8' },
 ];
 
 // Multiply array to allow infinite scrolling effect
@@ -213,7 +215,7 @@ export default function Portfolio() {
 
       <GallerySection>
         <GalleryTitle>Photo Gallery</GalleryTitle>
-        <GallerySliderContainer 
+        <GallerySliderContainer
           ref={scrollRef}
           onMouseDown={handleMouseDown}
           onMouseLeave={handleUpOrLeave}
