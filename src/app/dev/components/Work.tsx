@@ -1,5 +1,6 @@
 'use client';
 
+import { useRouter } from 'next/navigation';
 import { ArrowUpRight } from 'lucide-react';
 import {
   Section, SectionHeader, SectionNumber, SectionTitle,
@@ -39,8 +40,10 @@ const projects: Project[] = [
 ];
 
 export default function Work() {
+  const router = useRouter();
+
   const handleProjectClick = (href: string) => {
-    window.location.href = href;
+    router.push(href);
   };
 
   return (

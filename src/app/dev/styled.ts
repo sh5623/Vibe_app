@@ -29,10 +29,10 @@ const slideIn = keyframes`
 
 // === Page ===
 export const PageWrapper = styled.div`
-  background: #0a0a0a;
+  background: var(--bg-color);
   min-height: 100vh;
   color: #f0ede8;
-  font-family: 'Syne', sans-serif;
+  font-family: var(--font-syne), sans-serif;
   overflow-x: hidden;
 `;
 
@@ -57,7 +57,7 @@ export const Nav = styled.nav`
 `;
 
 export const NavLogo = styled.div`
-  font-family: 'IBM Plex Mono', monospace;
+  font-family: var(--font-mono), monospace;
   font-size: 0.8rem;
   color: #adff2f;
   letter-spacing: 0.25em;
@@ -74,7 +74,7 @@ export const NavLinks = styled.div`
 `;
 
 export const NavLink = styled.a`
-  font-family: 'IBM Plex Mono', monospace;
+  font-family: var(--font-mono), monospace;
   font-size: 0.72rem;
   color: rgba(240, 237, 232, 0.4);
   text-decoration: none;
@@ -117,7 +117,7 @@ export const StatusBadge = styled.div`
   display: flex;
   align-items: center;
   gap: 0.6rem;
-  font-family: 'IBM Plex Mono', monospace;
+  font-family: var(--font-mono), monospace;
   font-size: 0.7rem;
   color: rgba(240, 237, 232, 0.45);
   letter-spacing: 0.12em;
@@ -139,7 +139,7 @@ export const StatusBadge = styled.div`
 `;
 
 export const HeroEyebrow = styled.div`
-  font-family: 'IBM Plex Mono', monospace;
+  font-family: var(--font-mono), monospace;
   font-size: 0.72rem;
   letter-spacing: 0.35em;
   color: #adff2f;
@@ -175,7 +175,7 @@ export const HeroName = styled.h1`
 `;
 
 export const HeroRole = styled.div`
-  font-family: 'IBM Plex Mono', monospace;
+  font-family: var(--font-mono), monospace;
   font-size: clamp(0.9rem, 2vw, 1.2rem);
   color: rgba(240, 237, 232, 0.55);
   margin-bottom: 3.5rem;
@@ -210,7 +210,7 @@ export const CTAPrimary = styled.a`
   padding: 0.9rem 2rem;
   background: #adff2f;
   color: #0a0a0a;
-  font-family: 'IBM Plex Mono', monospace;
+  font-family: var(--font-mono), monospace;
   font-size: 0.78rem;
   font-weight: 500;
   letter-spacing: 0.18em;
@@ -233,7 +233,7 @@ export const CTASecondary = styled.a`
   background: transparent;
   color: #f0ede8;
   border: 1px solid rgba(240, 237, 232, 0.2);
-  font-family: 'IBM Plex Mono', monospace;
+  font-family: var(--font-mono), monospace;
   font-size: 0.78rem;
   font-weight: 500;
   letter-spacing: 0.18em;
@@ -256,7 +256,7 @@ export const ScrollHint = styled.div`
   flex-direction: column;
   align-items: center;
   gap: 0.5rem;
-  font-family: 'IBM Plex Mono', monospace;
+  font-family: var(--font-mono), monospace;
   font-size: 0.65rem;
   color: rgba(240, 237, 232, 0.25);
   letter-spacing: 0.25em;
@@ -285,7 +285,7 @@ export const MarqueeTrack = styled.div`
 `;
 
 export const MarqueeItem = styled.span`
-  font-family: 'Syne', sans-serif;
+  font-family: var(--font-syne), sans-serif;
   font-size: 0.72rem;
   font-weight: 700;
   letter-spacing: 0.35em;
@@ -314,7 +314,7 @@ export const SectionHeader = styled.div`
 `;
 
 export const SectionNumber = styled.span`
-  font-family: 'IBM Plex Mono', monospace;
+  font-family: var(--font-mono), monospace;
   font-size: 0.72rem;
   color: #adff2f;
   letter-spacing: 0.25em;
@@ -379,7 +379,7 @@ export const StatCard = styled.div`
   }
 
   .label {
-    font-family: 'IBM Plex Mono', monospace;
+    font-family: var(--font-mono), monospace;
     font-size: 0.65rem;
     letter-spacing: 0.22em;
     color: rgba(240, 237, 232, 0.35);
@@ -397,7 +397,7 @@ export const SkillCategory = styled.div`
 `;
 
 export const CategoryLabel = styled.div`
-  font-family: 'IBM Plex Mono', monospace;
+  font-family: var(--font-mono), monospace;
   font-size: 0.68rem;
   letter-spacing: 0.3em;
   color: rgba(240, 237, 232, 0.28);
@@ -416,7 +416,7 @@ export const SkillTag = styled.div<{ accent?: boolean }>`
   align-items: center;
   padding: 0.55rem 1.2rem;
   border: 1px solid ${({ accent }) => accent ? '#adff2f' : 'rgba(240, 237, 232, 0.12)'};
-  font-family: 'IBM Plex Mono', monospace;
+  font-family: var(--font-mono), monospace;
   font-size: 0.75rem;
   color: ${({ accent }) => accent ? '#adff2f' : 'rgba(240, 237, 232, 0.55)'};
   letter-spacing: 0.05em;
@@ -489,7 +489,7 @@ export const ProjectCard = styled.div`
 `;
 
 export const ProjectNum = styled.div`
-  font-family: 'IBM Plex Mono', monospace;
+  font-family: var(--font-mono), monospace;
   font-size: 0.68rem;
   color: #adff2f;
   letter-spacing: 0.25em;
@@ -517,7 +517,7 @@ export const TagRow = styled.div`
 `;
 
 export const Tag = styled.span`
-  font-family: 'IBM Plex Mono', monospace;
+  font-family: var(--font-mono), monospace;
   font-size: 0.62rem;
   color: rgba(240, 237, 232, 0.35);
   border: 1px solid rgba(240, 237, 232, 0.1);
@@ -571,7 +571,7 @@ export const ContactLinks = styled.div`
 `;
 
 export const ContactLink = styled.a`
-  font-family: 'IBM Plex Mono', monospace;
+  font-family: var(--font-mono), monospace;
   font-size: 0.82rem;
   letter-spacing: 0.22em;
   color: rgba(240, 237, 232, 0.45);
@@ -594,7 +594,7 @@ export const Footer = styled.footer`
   justify-content: space-between;
   align-items: center;
   border-top: 1px solid rgba(240, 237, 232, 0.07);
-  font-family: 'IBM Plex Mono', monospace;
+  font-family: var(--font-mono), monospace;
   font-size: 0.68rem;
   color: rgba(240, 237, 232, 0.2);
   letter-spacing: 0.12em;
