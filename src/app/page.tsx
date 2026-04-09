@@ -34,8 +34,17 @@ export default function Home() {
         return false;
     };
 
+    const handleDevPortfolioNavigate = () => {
+        router.push('/dev');
+    }
+
     return (
         <Container>
+            <HomeCard
+                title="이승호 Portfolio"
+                buttonText="보러가기"
+                onClick={handleDevPortfolioNavigate}
+            />
             <HomeCard
                 title="Bambi Portfolio"
                 buttonText="보러가기"
