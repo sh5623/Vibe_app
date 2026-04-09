@@ -176,13 +176,17 @@ export const HeroName = styled.h1`
 
 export const HeroRole = styled.div`
   font-family: var(--font-mono), monospace;
-  font-size: clamp(0.9rem, 2vw, 1.2rem);
+  font-size: clamp(0.85rem, 2vw, 1.2rem);
   color: rgba(240, 237, 232, 0.55);
   margin-bottom: 3.5rem;
   animation: ${fadeUp} 0.7s ease 0.2s both;
   min-height: 2em;
   display: flex;
   align-items: center;
+
+  @media (max-width: 480px) {
+    margin-bottom: 2.5rem;
+  }
 `;
 
 export const Cursor = styled.span`
@@ -223,6 +227,12 @@ export const CTAPrimary = styled.a`
     background: #f0ede8;
     transform: translateY(-2px);
   }
+
+  @media (max-width: 480px) {
+    flex: 1;
+    justify-content: center;
+    padding: 0.9rem 1.5rem;
+  }
 `;
 
 export const CTASecondary = styled.a`
@@ -245,6 +255,12 @@ export const CTASecondary = styled.a`
   &:hover {
     border-color: #adff2f;
     color: #adff2f;
+  }
+
+  @media (max-width: 480px) {
+    flex: 1;
+    justify-content: center;
+    padding: 0.9rem 1.5rem;
   }
 `;
 
@@ -311,6 +327,12 @@ export const SectionHeader = styled.div`
   align-items: baseline;
   gap: 1.5rem;
   margin-bottom: 5rem;
+
+  @media (max-width: 768px) {
+    margin-bottom: 3rem;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
 `;
 
 export const SectionNumber = styled.span`
@@ -335,6 +357,10 @@ export const AboutGrid = styled.div`
   gap: 6rem;
   align-items: start;
 
+  @media (max-width: 1024px) {
+    gap: 3rem;
+  }
+
   @media (max-width: 768px) {
     grid-template-columns: 1fr;
     gap: 3.5rem;
@@ -357,6 +383,10 @@ export const StatGrid = styled.div`
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 2px;
+
+  @media (max-width: 480px) {
+    grid-template-columns: 1fr;
+  }
 `;
 
 export const StatCard = styled.div`
@@ -584,6 +614,11 @@ export const ContactLink = styled.a`
   &:hover {
     color: #adff2f;
     border-color: #adff2f;
+  }
+
+  @media (max-width: 480px) {
+    font-size: 0.75rem;
+    letter-spacing: 0.15em;
   }
 `;
 
