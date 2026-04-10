@@ -43,6 +43,7 @@ src/
 - **Path alias:** `@/*` → `./src/*` (configured in tsconfig.json)
 - **Server components by default;** `"use client"` only when state/browser API needed
 - **No CSS files, no inline styles** — Emotion only → `.claude/rules/emotion-styling.md`
+- **Responsive design is mandatory** — 모든 스타일에 `@media (max-width: 768px)` 필수 포함, 반응형 없는 코드는 미완성으로 간주 → `.claude/rules/emotion-styling.md`
 - **TypeScript rules:** no `any`, interface over type → `.claude/rules/typescript.md`
 - **API route patterns:** → `.claude/rules/api-conventions.md`
 
