@@ -29,7 +29,7 @@ const slideIn = keyframes`
 
 // === Page ===
 export const PageWrapper = styled.div`
-  background: var(--bg-color);
+  background: #0a0a0a;
   min-height: 100vh;
   color: #f0ede8;
   font-family: var(--font-syne), sans-serif;
@@ -52,7 +52,7 @@ export const Nav = styled.nav`
   border-bottom: 1px solid rgba(240, 237, 232, 0.06);
 
   @media (max-width: 768px) {
-    padding: 1.25rem 1.5rem;
+    padding: 1rem 1.5rem;
   }
 `;
 
@@ -62,6 +62,7 @@ export const NavLogo = styled.div`
   color: #adff2f;
   letter-spacing: 0.25em;
   text-transform: uppercase;
+  flex-shrink: 0;
 `;
 
 export const NavLinks = styled.div`
@@ -69,7 +70,11 @@ export const NavLinks = styled.div`
   gap: 2.5rem;
 
   @media (max-width: 768px) {
-    gap: 1.25rem;
+    gap: 0.75rem;
+  }
+
+  @media (max-width: 420px) {
+    gap: 0.5rem;
   }
 `;
 
@@ -87,26 +92,23 @@ export const NavLink = styled.a`
   }
 
   @media (max-width: 480px) {
-    display: none;
-
-    &:last-child {
-      display: block;
-    }
+    font-size: 0.65rem;
+    letter-spacing: 0.12em;
   }
 `;
 
 // === Hero ===
 export const HeroSection = styled.section`
-  height: 100vh;
+  min-height: 100vh;
   display: flex;
   flex-direction: column;
   justify-content: center;
-  padding: 0 3rem;
+  padding: 6rem 3rem;
   position: relative;
   border-bottom: 1px solid rgba(240, 237, 232, 0.07);
 
   @media (max-width: 768px) {
-    padding: 0 1.5rem;
+    padding: 6rem 1.5rem 4rem;
   }
 `;
 
@@ -134,7 +136,7 @@ export const StatusBadge = styled.div`
 
   @media (max-width: 768px) {
     right: 1.5rem;
-    top: 6rem;
+    top: 5rem;
   }
 `;
 
@@ -161,11 +163,11 @@ export const HeroEyebrow = styled.div`
 `;
 
 export const HeroName = styled.h1`
-  font-size: clamp(4.5rem, 13vw, 15rem);
+  font-size: clamp(2.5rem, 12vw, 15rem);
   font-weight: 800;
-  line-height: 0.88;
+  line-height: 0.95;
   letter-spacing: -0.025em;
-  margin-bottom: 2.5rem;
+  margin-bottom: 2rem;
   animation: ${fadeUp} 0.7s ease 0.1s both;
 
   .outline {
@@ -579,10 +581,9 @@ export const ContactGlow = styled.div`
 `;
 
 export const ContactTitle = styled.h2`
-  font-size: clamp(3rem, 9vw, 10.5rem);
+  font-size: clamp(2.2rem, 9vw, 10.5rem);
   font-weight: 800;
-  letter-spacing: -0.03em;
-  line-height: 0.88;
+  line-height: 1;
   margin-bottom: 4rem;
   position: relative;
 

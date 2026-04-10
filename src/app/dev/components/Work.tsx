@@ -19,7 +19,7 @@ const projects: Project[] = [
   {
     num: '01',
     name: 'Vibe App',
-    desc: 'Next.js App Router 기반 인터랙티브 포트폴리오. 주식 대시보드, 초대장 시스템, 실시간 데이터 시각화를 포함한 풀스택 경험.',
+    desc: 'Next.js App Router 기반 AI를 활용한 웹사이트 구현.',
     tags: ['Next.js', 'TypeScript', 'Emotion', 'Recharts', 'React Query', 'Jotai'],
     href: '/',
   },

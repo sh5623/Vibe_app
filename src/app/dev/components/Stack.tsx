@@ -20,36 +20,43 @@ const skills: SkillGroup[] = [
       { label: 'React', accent: true },
       { label: 'Next.js', accent: true },
       { label: 'TypeScript', accent: true },
-      { label: 'JavaScript (ES2024)' },
-      { label: 'HTML5' },
-      { label: 'CSS3' },
+      { label: 'Vue.js', accent: true },
     ],
   },
   {
     category: 'Styling',
     items: [
       { label: 'Emotion CSS', accent: true },
-      { label: 'CSS-in-JS' },
+      { label: 'Tailwind CSS', accent: true },
       { label: 'Responsive Design' },
-      { label: 'Animation' },
     ],
   },
   {
     category: 'State & Data',
     items: [
       { label: 'Jotai', accent: true },
+      { label: 'Redux', accent: true },
       { label: 'React Query', accent: true },
+      { label: 'Vuex' },
       { label: 'REST API' },
+    ],
+  },
+  {
+    category: 'Build',
+    items: [
+      { label: 'Turborepo', accent: true },
+      { label: 'Vite', accent: true },
     ],
   },
   {
     category: 'Tools',
     items: [
-      { label: 'Git / GitHub' },
-      { label: 'Yarn' },
+      { label: 'Git / GitHub / GitLab' },
+      { label: 'Yarn / NPM' },
       { label: 'Recharts' },
-      { label: 'Lucide Icons' },
-      { label: 'VS Code' },
+      { label: 'Jira / Confluence' },
+      { label: 'Figma' },
+      { label: 'Slack' },
     ],
   },
 ];

@@ -4,9 +4,9 @@ import { Global, css } from '@emotion/react';
 
 const globalStyles = css`
   :root {
-    --bg-color: #0a0a0a;
-    --text-color: #ffffff;
-    --accent-color: #adff2f;
+    --bg-color: #fdfaf6;
+    --text-color: #333333;
+    --accent-color: #8c7b75;
   }
 
   html {
@@ -42,7 +42,7 @@ const globalStyles = css`
     width: 4px;
   }
   ::-webkit-scrollbar-track {
-    background: #0a0a0a;
+    background: var(--bg-color);
   }
   ::-webkit-scrollbar-thumb {
     background: rgba(173, 255, 47, 0.4);
