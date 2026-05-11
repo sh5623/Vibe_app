@@ -10,7 +10,7 @@ export default function Contact() {
         <ContactTitle>
           LET&apos;S
           <br />
-          <span className="outline">WORK</span>
+          <span className="gradient">WORK</span>
           <br />
           TOGETHER
         </ContactTitle>
