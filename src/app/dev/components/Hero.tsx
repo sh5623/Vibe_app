@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import {
-  HeroSection, StatusBadge, HeroEyebrow, HeroName, HeroRole, Cursor,
+  HeroSection, HeroOrbA, HeroOrbB, HeroCodeCard,
+  StatusBadge, HeroEyebrow, HeroName, HeroRole, Cursor,
   HeroCTAs, CTAPrimary, CTASecondary, ScrollHint,
 } from '../styled';
 
@@ -43,6 +44,35 @@ export default function Hero() {
 
   return (
     <HeroSection id="hero">
+      <HeroOrbA />
+      <HeroOrbB />
+      <HeroCodeCard>
+        <div>
+          <span className="line-num">1</span>
+          <span className="kw">const</span> <span className="vr">developer</span> = {'{'}
+        </div>
+        <div>
+          <span className="line-num">2</span>
+          &nbsp;&nbsp;<span className="fn">name</span>: <span className="str">&quot;Seungho Lee&quot;</span>,
+        </div>
+        <div>
+          <span className="line-num">3</span>
+          &nbsp;&nbsp;<span className="fn">role</span>: <span className="str">&quot;Frontend Dev&quot;</span>,
+        </div>
+        <div>
+          <span className="line-num">4</span>
+          &nbsp;&nbsp;<span className="fn">stack</span>: [<span className="str">&quot;React&quot;</span>, <span className="str">&quot;Next&quot;</span>],
+        </div>
+        <div>
+          <span className="line-num">5</span>
+          &nbsp;&nbsp;<span className="fn">exp</span>: <span className="str">&quot;7+ years&quot;</span>,
+        </div>
+        <div>
+          <span className="line-num">6</span>
+          {'}'}
+        </div>
+      </HeroCodeCard>
+
       <StatusBadge>
         <span className="dot" />
         Available for work
@@ -51,7 +81,7 @@ export default function Hero() {
       <HeroEyebrow>Portfolio</HeroEyebrow>
 
       <HeroName>
-        SEUNG
+        <span className="gradient">SEUNG</span>
         <br />
         <span className="outline">HO LEE</span>
       </HeroName>
