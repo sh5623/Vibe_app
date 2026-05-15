@@ -37,12 +37,6 @@ cp .env.example .env.local
 yarn dev
 ```
 
-## 환경변수
-
-| 변수 | 필수 | 설명 |
-|------|------|------|
-| `NEXT_PUBLIC_BIRTHDAY` | ✅ | `/letter` 페이지 생일 인증값 |
-
 ## 명령어
 
 ```bash
