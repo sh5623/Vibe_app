@@ -38,7 +38,9 @@ dist-ssr
 # Claude Code personal overrides
 .claude/
 CLAUDE.local.md
-.claude/settings.local.json
+
+# TypeScript build info
+tsconfig.tsbuildinfo
 
 # Playwright MCP
 .playwright-mcp/
