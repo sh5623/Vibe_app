@@ -4,27 +4,28 @@ import { motion } from 'framer-motion';
 import styled from '@emotion/styled';
 
 // ─── Design Tokens ────────────────────────────────────────────────────────────
-// --skill-card-bg          : #ffffff
-// --skill-card-border      : rgba(99,102,241,0.13)
-// --skill-card-shadow      : 0 2px 12px rgba(99,102,241,0.07)
-// --skill-card-hover-shadow: 0 18px 48px rgba(99,102,241,0.14)
+// --skill-card-bg          : rgba(255,255,255,0.04)
+// --skill-card-border      : rgba(99,102,241,0.15)
+// --skill-card-shadow      : 0 2px 12px rgba(0,0,0,0.3)
+// --skill-card-hover-shadow: 0 18px 48px rgba(99,102,241,0.18)
 // --skill-card-radius      : 20px
-// --skill-card-gradient    : linear-gradient(90deg,#4f46e5,#10b981)
+// --skill-card-gradient    : linear-gradient(90deg,#6366f1,#34d399)
 
 const Card = styled(motion.button)`
   position: relative;
   width: 100%;
-  background: #ffffff;
-  border: 1.5px solid rgba(99, 102, 241, 0.13);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1.5px solid rgba(99, 102, 241, 0.15);
   border-radius: 20px;
   padding: 2rem;
   text-align: left;
   cursor: pointer;
   overflow: hidden;
-  box-shadow: 0 2px 12px rgba(99, 102, 241, 0.07);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.3);
   transition:
     border-color 0.25s ease,
-    box-shadow 0.25s ease;
+    box-shadow 0.25s ease,
+    background 0.25s ease;
 
   /* gradient top bar */
   &::before {
@@ -34,7 +35,7 @@ const Card = styled(motion.button)`
     left: 0;
     right: 0;
     height: 3px;
-    background: linear-gradient(90deg, #4f46e5, #10b981);
+    background: linear-gradient(90deg, #6366f1, #34d399);
     transform: scaleX(0);
     transform-origin: left;
     transition: transform 0.35s ease;
@@ -42,8 +43,9 @@ const Card = styled(motion.button)`
   }
 
   &:hover {
-    border-color: rgba(99, 102, 241, 0.3);
-    box-shadow: 0 18px 48px rgba(99, 102, 241, 0.14);
+    border-color: rgba(99, 102, 241, 0.35);
+    box-shadow: 0 18px 48px rgba(99, 102, 241, 0.18);
+    background: rgba(255, 255, 255, 0.07);
 
     &::before {
       transform: scaleX(1);
@@ -51,7 +53,7 @@ const Card = styled(motion.button)`
   }
 
   &:focus-visible {
-    outline: 2px solid #4f46e5;
+    outline: 2px solid #818cf8;
     outline-offset: 3px;
   }
 
@@ -77,10 +79,10 @@ const IconBadge = styled.div`
   border-radius: 14px;
   background: linear-gradient(
     135deg,
-    rgba(99, 102, 241, 0.1),
-    rgba(16, 185, 129, 0.08)
+    rgba(99, 102, 241, 0.12),
+    rgba(52, 211, 153, 0.08)
   );
-  border: 1px solid rgba(99, 102, 241, 0.12);
+  border: 1px solid rgba(99, 102, 241, 0.16);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -92,7 +94,7 @@ const IconBadge = styled.div`
 const SkillName = styled.div`
   font-family: var(--font-mono), monospace;
   font-size: 0.82rem;
-  color: #4f46e5;
+  color: #818cf8;
   font-weight: 700;
   letter-spacing: 0.06em;
   margin-bottom: 0.35rem;
@@ -101,7 +103,7 @@ const SkillName = styled.div`
 const SkillTitle = styled.h3`
   font-size: 1.15rem;
   font-weight: 700;
-  color: #0f172a;
+  color: #f1f5f9;
   letter-spacing: -0.015em;
   margin-bottom: 0.75rem;
   line-height: 1.3;
@@ -119,9 +121,9 @@ const CmdBadge = styled.span`
   align-items: center;
   font-family: var(--font-mono), monospace;
   font-size: 0.68rem;
-  color: #10b981;
-  background: rgba(16, 185, 129, 0.08);
-  border: 1px solid rgba(16, 185, 129, 0.2);
+  color: #34d399;
+  background: rgba(52, 211, 153, 0.08);
+  border: 1px solid rgba(52, 211, 153, 0.2);
   border-radius: 8px;
   padding: 0.28rem 0.75rem;
   letter-spacing: 0.04em;
@@ -129,9 +131,9 @@ const CmdBadge = styled.span`
 `;
 
 // ─── State Matrix ─────────────────────────────────────────────────────────────
-// default  : white bg, subtle indigo border + shadow
+// default  : dark glass bg, subtle indigo border
 // hover    : border stronger, shadow elevated, gradient top bar slides in
-// focus    : 2px indigo outline, 3px offset (WCAG 2.4.7)
+// focus    : 2px indigo-400 outline, 3px offset (WCAG 2.4.7)
 // active   : scale(0.985) press feedback
 // reduced  : all transitions removed (prefers-reduced-motion)
 

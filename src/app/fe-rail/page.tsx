@@ -307,9 +307,9 @@ export default function FeRailPage() {
 
       {/* Hero */}
       <HeroSection>
-        <HeroOrb $color="rgba(79,70,229,0.18)" $size="700px" $top="-180px" $right="-120px" />
+        <HeroOrb $color="rgba(99,102,241,0.22)" $size="700px" $top="-180px" $right="-120px" />
         <HeroOrb
-          $color="rgba(6,182,212,0.14)"
+          $color="rgba(52,211,153,0.12)"
           $size="500px"
           $bottom="-80px"
           $left="-80px"

@@ -7,17 +7,17 @@ const orbFloat = keyframes`
 `;
 
 const pulse = keyframes`
-  0%, 100% { box-shadow: 0 0 0 0 rgba(79, 70, 229, 0.45); }
-  50%       { box-shadow: 0 0 0 6px rgba(79, 70, 229, 0); }
+  0%, 100% { box-shadow: 0 0 0 0 rgba(129, 140, 248, 0.5); }
+  50%       { box-shadow: 0 0 0 6px rgba(129, 140, 248, 0); }
 `;
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 export const PageWrapper = styled.div`
-  background-color: #f0f4ff;
-  background-image: radial-gradient(rgba(79, 70, 229, 0.07) 1px, transparent 1px);
+  background-color: #070b1a;
+  background-image: radial-gradient(rgba(99, 102, 241, 0.06) 1px, transparent 1px);
   background-size: 32px 32px;
   min-height: 100vh;
-  color: #0f172a;
+  color: #f1f5f9;
   font-family: var(--font-syne), sans-serif;
   overflow-x: hidden;
 `;
@@ -33,9 +33,9 @@ export const Nav = styled.nav`
   align-items: center;
   justify-content: space-between;
   padding: 1.25rem 3rem;
-  background: rgba(240, 244, 255, 0.88);
+  background: rgba(7, 11, 26, 0.88);
   backdrop-filter: blur(20px);
-  border-bottom: 1px solid rgba(79, 70, 229, 0.1);
+  border-bottom: 1px solid rgba(99, 102, 241, 0.12);
 
   @media (max-width: 768px) {
     padding: 1rem 1.5rem;
@@ -57,7 +57,7 @@ export const NavButton = styled.button`
   padding: 0;
 
   &:hover {
-    color: #4f46e5;
+    color: #818cf8;
   }
 `;
 
@@ -73,7 +73,7 @@ export const NavAnchor = styled.a`
   transition: color 0.2s ease;
 
   &:hover {
-    color: #4f46e5;
+    color: #818cf8;
   }
 `;
 
@@ -81,7 +81,7 @@ export const NavLogo = styled.div`
   font-family: var(--font-mono), monospace;
   font-size: 0.9rem;
   font-weight: 700;
-  background: linear-gradient(135deg, #4f46e5, #06b6d4);
+  background: linear-gradient(135deg, #818cf8, #67e8f9);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -97,18 +97,18 @@ export const LangToggle = styled.button<{ $active: boolean }>`
   font-size: 0.72rem;
   font-weight: 600;
   letter-spacing: 0.08em;
-  background: rgba(255, 255, 255, 0.9);
-  border: 1.5px solid rgba(79, 70, 229, 0.18);
+  background: rgba(255, 255, 255, 0.05);
+  border: 1.5px solid rgba(99, 102, 241, 0.22);
   border-radius: 100px;
   cursor: pointer;
   padding: 0;
   overflow: hidden;
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
-  box-shadow: 0 1px 4px rgba(79, 70, 229, 0.06);
+  box-shadow: 0 1px 4px rgba(99, 102, 241, 0.08);
 
   &:hover {
-    border-color: rgba(79, 70, 229, 0.4);
-    box-shadow: 0 2px 10px rgba(79, 70, 229, 0.12);
+    border-color: rgba(99, 102, 241, 0.45);
+    box-shadow: 0 2px 10px rgba(99, 102, 241, 0.18);
   }
 
   .opt {
@@ -119,11 +119,11 @@ export const LangToggle = styled.button<{ $active: boolean }>`
   }
 
   .opt-ko {
-    color: ${({ $active }) => ($active ? '#ffffff' : '#94a3b8')};
+    color: ${({ $active }) => ($active ? '#ffffff' : '#475569')};
   }
 
   .opt-en {
-    color: ${({ $active }) => (!$active ? '#ffffff' : '#94a3b8')};
+    color: ${({ $active }) => (!$active ? '#ffffff' : '#475569')};
   }
 
   .slider {
@@ -131,11 +131,11 @@ export const LangToggle = styled.button<{ $active: boolean }>`
     top: 2px;
     bottom: 2px;
     width: calc(50% - 2px);
-    background: linear-gradient(135deg, #4f46e5, #4338ca);
+    background: linear-gradient(135deg, #6366f1, #4f46e5);
     border-radius: 100px;
     transition: left 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
     left: ${({ $active }) => ($active ? '2px' : 'calc(50%)')};
-    box-shadow: 0 2px 8px rgba(79, 70, 229, 0.3);
+    box-shadow: 0 2px 8px rgba(99, 102, 241, 0.4);
   }
 `;
 
@@ -189,11 +189,11 @@ export const HeroBadge = styled.div`
   gap: 0.6rem;
   font-family: var(--font-mono), monospace;
   font-size: 0.72rem;
-  color: #4f46e5;
+  color: #818cf8;
   letter-spacing: 0.18em;
   text-transform: uppercase;
-  background: rgba(79, 70, 229, 0.07);
-  border: 1px solid rgba(79, 70, 229, 0.18);
+  background: rgba(99, 102, 241, 0.1);
+  border: 1px solid rgba(99, 102, 241, 0.22);
   border-radius: 100px;
   padding: 0.45rem 1.1rem 0.45rem 0.75rem;
   margin-bottom: 2rem;
@@ -203,7 +203,7 @@ export const HeroBadge = styled.div`
     width: 7px;
     height: 7px;
     border-radius: 50%;
-    background: #4f46e5;
+    background: #818cf8;
     flex-shrink: 0;
     animation: ${pulse} 2.2s ease-in-out infinite;
   }
@@ -216,12 +216,12 @@ export const HeroTitle = styled.h1`
   letter-spacing: -0.03em;
   margin-bottom: 1.5rem;
   max-width: 900px;
-  color: #0f172a;
+  color: #f1f5f9;
   position: relative;
   z-index: 1;
 
   .accent {
-    background: linear-gradient(135deg, #4f46e5 0%, #06b6d4 100%);
+    background: linear-gradient(135deg, #818cf8 0%, #34d399 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
@@ -257,7 +257,7 @@ export const CTAPrimary = styled.a`
   align-items: center;
   gap: 0.5rem;
   padding: 0.9rem 2.25rem;
-  background: linear-gradient(135deg, #4f46e5, #6d28d9);
+  background: linear-gradient(135deg, #6366f1, #4f46e5);
   color: white;
   font-family: var(--font-mono), monospace;
   font-size: 0.8rem;
@@ -267,12 +267,12 @@ export const CTAPrimary = styled.a`
   text-decoration: none;
   border-radius: 10px;
   transition: all 0.25s ease;
-  box-shadow: 0 4px 20px rgba(79, 70, 229, 0.35);
+  box-shadow: 0 4px 20px rgba(99, 102, 241, 0.4);
   cursor: pointer;
 
   &:hover {
     transform: translateY(-3px);
-    box-shadow: 0 12px 32px rgba(79, 70, 229, 0.45);
+    box-shadow: 0 12px 32px rgba(99, 102, 241, 0.55);
   }
 
   @media (max-width: 480px) {
@@ -286,8 +286,8 @@ export const CTASecondary = styled.a`
   align-items: center;
   gap: 0.5rem;
   padding: 0.9rem 2.25rem;
-  color: #4f46e5;
-  border: 1.5px solid rgba(79, 70, 229, 0.25);
+  color: #818cf8;
+  border: 1.5px solid rgba(99, 102, 241, 0.28);
   font-family: var(--font-mono), monospace;
   font-size: 0.8rem;
   font-weight: 600;
@@ -297,14 +297,14 @@ export const CTASecondary = styled.a`
   border-radius: 10px;
   transition: all 0.25s ease;
   cursor: pointer;
-  background: rgba(255, 255, 255, 0.8);
+  background: rgba(99, 102, 241, 0.06);
   backdrop-filter: blur(8px);
 
   &:hover {
-    border-color: #4f46e5;
-    background: rgba(79, 70, 229, 0.06);
+    border-color: rgba(99, 102, 241, 0.55);
+    background: rgba(99, 102, 241, 0.12);
     transform: translateY(-3px);
-    box-shadow: 0 8px 24px rgba(79, 70, 229, 0.14);
+    box-shadow: 0 8px 24px rgba(99, 102, 241, 0.2);
   }
 
   @media (max-width: 480px) {
@@ -316,10 +316,10 @@ export const CTASecondary = styled.a`
 // ─── Sections ─────────────────────────────────────────────────────────────────
 export const SectionOuter = styled.section`
   padding: 8rem 3rem;
-  border-top: 1px solid rgba(79, 70, 229, 0.07);
+  border-top: 1px solid rgba(99, 102, 241, 0.08);
 
   &:nth-of-type(even) {
-    background: rgba(255, 255, 255, 0.6);
+    background: rgba(255, 255, 255, 0.02);
   }
 
   @media (max-width: 768px) {
@@ -336,7 +336,7 @@ export const SectionInner = styled.div`
 export const SectionLabel = styled.div`
   font-family: var(--font-mono), monospace;
   font-size: 0.72rem;
-  color: #4f46e5;
+  color: #818cf8;
   letter-spacing: 0.3em;
   text-transform: uppercase;
   margin-bottom: 0.75rem;
@@ -348,7 +348,7 @@ export const SectionTitle = styled.h2`
   letter-spacing: -0.025em;
   line-height: 1.1;
   margin-bottom: 1rem;
-  color: #0f172a;
+  color: #f1f5f9;
 `;
 
 export const SectionDesc = styled.p`
@@ -394,14 +394,13 @@ export const SkillDetailGrid = styled.div`
 `;
 
 export const SkillDetailCard = styled.div`
-  background: #ffffff;
-  border: 1px solid rgba(79, 70, 229, 0.1);
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(99, 102, 241, 0.12);
   border-radius: 16px;
   padding: 2rem;
   position: relative;
   overflow: hidden;
-  transition: border-color 0.25s ease, box-shadow 0.25s ease;
-  box-shadow: 0 1px 6px rgba(79, 70, 229, 0.05);
+  transition: border-color 0.25s ease, box-shadow 0.25s ease, background 0.25s ease;
 
   &::before {
     content: '';
@@ -410,7 +409,7 @@ export const SkillDetailCard = styled.div`
     left: 0;
     right: 0;
     height: 2px;
-    background: linear-gradient(90deg, #4f46e5, #06b6d4);
+    background: linear-gradient(90deg, #6366f1, #34d399);
     transform: scaleX(0);
     transform-origin: left;
     transition: transform 0.35s ease;
@@ -418,8 +417,9 @@ export const SkillDetailCard = styled.div`
   }
 
   &:hover {
-    border-color: rgba(79, 70, 229, 0.22);
-    box-shadow: 0 8px 28px rgba(79, 70, 229, 0.09);
+    border-color: rgba(99, 102, 241, 0.28);
+    box-shadow: 0 8px 32px rgba(99, 102, 241, 0.12);
+    background: rgba(255, 255, 255, 0.05);
 
     &::before {
       transform: scaleX(1);
@@ -436,9 +436,9 @@ export const SkillDetailCard = styled.div`
     display: inline-block;
     font-family: var(--font-mono), monospace;
     font-size: 0.72rem;
-    color: #10b981;
-    background: rgba(16, 185, 129, 0.08);
-    border: 1px solid rgba(16, 185, 129, 0.18);
+    color: #34d399;
+    background: rgba(52, 211, 153, 0.08);
+    border: 1px solid rgba(52, 211, 153, 0.18);
     padding: 0.3rem 0.85rem;
     border-radius: 6px;
     margin-top: 1rem;
@@ -451,7 +451,7 @@ export const SkillDetailTitle = styled.h3`
   font-weight: 700;
   margin-bottom: 0.6rem;
   letter-spacing: -0.01em;
-  color: #0f172a;
+  color: #f1f5f9;
 `;
 
 export const SkillDetailDesc = styled.p`
@@ -464,7 +464,7 @@ export const SkillDetailDesc = styled.p`
 export const AgentPhaseLabel = styled.div`
   font-family: var(--font-mono), monospace;
   font-size: 0.7rem;
-  color: #4f46e5;
+  color: #818cf8;
   letter-spacing: 0.22em;
   text-transform: uppercase;
   margin-bottom: 0.9rem;
@@ -476,7 +476,7 @@ export const AgentPhaseLabel = styled.div`
     content: '';
     flex: 1;
     height: 1px;
-    background: rgba(79, 70, 229, 0.14);
+    background: rgba(99, 102, 241, 0.15);
   }
 `;
 
@@ -488,23 +488,23 @@ export const AgentGrid = styled.div`
 `;
 
 export const AgentCard = styled.div`
-  background: #ffffff;
-  border: 1px solid rgba(79, 70, 229, 0.1);
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(99, 102, 241, 0.12);
   border-radius: 12px;
   padding: 1.25rem 1.5rem;
   transition: all 0.2s ease;
-  box-shadow: 0 1px 4px rgba(79, 70, 229, 0.04);
 
   &:hover {
-    border-color: rgba(79, 70, 229, 0.24);
-    box-shadow: 0 6px 20px rgba(79, 70, 229, 0.09);
+    border-color: rgba(99, 102, 241, 0.3);
+    box-shadow: 0 6px 20px rgba(99, 102, 241, 0.12);
     transform: translateY(-2px);
+    background: rgba(255, 255, 255, 0.05);
   }
 
   .name {
     font-family: var(--font-mono), monospace;
     font-size: 0.8rem;
-    color: #4f46e5;
+    color: #818cf8;
     margin-bottom: 0.45rem;
     font-weight: 600;
   }
@@ -518,7 +518,7 @@ export const AgentCard = styled.div`
   .model {
     font-family: var(--font-mono), monospace;
     font-size: 0.62rem;
-    color: rgba(16, 185, 129, 0.8);
+    color: rgba(52, 211, 153, 0.8);
     margin-top: 0.75rem;
     letter-spacing: 0.05em;
   }
@@ -547,7 +547,7 @@ export const WorkflowStep = styled.div`
       top: 42px;
       width: 1px;
       height: calc(100% - 42px);
-      background: linear-gradient(to bottom, rgba(79, 70, 229, 0.25), transparent);
+      background: linear-gradient(to bottom, rgba(99, 102, 241, 0.3), transparent);
     }
   }
 `;
@@ -556,14 +556,14 @@ export const WorkflowNum = styled.div`
   width: 40px;
   height: 40px;
   border-radius: 50%;
-  background: rgba(79, 70, 229, 0.08);
-  border: 1.5px solid rgba(79, 70, 229, 0.2);
+  background: rgba(99, 102, 241, 0.1);
+  border: 1.5px solid rgba(99, 102, 241, 0.25);
   display: flex;
   align-items: center;
   justify-content: center;
   font-family: var(--font-mono), monospace;
   font-size: 0.78rem;
-  color: #4f46e5;
+  color: #818cf8;
   font-weight: 700;
   flex-shrink: 0;
 `;
@@ -575,7 +575,7 @@ export const WorkflowContent = styled.div`
     font-family: var(--font-mono), monospace;
     font-size: 0.88rem;
     font-weight: 600;
-    color: #0f172a;
+    color: #f1f5f9;
     margin-bottom: 0.35rem;
   }
 
@@ -588,8 +588,8 @@ export const WorkflowContent = styled.div`
 
 // ─── Code Block ───────────────────────────────────────────────────────────────
 export const CodeBlock = styled.pre`
-  background: #1e293b;
-  border: 1px solid rgba(79, 70, 229, 0.1);
+  background: #020617;
+  border: 1px solid rgba(99, 102, 241, 0.15);
   border-radius: 14px;
   padding: 1.75rem 2rem;
   font-family: var(--font-mono), monospace;
@@ -597,17 +597,17 @@ export const CodeBlock = styled.pre`
   line-height: 1.9;
   color: #e2e8f0;
   overflow-x: auto;
-  box-shadow: 0 4px 24px rgba(15, 23, 42, 0.12);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(99, 102, 241, 0.08);
 
   .comment {
-    color: #64748b;
+    color: #475569;
   }
   .cmd {
     color: #34d399;
   }
 
   @media (max-width: 768px) {
-    padding: 1.25rem 1.25rem;
+    padding: 1.25rem;
     font-size: 0.75rem;
   }
 `;
@@ -618,23 +618,23 @@ export const FAQList = styled.div`
 `;
 
 export const FAQItem = styled.div`
-  background: #ffffff;
-  border: 1px solid rgba(79, 70, 229, 0.08);
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(99, 102, 241, 0.1);
   border-radius: 14px;
   padding: 1.75rem 2rem;
   margin-bottom: 0.75rem;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
-  box-shadow: 0 1px 4px rgba(79, 70, 229, 0.04);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
 
   &:hover {
-    border-color: rgba(79, 70, 229, 0.18);
-    box-shadow: 0 4px 16px rgba(79, 70, 229, 0.07);
+    border-color: rgba(99, 102, 241, 0.22);
+    box-shadow: 0 4px 16px rgba(99, 102, 241, 0.08);
+    background: rgba(255, 255, 255, 0.05);
   }
 
   .q {
     font-size: 0.98rem;
     font-weight: 700;
-    color: #0f172a;
+    color: #f1f5f9;
     margin-bottom: 0.65rem;
     letter-spacing: -0.01em;
   }
@@ -653,12 +653,12 @@ export const PageFooter = styled.footer`
   display: flex;
   justify-content: space-between;
   align-items: center;
-  border-top: 1px solid rgba(79, 70, 229, 0.08);
+  border-top: 1px solid rgba(99, 102, 241, 0.08);
   font-family: var(--font-mono), monospace;
   font-size: 0.68rem;
-  color: #94a3b8;
+  color: #334155;
   letter-spacing: 0.1em;
-  background: rgba(255, 255, 255, 0.6);
+  background: rgba(0, 0, 0, 0.2);
 
   @media (max-width: 768px) {
     padding: 1.5rem;
