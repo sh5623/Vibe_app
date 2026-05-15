@@ -36,5 +36,9 @@ dist-ssr
 *.sw?
 
 # Claude Code personal overrides
+.claude/
 CLAUDE.local.md
 .claude/settings.local.json
+
+# Playwright MCP
+.playwright-mcp/
