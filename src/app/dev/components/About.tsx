@@ -30,6 +30,12 @@ export default function About() {
             빌드 최적화, OS별 웹뷰 브릿지 공통화 등 기술적 문제 해결에
             강점을 가지고 있습니다.
           </AboutText>
+          <AboutText>
+            최근에는 <strong>fe-rail</strong>을 직접 설계·구현했습니다.
+            Claude Code 플러그인으로, spec → build → review → PR 사이클을
+            자동화하여 프론트엔드 개발 흐름 전체를 단일 워크플로로 연결합니다.
+            AI 도구를 개발 생산성에 실질적으로 통합하는 데 관심을 갖고 있습니다.
+          </AboutText>
         </div>
         <StatGrid>
           <StatCard>
