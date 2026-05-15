@@ -4,7 +4,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Vibe App is a personal portfolio and interactive experience application built with Next.js App Router. It features invitation cards, a letter system with birthday verification, and a stock market dashboard with real-time data visualization.
+Vibe App is a personal portfolio and interactive experience built with Next.js App Router.
+Pages: fe-rail plugin landing (`/fe-rail`), developer portfolio (`/dev`), Bambi portfolio (`/portfolio`), invitation card (`/invitation`), letter with birthday verification (`/letter`), stock dashboard (`/stock`).
 
 ## Commands
 
@@ -21,6 +22,7 @@ yarn lint     # Run ESLint
 - **Language:** TypeScript (strict mode)
 - **Styling:** `@emotion/styled` — see `.claude/rules/emotion-styling.md`
 - **State:** Jotai (global atoms in `src/store/`), React Query (server state, 1min stale)
+- **Animation:** framer-motion (motion, AnimatePresence, whileInView)
 - **Charts:** Recharts, **Icons:** Lucide React
 - **Stock Data:** yahoo-finance2 via `src/app/api/stock/route.ts`
 
