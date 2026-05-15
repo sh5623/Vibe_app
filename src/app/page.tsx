@@ -38,8 +38,17 @@ export default function Home() {
         router.push('/dev');
     }
 
+    const handleFeRailNavigate = () => {
+        router.push('/fe-rail');
+    }
+
     return (
         <Container>
+            <HomeCard
+                title={<>fe-rail<span>Claude Code Plugin</span></>}
+                buttonText="보러가기"
+                onClick={handleFeRailNavigate}
+            />
             <HomeCard
                 title="이승호 Portfolio"
                 buttonText="보러가기"
