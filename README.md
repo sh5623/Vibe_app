@@ -30,8 +30,7 @@
 # 의존성 설치
 yarn install
 
-# 환경변수 설정
-cp .env.example .env.local
+# 환경변수 설정 (.env.local 파일을 직접 생성하고 NEXT_PUBLIC_BIRTHDAY 키 설정)
 
 # 개발 서버 실행 (localhost:3000)
 yarn dev

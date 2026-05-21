@@ -20,7 +20,7 @@ yarn lint     # Run ESLint
 
 - **Framework:** Next.js 16+ (App Router)
 - **Language:** TypeScript (strict mode)
-- **Styling:** `@emotion/styled` — see `.claude/rules/emotion-styling.md`
+- **Styling:** `@emotion/styled` (CSS-in-JS, SSR 지원)
 - **State:** Jotai (global atoms in `src/store/`), React Query (server state, 1min stale)
 - **Animation:** framer-motion (motion, AnimatePresence, whileInView)
 - **Charts:** Recharts, **Icons:** Lucide React
@@ -44,21 +44,14 @@ src/
 
 - **Path alias:** `@/*` → `./src/*` (configured in tsconfig.json)
 - **Server components by default;** `"use client"` only when state/browser API needed
-- **No CSS files, no inline styles** — Emotion only → `.claude/rules/emotion-styling.md`
-- **Responsive design is mandatory** — 모든 스타일에 `@media (max-width: 768px)` 필수 포함, 반응형 없는 코드는 미완성으로 간주 → `.claude/rules/emotion-styling.md`
-- **TypeScript rules:** no `any`, interface over type → `.claude/rules/typescript.md`
-- **API route patterns:** → `.claude/rules/api-conventions.md`
-
-## Slash Commands
-
-- `/create-component [Name]` — 컴포넌트 + styles.ts 생성
-- `/create-page [name]` — 페이지 + styled.ts 생성
-- `/create-hook [name] [endpoint]` — React Query 훅 생성
+- **No CSS files, no inline styles** — Emotion only
+- **Responsive design is mandatory** — 모든 스타일에 `@media (max-width: 768px)` 필수 포함, 반응형 없는 코드는 미완성으로 간주
+- **TypeScript rules:** no `any`, interface over type
 
 ## Environment Variables
 
-Copy `.env.example` to `.env.local`:
-- `NEXT_PUBLIC_BIRTHDAY` - Required for letter page access verification
+Create `.env.local` in project root with:
+- `NEXT_PUBLIC_BIRTHDAY` — Required for `/letter` page access verification (used in `src/app/page.tsx`)
 
 ## Critical Files
 
