@@ -17,7 +17,7 @@ export const KospiChart = () => {
 
     const chartData = useMemo(() => {
         if (!stockData?.history) return [];
-        return stockData.history.map((h: any) => {
+        return stockData.history.map((h) => {
             const d = new Date(h.date);
             return {
                 name: `${d.getMonth() + 1}/${d.getDate()}`,

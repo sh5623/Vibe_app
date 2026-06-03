@@ -1,6 +1,33 @@
 import { NextResponse } from 'next/server';
 import YahooFinance from 'yahoo-finance2';
 
+interface YFSearchQuote {
+    quoteType?: string;
+    symbol?: string;
+}
+
+interface YFQuote {
+    regularMarketPrice?: number;
+    regularMarketChange?: number;
+    regularMarketChangePercent?: number;
+    shortName?: string;
+    longName?: string;
+}
+
+interface YFHistoryPoint {
+    date: string | Date;
+    close: number | null;
+}
+
+interface YFValidationError {
+    result?: { quotes?: YFSearchQuote[] };
+    message?: string;
+}
+
+function isYFValidationError(e: unknown): e is YFValidationError {
+    return typeof e === 'object' && e !== null && 'result' in e;
+}
+
 const yahooFinance = new YahooFinance();
 
 export async function GET(request: Request) {
@@ -45,15 +72,15 @@ export async function GET(request: Request) {
                     quotesCount: 3,
                 });
                 if (searchResult.quotes && searchResult.quotes.length > 0) {
-                    const topQuote: any = searchResult.quotes.find(q => q.quoteType === 'EQUITY' || q.quoteType === 'ETF') || searchResult.quotes[0];
+                    const topQuote = (searchResult.quotes as YFSearchQuote[]).find(q => q.quoteType === 'EQUITY' || q.quoteType === 'ETF') || searchResult.quotes[0] as YFSearchQuote;
                     if (topQuote?.symbol) {
                         targetSymbol = String(topQuote.symbol);
                     }
                 }
-            } catch (searchError: any) {
+            } catch (searchError: unknown) {
                 // Yahoo Finance API의 Validation Error의 경우 결과값을 에러 객체 안에 담아서 보냄
-                if (searchError.result && searchError.result.quotes && searchError.result.quotes.length > 0) {
-                    const topQuote: any = searchError.result.quotes.find((q: any) => q.quoteType === 'EQUITY' || q.quoteType === 'ETF') || searchError.result.quotes[0];
+                if (isYFValidationError(searchError) && searchError.result?.quotes?.length) {
+                    const topQuote = searchError.result.quotes.find(q => q.quoteType === 'EQUITY' || q.quoteType === 'ETF') || searchError.result.quotes[0];
                     if (topQuote?.symbol) {
                         targetSymbol = String(topQuote.symbol);
                     }
@@ -61,12 +88,13 @@ export async function GET(request: Request) {
                     // searchAPI도 완전히 실패하면 KQ를 기본으로 한번 시도해보도록 넘깁니다.
                     targetSymbol = `${symbol.trim()}.KQ`;
                 } else {
-                    console.log('Search fallback failed for:', symbol, searchError.message);
+                    const msg = isYFValidationError(searchError) ? searchError.message : String(searchError);
+                    console.log('Search fallback failed for:', symbol, msg);
                 }
             }
         }
 
-        const quote: any = await yahooFinance.quote(targetSymbol);
+        const quote = await yahooFinance.quote(targetSymbol) as YFQuote;
 
         const now = new Date();
         const past = new Date();
@@ -81,10 +109,10 @@ export async function GET(request: Request) {
         const period1 = past.toISOString().split('T')[0];
         const period2 = now.toISOString().split('T')[0];
 
-        let history: any[] = [];
+        let history: YFHistoryPoint[] = [];
         try {
             const chartData = await yahooFinance.chart(targetSymbol, { period1, period2, interval: '1d' });
-            history = chartData.quotes.filter((q: any) => q.close !== null);
+            history = (chartData.quotes as YFHistoryPoint[]).filter(q => q.close !== null);
         } catch (e) {
             console.error('History fetch error:', e);
         }
@@ -97,20 +125,20 @@ export async function GET(request: Request) {
                 changePercent: quote.regularMarketChangePercent,
                 name: quote.shortName || quote.longName || targetSymbol,
             },
-            history: history.map((item: any) => ({
+            history: history.map(item => ({
                 date: item.date,
                 close: item.close,
             })),
         });
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error('Yahoo Finance API Error:', error);
 
-        // 064400.KS가 아직 데이터가 없거나 에러를 발생시키는 경우, 임시로 LG전자(066570.KS)의 데이터를 이용해 데모 데이터로 반환합니다. 
+        // 064400.KS가 아직 데이터가 없거나 에러를 발생시키는 경우, 임시로 LG전자(066570.KS)의 데이터를 이용해 데모 데이터로 반환합니다.
         // 화면에는 LG CNS로 표기됩니다.
         if (symbol === '064400.KS') {
             try {
                 const fallbackSymbol = '066570.KS';
-                const quote: any = await yahooFinance.quote(fallbackSymbol);
+                const quote = await yahooFinance.quote(fallbackSymbol) as YFQuote;
 
                 const now = new Date();
                 const past = new Date();
@@ -119,10 +147,10 @@ export async function GET(request: Request) {
                 const period1 = past.toISOString().split('T')[0];
                 const period2 = now.toISOString().split('T')[0];
 
-                let history: any[] = [];
+                let history: YFHistoryPoint[] = [];
                 try {
                     const fallbackChart = await yahooFinance.chart(fallbackSymbol, { period1, period2, interval: '1d' });
-                    history = fallbackChart.quotes.filter((q: any) => q.close !== null);
+                    history = (fallbackChart.quotes as YFHistoryPoint[]).filter(q => q.close !== null);
                 } catch (e) {
                     console.error('Fallback History fetch error:', e);
                 }
@@ -136,16 +164,18 @@ export async function GET(request: Request) {
                         changePercent: quote.regularMarketChangePercent,
                         name: 'LG CNS',
                     },
-                    history: history.map((item: any) => ({
+                    history: history.map(item => ({
                         date: item.date,
                         close: item.close,
                     })),
                 });
-            } catch (fallbackError: any) {
-                return NextResponse.json({ error: fallbackError.message }, { status: 500 });
+            } catch (fallbackError: unknown) {
+                const msg = fallbackError instanceof Error ? fallbackError.message : String(fallbackError);
+                return NextResponse.json({ error: msg }, { status: 500 });
             }
         }
 
-        return NextResponse.json({ error: error.message }, { status: 500 });
+        const msg = error instanceof Error ? error.message : String(error);
+        return NextResponse.json({ error: msg }, { status: 500 });
     }
 }

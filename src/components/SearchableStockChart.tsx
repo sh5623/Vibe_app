@@ -22,7 +22,7 @@ export const SearchableStockChart = ({ symbol }: Props) => {
 
     const chartData = useMemo(() => {
         if (!stockData?.history) return [];
-        return stockData.history.map((h: any) => ({
+        return stockData.history.map((h) => ({
             name: h.date.split('T')[0],
             price: h.close
         }));
