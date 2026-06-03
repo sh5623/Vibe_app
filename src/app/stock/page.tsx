@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowUpRight, ArrowDownRight, TrendingUp, ArrowLeft, DollarSign, Activity, Maximize2, MoreHorizontal, Search } from 'lucide-react';
+import { ArrowUpRight, ArrowDownRight, TrendingUp, ArrowLeft, Activity, Maximize2, MoreHorizontal, Search } from 'lucide-react';
 import { Container, Header, Highlight, Grid, Card } from './styled';
 import { KospiChart } from '../../components/KospiChart';
 import { LgCnsChart } from '../../components/LgCnsChart';

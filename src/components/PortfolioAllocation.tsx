@@ -19,7 +19,9 @@ const data3 = [
 const COLORS = ['#3b82f6', '#34d399']; // Blue, Green
 const BG_COLOR = 'rgba(255, 255, 255, 0.05)';
 
-const Donut = ({ data, label, subLabel }: { data: any[], label: string, subLabel: string }) => {
+interface DonutSlice { name: string; value: number }
+
+const Donut = ({ data, label, subLabel }: { data: DonutSlice[], label: string, subLabel: string }) => {
     return (
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
             <div style={{ width: 140, height: 140, minWidth: 0 }}>

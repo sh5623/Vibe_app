@@ -27,9 +27,11 @@ export default function Hero() {
     }
 
     if (isDeleting && displayText === '') {
-      setIsDeleting(false);
-      setCurrentRole((p) => (p + 1) % roles.length);
-      return;
+      const t = setTimeout(() => {
+        setIsDeleting(false);
+        setCurrentRole((p) => (p + 1) % roles.length);
+      }, 0);
+      return () => clearTimeout(t);
     }
 
     const delay = isDeleting ? 38 : 85;
