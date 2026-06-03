@@ -26,19 +26,17 @@ export default function Hero() {
       return () => clearTimeout(t);
     }
 
-    if (isDeleting && displayText === '') {
-      const t = setTimeout(() => {
-        setIsDeleting(false);
-        setCurrentRole((p) => (p + 1) % roles.length);
-      }, 0);
-      return () => clearTimeout(t);
-    }
-
     const delay = isDeleting ? 38 : 85;
     const t = setTimeout(() => {
-      setDisplayText((p) =>
-        isDeleting ? p.slice(0, -1) : role.slice(0, p.length + 1)
-      );
+      if (isDeleting && displayText.length === 1) {
+        setDisplayText('');
+        setIsDeleting(false);
+        setCurrentRole((p) => (p + 1) % roles.length);
+      } else {
+        setDisplayText((p) =>
+          isDeleting ? p.slice(0, -1) : role.slice(0, p.length + 1)
+        );
+      }
     }, delay);
 
     return () => clearTimeout(t);

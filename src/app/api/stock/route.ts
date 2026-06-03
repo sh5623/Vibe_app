@@ -72,15 +72,17 @@ export async function GET(request: Request) {
                     quotesCount: 3,
                 });
                 if (searchResult.quotes && searchResult.quotes.length > 0) {
-                    const topQuote = (searchResult.quotes as YFSearchQuote[]).find(q => q.quoteType === 'EQUITY' || q.quoteType === 'ETF') || searchResult.quotes[0] as YFSearchQuote;
+                    const quotes = searchResult.quotes as YFSearchQuote[];
+                    const topQuote = quotes.find(q => q.quoteType === 'EQUITY' || q.quoteType === 'ETF') || quotes[0];
                     if (topQuote?.symbol) {
                         targetSymbol = String(topQuote.symbol);
                     }
                 }
             } catch (searchError: unknown) {
                 // Yahoo Finance API의 Validation Error의 경우 결과값을 에러 객체 안에 담아서 보냄
-                if (isYFValidationError(searchError) && searchError.result?.quotes?.length) {
-                    const topQuote = searchError.result.quotes.find(q => q.quoteType === 'EQUITY' || q.quoteType === 'ETF') || searchError.result.quotes[0];
+                const quotes = isYFValidationError(searchError) ? searchError.result?.quotes : undefined;
+                if (quotes && quotes.length > 0) {
+                    const topQuote = quotes.find(q => q.quoteType === 'EQUITY' || q.quoteType === 'ETF') || quotes[0];
                     if (topQuote?.symbol) {
                         targetSymbol = String(topQuote.symbol);
                     }
@@ -112,7 +114,7 @@ export async function GET(request: Request) {
         let history: YFHistoryPoint[] = [];
         try {
             const chartData = await yahooFinance.chart(targetSymbol, { period1, period2, interval: '1d' });
-            history = (chartData.quotes as YFHistoryPoint[]).filter(q => q.close !== null);
+            history = ((chartData.quotes || []) as YFHistoryPoint[]).filter(q => q.close !== null);
         } catch (e) {
             console.error('History fetch error:', e);
         }
@@ -150,7 +152,7 @@ export async function GET(request: Request) {
                 let history: YFHistoryPoint[] = [];
                 try {
                     const fallbackChart = await yahooFinance.chart(fallbackSymbol, { period1, period2, interval: '1d' });
-                    history = (fallbackChart.quotes as YFHistoryPoint[]).filter(q => q.close !== null);
+                    history = ((fallbackChart.quotes || []) as YFHistoryPoint[]).filter(q => q.close !== null);
                 } catch (e) {
                     console.error('Fallback History fetch error:', e);
                 }
