@@ -15,6 +15,9 @@ build
 dist
 dist-ssr
 
+# React Router (generated types — run pnpm typecheck to regenerate)
+.react-router/
+
 # Environment variables
 *.local
 .env
@@ -44,3 +47,6 @@ tsconfig.tsbuildinfo
 
 # Playwright MCP
 .playwright-mcp/
+
+# Docs
+feature.md
