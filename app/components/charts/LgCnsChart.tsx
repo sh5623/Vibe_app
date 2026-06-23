@@ -1,51 +1,44 @@
-import { useMemo } from 'react';
+import { ArrowDownRight, ArrowUpRight } from 'lucide-react'
+import { useMemo } from 'react'
 import {
-  LineChart,
+  CartesianGrid,
   Line,
+  LineChart,
+  ResponsiveContainer,
+  Tooltip,
   XAxis,
   YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-} from 'recharts';
-import { ArrowUpRight, ArrowDownRight } from 'lucide-react';
-import { useStockQuery } from '@/hooks/use-stock-query';
+} from 'recharts'
+import { useStockQuery } from '@/hooks/use-stock-query'
 
 export function LgCnsChart() {
-  const { data: stockData, isLoading, isError } = useStockQuery('064400.KS', '1mo');
+  const { data: stockData, isLoading, isError } = useStockQuery('064400.KS', '1mo')
 
   const chartData = useMemo(() => {
-    if (!stockData?.history) return [];
+    if (!stockData?.history) return []
     return stockData.history.map((h) => ({
       name: h.date.split('T')[0],
       price: h.close,
-    }));
-  }, [stockData]);
+    }))
+  }, [stockData])
 
   if (isLoading) {
-    return (
-      <div className="h-[260px] flex items-center justify-center">Loading...</div>
-    );
+    return <div className="h-[260px] flex items-center justify-center">Loading...</div>
   }
 
   if (isError || stockData === undefined) {
-    return (
-      <div className="h-[260px] flex items-center justify-center">
-        Error loading data
-      </div>
-    );
+    return <div className="h-[260px] flex items-center justify-center">Error loading data</div>
   }
 
-  const { quote } = stockData;
-  const isUp = quote.change >= 0;
+  const { quote } = stockData
+  const isUp = quote.change >= 0
 
   return (
     <div>
       <div className="flex justify-between items-end mb-6">
         <div>
           <div className="text-[#94a3b8] text-[0.875rem] mb-1">
-            Stock / LG CNS &bull; {quote.price?.toLocaleString()}{' '}
-            {isUp ? '+' : ''}
+            Stock / LG CNS &bull; {quote.price?.toLocaleString()} {isUp ? '+' : ''}
             {quote.change?.toLocaleString()} ({isUp ? '+' : ''}
             {quote.changePercent?.toFixed(2)}%)
           </div>
@@ -55,8 +48,7 @@ export function LgCnsChart() {
               className="text-[1.125rem] flex items-center"
               style={{ color: isUp ? '#34d399' : '#ef4444' }}
             >
-              {isUp ? <ArrowUpRight size={18} /> : <ArrowDownRight size={18} />}{' '}
-              {isUp ? '+' : ''}
+              {isUp ? <ArrowUpRight size={18} /> : <ArrowDownRight size={18} />} {isUp ? '+' : ''}
               {quote.changePercent?.toFixed(2)}%
             </span>
           </div>
@@ -88,5 +80,5 @@ export function LgCnsChart() {
         </ResponsiveContainer>
       </div>
     </div>
-  );
+  )
 }

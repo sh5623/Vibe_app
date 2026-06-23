@@ -25,15 +25,39 @@ export default function About() {
       <div className="grid grid-cols-[1.1fr_0.9fr] gap-20 items-start max-[1024px]:gap-12 max-[768px]:grid-cols-1 max-[768px]:gap-12">
         <div>
           {[
-            <>단순한 화면 구현을 넘어, <strong>복잡한 비즈니스 맥락을 이해하고 지속 가능한 코드 구조로 전환</strong>하여 사용자 경험을 완성하는 프론트엔드 개발자입니다. 총 7년의 경력 동안 금융·공공 SI부터 대규모 B2C 서비스까지 다양한 도메인을 경험했습니다.</>,
-            <>현재 <strong>여기어때컴퍼니</strong>에서 광고센터 구축 및 고도화, 가격경쟁력 대시보드 CMS, 해외 숙소 공급사 관리 시스템 등을 개발하며 기획·디자인·백엔드·QA 팀과 협업해 안정적인 서비스 오픈을 주도하고 있습니다.</>,
-            <>React / Next.js를 주력으로, Vue.js까지 유연하게 활용합니다. TypeScript 환경의 디자인 시스템 도입, Dynamic Import를 통한 빌드 최적화, OS별 웹뷰 브릿지 공통화 등 기술적 문제 해결에 강점을 가지고 있습니다.</>,
-            <>최근에는 <strong>fe-rail</strong>을 직접 설계·구현했습니다. Claude Code 플러그인으로, spec → build → review → PR 사이클을 자동화하여 프론트엔드 개발 흐름 전체를 단일 워크플로로 연결합니다. AI 도구를 개발 생산성에 실질적으로 통합하는 데 관심을 갖고 있습니다.</>,
-          ].map((text, i) => (
-            <p key={i} className="text-[clamp(1rem,1.4vw,1.1rem)] leading-[1.85] text-[#64748b] mb-5 [&_strong]:text-[#0f172a] [&_strong]:font-bold">
-              {text}
-            </p>
-          ))}
+            <>
+              단순한 화면 구현을 넘어,{' '}
+              <strong>복잡한 비즈니스 맥락을 이해하고 지속 가능한 코드 구조로 전환</strong>하여
+              사용자 경험을 완성하는 프론트엔드 개발자입니다. 총 7년의 경력 동안 금융·공공 SI부터
+              대규모 B2C 서비스까지 다양한 도메인을 경험했습니다.
+            </>,
+            <>
+              현재 <strong>여기어때컴퍼니</strong>에서 광고센터 구축 및 고도화, 가격경쟁력 대시보드
+              CMS, 해외 숙소 공급사 관리 시스템 등을 개발하며 기획·디자인·백엔드·QA 팀과 협업해
+              안정적인 서비스 오픈을 주도하고 있습니다.
+            </>,
+            <>
+              React / Next.js를 주력으로, Vue.js까지 유연하게 활용합니다. TypeScript 환경의 디자인
+              시스템 도입, Dynamic Import를 통한 빌드 최적화, OS별 웹뷰 브릿지 공통화 등 기술적 문제
+              해결에 강점을 가지고 있습니다.
+            </>,
+            <>
+              최근에는 <strong>fe-rail</strong>을 직접 설계·구현했습니다. Claude Code 플러그인으로,
+              spec → build → review → PR 사이클을 자동화하여 프론트엔드 개발 흐름 전체를 단일
+              워크플로로 연결합니다. AI 도구를 개발 생산성에 실질적으로 통합하는 데 관심을 갖고
+              있습니다.
+            </>,
+          ].map((text, i) => {
+            return (
+              <p
+                // biome-ignore lint/suspicious/noArrayIndexKey: static text-only array, no stable ID available
+                key={i}
+                className="text-[clamp(1rem,1.4vw,1.1rem)] leading-[1.85] text-[#64748b] mb-5 [&_strong]:text-[#0f172a] [&_strong]:font-bold"
+              >
+                {text}
+              </p>
+            )
+          })}
         </div>
 
         <div className="grid grid-cols-2 gap-4">
@@ -69,5 +93,5 @@ export default function About() {
         </div>
       </div>
     </section>
-  );
+  )
 }

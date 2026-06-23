@@ -14,5 +14,6 @@ let browserQueryClient: QueryClient | undefined
 
 export function getQueryClient() {
   if (isServer) return makeQueryClient()
-  return (browserQueryClient ??= makeQueryClient())
+  if (browserQueryClient === undefined) browserQueryClient = makeQueryClient()
+  return browserQueryClient
 }

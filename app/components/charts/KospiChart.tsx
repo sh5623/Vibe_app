@@ -1,35 +1,35 @@
-import { useMemo } from 'react';
+import { useMemo } from 'react'
 import {
-  AreaChart,
   Area,
+  AreaChart,
+  CartesianGrid,
+  ResponsiveContainer,
+  Tooltip,
   XAxis,
   YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-} from 'recharts';
-import { useStockQuery } from '@/hooks/use-stock-query';
+} from 'recharts'
+import { useStockQuery } from '@/hooks/use-stock-query'
 
 export function KospiChart() {
-  const { data: stockData, isLoading, isError } = useStockQuery('^KS11', '6mo');
+  const { data: stockData, isLoading, isError } = useStockQuery('^KS11', '6mo')
 
   const chartData = useMemo(() => {
-    if (!stockData?.history) return [];
+    if (!stockData?.history) return []
     return stockData.history.map((h) => {
-      const d = new Date(h.date);
+      const d = new Date(h.date)
       return {
         name: `${d.getMonth() + 1}/${d.getDate()}`,
         value: Math.round(h.close),
-      };
-    });
-  }, [stockData]);
+      }
+    })
+  }, [stockData])
 
   if (isLoading) {
     return (
       <div className="w-full h-[450px] flex items-center justify-center">
         Loading KOSPI Chart...
       </div>
-    );
+    )
   }
 
   if (isError || chartData.length === 0) {
@@ -37,7 +37,7 @@ export function KospiChart() {
       <div className="w-full h-[450px] flex items-center justify-center">
         No KOSPI data available
       </div>
-    );
+    )
   }
 
   return (
@@ -50,11 +50,7 @@ export function KospiChart() {
               <stop offset="95%" stopColor="#34d399" stopOpacity={0} />
             </linearGradient>
           </defs>
-          <CartesianGrid
-            strokeDasharray="3 3"
-            stroke="rgba(255,255,255,0.05)"
-            vertical={false}
-          />
+          <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
           <XAxis
             dataKey="name"
             stroke="#94a3b8"
@@ -92,5 +88,5 @@ export function KospiChart() {
         </AreaChart>
       </ResponsiveContainer>
     </div>
-  );
+  )
 }

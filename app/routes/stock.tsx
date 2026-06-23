@@ -1,31 +1,40 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router';
-import type { Route } from './+types/stock';
-import { ArrowUpRight, ArrowDownRight, TrendingUp, ArrowLeft, Activity, Maximize2, MoreHorizontal, Search } from 'lucide-react';
-import { KospiChart } from '@/components/charts/KospiChart';
-import { LgCnsChart } from '@/components/charts/LgCnsChart';
-import { SearchableStockChart } from '@/components/charts/SearchableStockChart';
-import { useStockQuery } from '@/hooks/use-stock-query';
+import {
+  Activity,
+  ArrowDownRight,
+  ArrowLeft,
+  ArrowUpRight,
+  Maximize2,
+  MoreHorizontal,
+  Search,
+  TrendingUp,
+} from 'lucide-react'
+import { useState } from 'react'
+import { useNavigate } from 'react-router'
+import { KospiChart } from '@/components/charts/KospiChart'
+import { LgCnsChart } from '@/components/charts/LgCnsChart'
+import { SearchableStockChart } from '@/components/charts/SearchableStockChart'
+import { useStockQuery } from '@/hooks/use-stock-query'
+import type { Route } from './+types/stock'
 
 export function meta(_: Route.MetaArgs) {
-  return [{ title: 'Stock Dashboard | Vibe' }];
+  return [{ title: 'Stock Dashboard | Vibe' }]
 }
 
 export default function StockDashboard() {
-  const navigate = useNavigate();
-  const { data: kospiData } = useStockQuery('^KS11', '1mo');
+  const navigate = useNavigate()
+  const { data: kospiData } = useStockQuery('^KS11', '1mo')
 
-  const [searchSymbol, setSearchSymbol] = useState('');
-  const [inputValue, setInputValue] = useState('');
+  const [searchSymbol, setSearchSymbol] = useState('')
+  const [inputValue, setInputValue] = useState('')
 
-  const kospiChangePercent = kospiData?.quote?.changePercent ?? 0;
-  const isUp = kospiChangePercent >= 0;
-  const changePercentStr = `${isUp ? '+' : ''}${kospiChangePercent.toFixed(2)}%`;
+  const kospiChangePercent = kospiData?.quote?.changePercent ?? 0
+  const isUp = kospiChangePercent >= 0
+  const changePercentStr = `${isUp ? '+' : ''}${kospiChangePercent.toFixed(2)}%`
   const kospiPrice =
     kospiData?.quote?.price?.toLocaleString(undefined, {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
-    }) ?? 'Loading...';
+    }) ?? 'Loading...'
 
   return (
     <div className="min-h-screen bg-[#0b1120] text-white p-8 font-[Inter,system-ui,sans-serif] flex flex-col gap-8 max-[768px]:p-4">
@@ -66,6 +75,7 @@ export default function StockDashboard() {
           </div>
         </div>
         <button
+          type="button"
           className="bg-white/10 border border-white/20 text-white py-3 px-6 rounded-full cursor-pointer flex items-center gap-2 transition-all duration-200 backdrop-blur-[10px] hover:bg-white/20 hover:-translate-y-0.5"
           onClick={() => void navigate('/')}
         >
@@ -106,8 +116,8 @@ export default function StockDashboard() {
             <div className="flex justify-between items-center border-b border-white/10 pb-4 mb-6 max-[768px]:flex-col max-[768px]:items-start max-[768px]:gap-4">
               <form
                 onSubmit={(e) => {
-                  e.preventDefault();
-                  setSearchSymbol(inputValue);
+                  e.preventDefault()
+                  setSearchSymbol(inputValue)
                 }}
                 className="flex-1 w-full max-w-[320px]"
               >
@@ -145,5 +155,5 @@ export default function StockDashboard() {
         </div>
       </div>
     </div>
-  );
+  )
 }

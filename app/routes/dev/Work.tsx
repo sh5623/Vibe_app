@@ -1,12 +1,12 @@
-import { useNavigate } from 'react-router';
-import { ArrowUpRight } from 'lucide-react';
+import { ArrowUpRight } from 'lucide-react'
+import { Link } from 'react-router'
 
 interface Project {
-  num: string;
-  name: string;
-  desc: string;
-  tags: string[];
-  href: string;
+  num: string
+  name: string
+  desc: string
+  tags: string[]
+  href: string
 }
 
 const projects: Project[] = [
@@ -38,11 +38,9 @@ const projects: Project[] = [
     tags: ['Next.js', 'Emotion', 'Image Optimization', 'Canvas Animation'],
     href: '/portfolio',
   },
-];
+]
 
 export default function Work() {
-  const navigate = useNavigate();
-
   return (
     <section
       id="work"
@@ -68,10 +66,10 @@ export default function Work() {
 
       <div className="grid grid-cols-2 gap-6 max-[768px]:grid-cols-1">
         {projects.map((project) => (
-          <div
+          <Link
             key={project.num}
-            onClick={() => navigate(project.href)}
-            className="relative bg-white border border-[rgba(79,70,229,0.1)] rounded-[20px] p-10 cursor-pointer transition-all duration-300 overflow-hidden before:content-[''] before:absolute before:top-0 before:left-0 before:right-0 before:h-[4px] before:bg-gradient-to-r before:from-[#4f46e5] before:to-[#06b6d4] before:scale-x-0 before:origin-left before:transition-transform before:duration-[350ms] before:rounded-tl-[20px] before:rounded-tr-[20px] hover:border-[rgba(79,70,229,0.2)] hover:-translate-y-[6px] hover:shadow-[0_20px_50px_rgba(79,70,229,0.12)] hover:before:scale-x-100 [&:hover_.arrow]:translate-x-1 [&:hover_.arrow]:-translate-y-1 [&:hover_.arrow]:text-[#4f46e5]"
+            to={project.href}
+            className="relative block no-underline bg-white border border-[rgba(79,70,229,0.1)] rounded-[20px] p-10 cursor-pointer transition-all duration-300 overflow-hidden before:content-[''] before:absolute before:top-0 before:left-0 before:right-0 before:h-[4px] before:bg-gradient-to-r before:from-[#4f46e5] before:to-[#06b6d4] before:scale-x-0 before:origin-left before:transition-transform before:duration-[350ms] before:rounded-tl-[20px] before:rounded-tr-[20px] hover:border-[rgba(79,70,229,0.2)] hover:-translate-y-[6px] hover:shadow-[0_20px_50px_rgba(79,70,229,0.12)] hover:before:scale-x-100 [&:hover_.arrow]:translate-x-1 [&:hover_.arrow]:-translate-y-1 [&:hover_.arrow]:text-[#4f46e5]"
           >
             <div className="flex justify-between items-start mb-6">
               <div
@@ -106,9 +104,9 @@ export default function Work() {
                 </span>
               ))}
             </div>
-          </div>
+          </Link>
         ))}
       </div>
     </section>
-  );
+  )
 }

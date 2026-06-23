@@ -79,8 +79,6 @@ app/                         # RR7 appDirectory (source root)
 ├── styles/
 │   └── globals.css          # @import "tailwindcss"
 └── assets/                  # 정적 이미지
-
-src/                         # 마이그레이션 중 (점진적 이전)
 ```
 
 ## 🔴 React Router 7 — 프레임워크 모드

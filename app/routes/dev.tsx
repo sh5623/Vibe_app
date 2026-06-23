@@ -1,14 +1,14 @@
-import type { Route } from './+types/dev';
-import Navigation from './dev/Navigation';
-import Hero from './dev/Hero';
-import Marquee from './dev/Marquee';
-import About from './dev/About';
-import Stack from './dev/Stack';
-import Work from './dev/Work';
-import Contact from './dev/Contact';
+import type { Route } from './+types/dev'
+import About from './dev/About'
+import Contact from './dev/Contact'
+import Hero from './dev/Hero'
+import Marquee from './dev/Marquee'
+import Navigation from './dev/Navigation'
+import Stack from './dev/Stack'
+import Work from './dev/Work'
 
 export function meta(_: Route.MetaArgs) {
-  return [{ title: '이승호 Portfolio | Vibe' }];
+  return [{ title: '이승호 Portfolio | Vibe' }]
 }
 
 export default function DevPortfolio() {
@@ -30,5 +30,5 @@ export default function DevPortfolio() {
       <Work />
       <Contact />
     </div>
-  );
+  )
 }

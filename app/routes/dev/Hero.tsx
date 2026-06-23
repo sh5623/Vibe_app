@@ -1,37 +1,33 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react'
 
-const roles = [
-  'Frontend Developer',
-  'React / Next.js Developer',
-  'Vue.js / Nuxt.js Developer',
-];
+const roles = ['Frontend Developer', 'React / Next.js Developer', 'Vue.js / Nuxt.js Developer']
 
 export default function Hero() {
-  const [currentRole, setCurrentRole] = useState(0);
-  const [displayText, setDisplayText] = useState('');
-  const [isDeleting, setIsDeleting] = useState(false);
+  const [currentRole, setCurrentRole] = useState(0)
+  const [displayText, setDisplayText] = useState('')
+  const [isDeleting, setIsDeleting] = useState(false)
 
   useEffect(() => {
-    const role = roles[currentRole] ?? '';
+    const role = roles[currentRole] ?? ''
 
     if (!isDeleting && displayText === role) {
-      const t = setTimeout(() => setIsDeleting(true), 2500);
-      return () => clearTimeout(t);
+      const t = setTimeout(() => setIsDeleting(true), 2500)
+      return () => clearTimeout(t)
     }
 
-    const delay = isDeleting ? 38 : 85;
+    const delay = isDeleting ? 38 : 85
     const t = setTimeout(() => {
       if (isDeleting && displayText.length === 1) {
-        setDisplayText('');
-        setIsDeleting(false);
-        setCurrentRole((p) => (p + 1) % roles.length);
+        setDisplayText('')
+        setIsDeleting(false)
+        setCurrentRole((p) => (p + 1) % roles.length)
       } else {
-        setDisplayText((p) => (isDeleting ? p.slice(0, -1) : role.slice(0, p.length + 1)));
+        setDisplayText((p) => (isDeleting ? p.slice(0, -1) : role.slice(0, p.length + 1)))
       }
-    }, delay);
+    }, delay)
 
-    return () => clearTimeout(t);
-  }, [displayText, isDeleting, currentRole]);
+    return () => clearTimeout(t)
+  }, [displayText, isDeleting, currentRole])
 
   return (
     <section
@@ -57,12 +53,36 @@ export default function Hero() {
         className="absolute right-[7%] top-1/2 -translate-y-1/2 -rotate-[1.5deg] bg-white/95 backdrop-blur-[20px] border border-[rgba(79,70,229,0.14)] rounded-[14px] px-8 py-7 shadow-[0_24px_60px_rgba(79,70,229,0.14),0_0_0_1px_rgba(255,255,255,0.8)] text-[0.8rem] leading-[1.9] z-[1] min-w-[300px] max-[1100px]:hidden"
         style={{ fontFamily: 'var(--font-mono), monospace' }}
       >
-        <div><span className="text-[rgba(100,116,139,0.35)] mr-5 select-none">1</span><span className="text-[#7c3aed]">const</span> <span className="text-[#c2410c]">developer</span> = {'{'}</div>
-        <div><span className="text-[rgba(100,116,139,0.35)] mr-5 select-none">2</span>&nbsp;&nbsp;<span className="text-[#0369a1]">name</span>: <span className="text-[#059669]">&quot;Seungho Lee&quot;</span>,</div>
-        <div><span className="text-[rgba(100,116,139,0.35)] mr-5 select-none">3</span>&nbsp;&nbsp;<span className="text-[#0369a1]">role</span>: <span className="text-[#059669]">&quot;Frontend Dev&quot;</span>,</div>
-        <div><span className="text-[rgba(100,116,139,0.35)] mr-5 select-none">4</span>&nbsp;&nbsp;<span className="text-[#0369a1]">stack</span>: [<span className="text-[#059669]">&quot;React&quot;</span>, <span className="text-[#059669]">&quot;Next&quot;</span>],</div>
-        <div><span className="text-[rgba(100,116,139,0.35)] mr-5 select-none">5</span>&nbsp;&nbsp;<span className="text-[#0369a1]">exp</span>: <span className="text-[#059669]">&quot;7+ years&quot;</span>,</div>
-        <div><span className="text-[rgba(100,116,139,0.35)] mr-5 select-none">6</span>{'}'}</div>
+        <div>
+          <span className="text-[rgba(100,116,139,0.35)] mr-5 select-none">1</span>
+          <span className="text-[#7c3aed]">const</span>{' '}
+          <span className="text-[#c2410c]">developer</span> = {'{'}
+        </div>
+        <div>
+          <span className="text-[rgba(100,116,139,0.35)] mr-5 select-none">2</span>&nbsp;&nbsp;
+          <span className="text-[#0369a1]">name</span>:{' '}
+          <span className="text-[#059669]">&quot;Seungho Lee&quot;</span>,
+        </div>
+        <div>
+          <span className="text-[rgba(100,116,139,0.35)] mr-5 select-none">3</span>&nbsp;&nbsp;
+          <span className="text-[#0369a1]">role</span>:{' '}
+          <span className="text-[#059669]">&quot;Frontend Dev&quot;</span>,
+        </div>
+        <div>
+          <span className="text-[rgba(100,116,139,0.35)] mr-5 select-none">4</span>&nbsp;&nbsp;
+          <span className="text-[#0369a1]">stack</span>: [
+          <span className="text-[#059669]">&quot;React&quot;</span>,{' '}
+          <span className="text-[#059669]">&quot;Next&quot;</span>],
+        </div>
+        <div>
+          <span className="text-[rgba(100,116,139,0.35)] mr-5 select-none">5</span>&nbsp;&nbsp;
+          <span className="text-[#0369a1]">exp</span>:{' '}
+          <span className="text-[#059669]">&quot;7+ years&quot;</span>,
+        </div>
+        <div>
+          <span className="text-[rgba(100,116,139,0.35)] mr-5 select-none">6</span>
+          {'}'}
+        </div>
       </div>
 
       {/* Status Badge */}
@@ -115,14 +135,26 @@ export default function Hero() {
         <a
           href="#work"
           className="inline-flex items-center gap-2 py-[0.9rem] px-[2.25rem] bg-gradient-to-br from-[#4f46e5] to-[#6d28d9] text-white no-underline rounded-[10px] transition-all duration-[250ms] shadow-[0_4px_20px_rgba(79,70,229,0.35)] hover:-translate-y-[3px] hover:shadow-[0_10px_32px_rgba(79,70,229,0.45)] max-[480px]:flex-1 max-[480px]:justify-center max-[480px]:px-6"
-          style={{ fontFamily: 'var(--font-mono), monospace', fontSize: '0.8rem', fontWeight: 600, letterSpacing: '0.15em', textTransform: 'uppercase' }}
+          style={{
+            fontFamily: 'var(--font-mono), monospace',
+            fontSize: '0.8rem',
+            fontWeight: 600,
+            letterSpacing: '0.15em',
+            textTransform: 'uppercase',
+          }}
         >
           View Projects
         </a>
         <a
           href="#contact"
           className="inline-flex items-center gap-2 py-[0.9rem] px-[2.25rem] bg-white/90 text-[#4f46e5] border-[1.5px] border-[rgba(79,70,229,0.2)] no-underline rounded-[10px] transition-all duration-[250ms] backdrop-blur-[10px] hover:border-[#4f46e5] hover:bg-[rgba(79,70,229,0.06)] hover:-translate-y-[3px] hover:shadow-[0_6px_20px_rgba(79,70,229,0.12)] max-[480px]:flex-1 max-[480px]:justify-center max-[480px]:px-6"
-          style={{ fontFamily: 'var(--font-mono), monospace', fontSize: '0.8rem', fontWeight: 600, letterSpacing: '0.15em', textTransform: 'uppercase' }}
+          style={{
+            fontFamily: 'var(--font-mono), monospace',
+            fontSize: '0.8rem',
+            fontWeight: 600,
+            letterSpacing: '0.15em',
+            textTransform: 'uppercase',
+          }}
         >
           Get in Touch
         </a>
@@ -135,5 +167,5 @@ export default function Hero() {
         Scroll
       </div>
     </section>
-  );
+  )
 }

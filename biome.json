@@ -1,5 +1,5 @@
 {
-  "$schema": "https://biomejs.dev/schemas/2.4.0/schema.json",
+  "$schema": "https://biomejs.dev/schemas/2.5.0/schema.json",
   "formatter": {
     "enabled": true,
     "indentStyle": "space",
@@ -16,18 +16,9 @@
   "linter": {
     "enabled": true,
     "rules": {
-      "recommended": true,
+      "preset": "recommended",
       "style": {
-        "noNonNullAssertion": "error"
-      },
-      "suspicious": {
-        "noExplicitAny": "error"
-      },
-      "correctness": {
-        "noUnusedImports": "error",
-        "noUnusedVariables": "error"
-      },
-      "nursery": {
+        "noNonNullAssertion": "error",
         "noRestrictedImports": {
           "level": "error",
           "options": {
@@ -36,18 +27,27 @@
             }
           }
         }
-      }
+      },
+      "suspicious": {
+        "noExplicitAny": "error"
+      },
+      "correctness": {
+        "noUnusedImports": "error",
+        "noUnusedVariables": "error"
+      },
+      "nursery": {}
     }
   },
   "files": {
-    "ignore": [
-      "node_modules",
-      "dist",
-      ".next",
-      "build",
-      ".react-router",
-      "coverage",
-      "playwright-report"
+    "includes": [
+      "**",
+      "!**/node_modules",
+      "!**/dist",
+      "!**/.next",
+      "!**/build",
+      "!**/.react-router",
+      "!**/coverage",
+      "!**/playwright-report"
     ]
   }
 }

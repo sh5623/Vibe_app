@@ -1,11 +1,11 @@
 interface Skill {
-  label: string;
-  accent?: boolean;
+  label: string
+  accent?: boolean
 }
 
 interface SkillGroup {
-  category: string;
-  items: Skill[];
+  category: string
+  items: Skill[]
 }
 
 const skills: SkillGroup[] = [
@@ -54,7 +54,7 @@ const skills: SkillGroup[] = [
       { label: 'Slack' },
     ],
   },
-];
+]
 
 export default function Stack() {
   return (
@@ -106,5 +106,5 @@ export default function Stack() {
         </div>
       ))}
     </section>
-  );
+  )
 }

@@ -1,7 +1,7 @@
 interface HomeCardProps {
-  title: React.ReactNode;
-  buttonText: string;
-  onClick: () => void;
+  title: React.ReactNode
+  buttonText: string
+  onClick: () => void
 }
 
 export function HomeCard({ title, buttonText, onClick }: HomeCardProps) {
@@ -11,6 +11,7 @@ export function HomeCard({ title, buttonText, onClick }: HomeCardProps) {
         {title}
       </h1>
       <button
+        type="button"
         onClick={onClick}
         className="bg-[#8c7b75] text-white border-none py-4 px-8 text-[1.1rem] rounded-[50px] cursor-pointer transition-all duration-300 shadow-[0_4px_12px_rgba(93,64,55,0.2)] z-[1] hover:bg-[#5d4037] hover:-translate-y-0.5 hover:shadow-[0_6px_16px_rgba(93,64,55,0.3)] active:translate-y-0 max-[480px]:py-[14px] max-[480px]:px-7 max-[480px]:text-[1rem]"
         style={{ fontFamily: "'Gowun Dodum', sans-serif" }}
@@ -18,5 +19,5 @@ export function HomeCard({ title, buttonText, onClick }: HomeCardProps) {
         {buttonText}
       </button>
     </div>
-  );
+  )
 }

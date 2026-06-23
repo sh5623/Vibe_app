@@ -1,29 +1,33 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router';
-import type { Route } from './+types/home';
-import { HomeCard } from '@/components/HomeCard';
-import { BirthdayModal } from '@/components/BirthdayModal';
+import { useState } from 'react'
+import { useNavigate } from 'react-router'
+import { BirthdayModal } from '@/components/BirthdayModal'
+import { HomeCard } from '@/components/HomeCard'
+import type { Route } from './+types/home'
 
 export function meta(_: Route.MetaArgs) {
-  return [{ title: 'Vibe App' }, { name: 'description', content: '이승호의 포트폴리오' }];
+  return [{ title: 'Vibe App' }, { name: 'description', content: '이승호의 포트폴리오' }]
 }
 
 export default function Home() {
-  const navigate = useNavigate();
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const navigate = useNavigate()
+  const [isModalOpen, setIsModalOpen] = useState(false)
 
   const handleConfirm = (birthday: string): boolean => {
-    if (birthday === import.meta.env['VITE_BIRTHDAY']) {
-      void navigate('/letter');
-      return true;
+    if (birthday === import.meta.env.VITE_BIRTHDAY) {
+      void navigate('/letter')
+      return true
     }
-    return false;
-  };
+    return false
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center flex-wrap p-5 gap-5 max-[768px]:flex-col">
       <HomeCard
-        title={<>fe-rail<span>Claude Code Plugin</span></>}
+        title={
+          <>
+            fe-rail<span>Claude Code Plugin</span>
+          </>
+        }
         buttonText="보러가기"
         onClick={() => void navigate('/fe-rail')}
       />
@@ -58,5 +62,5 @@ export default function Home() {
         onConfirm={handleConfirm}
       />
     </div>
-  );
+  )
 }

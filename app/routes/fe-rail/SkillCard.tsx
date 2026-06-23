@@ -1,12 +1,12 @@
-import { motion } from 'framer-motion';
+import { motion } from 'framer-motion'
 
 export interface SkillCardProps {
-  icon: string;
-  name: string;
-  title: string;
-  desc: string;
-  cmd: string;
-  onClick: () => void;
+  icon: string
+  name: string
+  title: string
+  desc: string
+  cmd: string
+  onClick: () => void
 }
 
 export function SkillCard({ icon, name, title, desc, cmd, onClick }: SkillCardProps) {
@@ -19,8 +19,8 @@ export function SkillCard({ icon, name, title, desc, cmd, onClick }: SkillCardPr
       aria-label={`${name}: ${title}`}
       onKeyDown={(e) => {
         if (e.key === 'Enter' || e.key === ' ') {
-          e.preventDefault();
-          onClick();
+          e.preventDefault()
+          onClick()
         }
       }}
       className="relative w-full bg-white/[0.04] border-[1.5px] border-[rgba(99,102,241,0.15)] rounded-[20px] p-8 text-left cursor-pointer overflow-hidden shadow-[0_2px_12px_rgba(0,0,0,0.3)] transition-[border-color,box-shadow,background] duration-[250ms] before:content-[''] before:absolute before:top-0 before:left-0 before:right-0 before:h-[3px] before:bg-gradient-to-r before:from-[#6366f1] before:to-[#34d399] before:scale-x-0 before:origin-left before:transition-transform before:duration-[350ms] before:rounded-tl-[20px] before:rounded-tr-[20px] hover:border-[rgba(99,102,241,0.35)] hover:shadow-[0_18px_48px_rgba(99,102,241,0.18)] hover:bg-white/[0.07] hover:before:scale-x-100 focus-visible:outline-2 focus-visible:outline-[#818cf8] focus-visible:outline-offset-[3px] active:scale-[0.985] max-[768px]:p-6"
@@ -45,5 +45,5 @@ export function SkillCard({ icon, name, title, desc, cmd, onClick }: SkillCardPr
         {cmd}
       </span>
     </motion.button>
-  );
+  )
 }

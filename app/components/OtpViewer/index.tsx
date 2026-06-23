@@ -1,52 +1,52 @@
-import { useState } from 'react';
-import { AnimatePresence, motion } from 'framer-motion';
-import { LoginForm } from './LoginForm';
-import { ResultCard } from './ResultCard';
+import { AnimatePresence, motion } from 'framer-motion'
+import { useState } from 'react'
+import { LoginForm } from './LoginForm'
+import { ResultCard } from './ResultCard'
 
-export type OtpErrorCode = 'INVALID_CREDENTIALS' | 'NO_MAIL_FOUND' | 'PARSE_FAILED';
+export type OtpErrorCode = 'INVALID_CREDENTIALS' | 'NO_MAIL_FOUND' | 'PARSE_FAILED'
 
 export interface OtpSuccessResponse {
-  code: string;
-  receivedAt: string;
+  code: string
+  receivedAt: string
 }
 
 function useOtpViewer() {
-  const [result, setResult] = useState<OtpSuccessResponse | null>(null);
-  const [error, setError] = useState<OtpErrorCode | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
+  const [result, setResult] = useState<OtpSuccessResponse | null>(null)
+  const [error, setError] = useState<OtpErrorCode | null>(null)
+  const [isLoading, setIsLoading] = useState(false)
 
   const verify = async (email: string, pin: string) => {
-    setIsLoading(true);
-    setError(null);
+    setIsLoading(true)
+    setError(null)
     try {
       const res = await fetch('/api/otp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, pin }),
-      });
-      const data = (await res.json()) as OtpSuccessResponse | { error: OtpErrorCode };
+      })
+      const data = (await res.json()) as OtpSuccessResponse | { error: OtpErrorCode }
       if (!res.ok) {
-        setError((data as { error: OtpErrorCode }).error);
+        setError((data as { error: OtpErrorCode }).error)
       } else {
-        setResult(data as OtpSuccessResponse);
+        setResult(data as OtpSuccessResponse)
       }
     } catch {
-      setError('PARSE_FAILED');
+      setError('PARSE_FAILED')
     } finally {
-      setIsLoading(false);
+      setIsLoading(false)
     }
-  };
+  }
 
   const reset = () => {
-    setResult(null);
-    setError(null);
-  };
+    setResult(null)
+    setError(null)
+  }
 
-  return { result, error, isLoading, verify, reset };
+  return { result, error, isLoading, verify, reset }
 }
 
 export function OtpViewer() {
-  const { result, error, isLoading, verify, reset } = useOtpViewer();
+  const { result, error, isLoading, verify, reset } = useOtpViewer()
 
   return (
     <div className="min-h-screen flex items-center justify-center px-5 py-6 bg-gradient-to-br from-[#0f0c29] via-[#302b63] to-[#24243e] relative overflow-hidden before:content-[''] before:absolute before:w-[400px] before:h-[400px] before:bg-[#6c63ff] before:rounded-full before:blur-[80px] before:opacity-25 before:pointer-events-none before:-top-[100px] before:-left-[100px] after:content-[''] after:absolute after:w-[300px] after:h-[300px] after:bg-[#a78bfa] after:rounded-full after:blur-[80px] after:opacity-25 after:pointer-events-none after:-bottom-[80px] after:-right-[80px]">
@@ -65,5 +65,5 @@ export function OtpViewer() {
         </AnimatePresence>
       </motion.div>
     </div>
-  );
+  )
 }

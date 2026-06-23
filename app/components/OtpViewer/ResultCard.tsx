@@ -1,11 +1,11 @@
-import { useState } from 'react';
-import { AnimatePresence, motion } from 'framer-motion';
-import { Copy, Check, RefreshCw } from 'lucide-react';
-import type { OtpSuccessResponse } from './index';
+import { AnimatePresence, motion } from 'framer-motion'
+import { Check, Copy, RefreshCw } from 'lucide-react'
+import { useState } from 'react'
+import type { OtpSuccessResponse } from './index'
 
 interface ResultCardProps {
-  result: OtpSuccessResponse;
-  onReset: () => void;
+  result: OtpSuccessResponse
+  onReset: () => void
 }
 
 function formatKST(isoString: string): string {
@@ -18,17 +18,17 @@ function formatKST(isoString: string): string {
     minute: '2-digit',
     second: '2-digit',
     hour12: false,
-  });
+  })
 }
 
 export function ResultCard({ result, onReset }: ResultCardProps) {
-  const [copied, setCopied] = useState(false);
+  const [copied, setCopied] = useState(false)
 
   const handleCopy = async () => {
-    await navigator.clipboard.writeText(result.code);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
+    await navigator.clipboard.writeText(result.code)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
 
   return (
     <>
@@ -69,6 +69,7 @@ export function ResultCard({ result, onReset }: ResultCardProps) {
       <div className="h-px bg-white/[0.08] my-5" />
 
       <button
+        type="button"
         onClick={onReset}
         aria-label="다시 조회"
         className="block w-full py-3 border-none bg-transparent text-white/40 text-[0.85rem] cursor-pointer transition-colors duration-200 hover:text-white/70"
@@ -77,5 +78,5 @@ export function ResultCard({ result, onReset }: ResultCardProps) {
         다시 조회
       </button>
     </>
-  );
+  )
 }

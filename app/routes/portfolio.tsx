@@ -1,20 +1,20 @@
-import { useRef, useEffect } from 'react';
-import type { Route } from './+types/portfolio';
-import { Heart, Stars, Instagram, ExternalLink } from 'lucide-react';
-import BambiImage from '@/assets/Bambi.jpg';
-import Bambi1 from '@/assets/Bambi/Bambi_1.jpeg';
-import Bambi2 from '@/assets/Bambi/Bambi_2.jpeg';
-import Bambi3 from '@/assets/Bambi/Bambi_3.jpeg';
-import Bambi4 from '@/assets/Bambi/Bambi_4.jpeg';
-import Bambi5 from '@/assets/Bambi/Bambi_5.jpeg';
-import Bambi6 from '@/assets/Bambi/Bambi_6.jpeg';
-import Bambi7 from '@/assets/Bambi/Bambi_7.jpeg';
-import Bambi8 from '@/assets/Bambi/Bambi_8.jpeg';
-import Work1 from '@/assets/Bambi/works/work_1.jpg';
-import Work2 from '@/assets/Bambi/works/work_2.jpg';
+import { ExternalLink, Heart, Instagram, Stars } from 'lucide-react'
+import { useEffect, useRef } from 'react'
+import Bambi1 from '@/assets/Bambi/Bambi_1.jpeg'
+import Bambi2 from '@/assets/Bambi/Bambi_2.jpeg'
+import Bambi3 from '@/assets/Bambi/Bambi_3.jpeg'
+import Bambi4 from '@/assets/Bambi/Bambi_4.jpeg'
+import Bambi5 from '@/assets/Bambi/Bambi_5.jpeg'
+import Bambi6 from '@/assets/Bambi/Bambi_6.jpeg'
+import Bambi7 from '@/assets/Bambi/Bambi_7.jpeg'
+import Bambi8 from '@/assets/Bambi/Bambi_8.jpeg'
+import Work1 from '@/assets/Bambi/works/work_1.jpg'
+import Work2 from '@/assets/Bambi/works/work_2.jpg'
+import BambiImage from '@/assets/Bambi.jpg'
+import type { Route } from './+types/portfolio'
 
 export function meta(_: Route.MetaArgs) {
-  return [{ title: 'Bambi Portfolio | Vibe' }];
+  return [{ title: 'Bambi Portfolio | Vibe' }]
 }
 
 const galleryImages = [
@@ -26,9 +26,9 @@ const galleryImages = [
   { src: Bambi6, alt: '밤비 갤러리 6' },
   { src: Bambi7, alt: '밤비 갤러리 7' },
   { src: Bambi8, alt: '밤비 갤러리 8' },
-];
+]
 
-const sliderImages = [...galleryImages, ...galleryImages];
+const sliderImages = [...galleryImages, ...galleryImages]
 
 const workItems = [
   {
@@ -45,60 +45,60 @@ const workItems = [
     image: Work2,
     link: 'https://drmypet.co.kr/product/%EB%A7%88%EC%9D%B4%ED%8E%AB%EB%8B%A5%ED%84%B0-%EC%8B%9C%EA%B7%B8%EB%8B%88%EC%B2%98-%EA%B8%B0%EA%B4%80%EC%A7%80-20-%EC%98%81%EC%96%91%EC%A0%9C/948/category/90/display/1/',
   },
-];
+]
 
 export default function Portfolio() {
-  const scrollRef = useRef<HTMLDivElement>(null);
-  const isDragging = useRef(false);
-  const startX = useRef(0);
-  const startScrollLeft = useRef(0);
+  const scrollRef = useRef<HTMLDivElement>(null)
+  const isDragging = useRef(false)
+  const startX = useRef(0)
+  const startScrollLeft = useRef(0)
 
   useEffect(() => {
-    const scrollContainer = scrollRef.current;
-    if (!scrollContainer) return;
+    const scrollContainer = scrollRef.current
+    if (!scrollContainer) return
 
-    let animationId: number;
-    let currentScroll = scrollContainer.scrollLeft;
+    let animationId: number
+    let currentScroll = scrollContainer.scrollLeft
 
     const playScroll = () => {
       if (!isDragging.current) {
         if (Math.abs(scrollContainer.scrollLeft - currentScroll) > 5) {
-          currentScroll = scrollContainer.scrollLeft;
+          currentScroll = scrollContainer.scrollLeft
         } else {
-          currentScroll += 2.5;
+          currentScroll += 2.5
           if (currentScroll >= scrollContainer.scrollWidth / 2) {
-            currentScroll = 0;
+            currentScroll = 0
           }
-          scrollContainer.scrollLeft = currentScroll;
+          scrollContainer.scrollLeft = currentScroll
         }
       } else {
-        currentScroll = scrollContainer.scrollLeft;
+        currentScroll = scrollContainer.scrollLeft
       }
-      animationId = requestAnimationFrame(playScroll);
-    };
+      animationId = requestAnimationFrame(playScroll)
+    }
 
-    animationId = requestAnimationFrame(playScroll);
-    return () => cancelAnimationFrame(animationId);
-  }, []);
+    animationId = requestAnimationFrame(playScroll)
+    return () => cancelAnimationFrame(animationId)
+  }, [])
 
   const handleMouseDown = (e: React.MouseEvent) => {
-    if (!scrollRef.current) return;
-    isDragging.current = true;
-    startX.current = e.pageX - scrollRef.current.offsetLeft;
-    startScrollLeft.current = scrollRef.current.scrollLeft;
-  };
+    if (!scrollRef.current) return
+    isDragging.current = true
+    startX.current = e.pageX - scrollRef.current.offsetLeft
+    startScrollLeft.current = scrollRef.current.scrollLeft
+  }
 
   const handleMouseMove = (e: React.MouseEvent) => {
-    if (!isDragging.current || !scrollRef.current) return;
-    e.preventDefault();
-    const x = e.pageX - scrollRef.current.offsetLeft;
-    const walk = (x - startX.current) * 1.5;
-    scrollRef.current.scrollLeft = startScrollLeft.current - walk;
-  };
+    if (!isDragging.current || !scrollRef.current) return
+    e.preventDefault()
+    const x = e.pageX - scrollRef.current.offsetLeft
+    const walk = (x - startX.current) * 1.5
+    scrollRef.current.scrollLeft = startScrollLeft.current - walk
+  }
 
   const handleUpOrLeave = () => {
-    isDragging.current = false;
-  };
+    isDragging.current = false
+  }
 
   return (
     <div
@@ -153,10 +153,12 @@ export default function Portfolio() {
 
         {/* Info Cards */}
         <div className="flex flex-col gap-8">
-          <div
-            className="flex flex-col justify-center bg-gradient-to-br from-white/5 to-white/[0.01] backdrop-blur-[10px] border border-white/5 rounded-[24px] p-8 shadow-[0_4px_30px_rgba(0,0,0,0.1)] transition-all duration-300 hover:-translate-y-[5px] hover:bg-white/5 animate-[fadeInUp_1s_ease-out_0.1s_both]"
-          >
-            <Heart size={24} color="#f43f5e" className="mb-4 animate-[float_3s_ease-in-out_infinite]" />
+          <div className="flex flex-col justify-center bg-gradient-to-br from-white/5 to-white/[0.01] backdrop-blur-[10px] border border-white/5 rounded-[24px] p-8 shadow-[0_4px_30px_rgba(0,0,0,0.1)] transition-all duration-300 hover:-translate-y-[5px] hover:bg-white/5 animate-[fadeInUp_1s_ease-out_0.1s_both]">
+            <Heart
+              size={24}
+              color="#f43f5e"
+              className="mb-4 animate-[float_3s_ease-in-out_infinite]"
+            />
             <h3 className="text-[1.8rem] mb-6 text-[#e2e8f0] font-semibold">Profile</h3>
             <p className="text-[1.2rem] text-[#cbd5e1] mb-3 leading-[1.6]">
               이름:{' '}
@@ -172,17 +174,25 @@ export default function Portfolio() {
                 밤비 (Bambi)
               </span>
             </p>
-            <p className="text-[1.2rem] text-[#cbd5e1] mb-3 leading-[1.6]">견종: 파피용 (Papillon)</p>
+            <p className="text-[1.2rem] text-[#cbd5e1] mb-3 leading-[1.6]">
+              견종: 파피용 (Papillon)
+            </p>
             <p className="text-[1.2rem] text-[#cbd5e1] mb-3 leading-[1.6]">생일: 2021년 4월생</p>
           </div>
 
-          <div
-            className="flex flex-col justify-center bg-gradient-to-br from-white/5 to-white/[0.01] backdrop-blur-[10px] border border-white/5 rounded-[24px] p-8 shadow-[0_4px_30px_rgba(0,0,0,0.1)] transition-all duration-300 hover:-translate-y-[5px] hover:bg-white/5 animate-[fadeInUp_1s_ease-out_0.2s_both]"
-          >
-            <Stars size={24} color="#fbbf24" className="mb-4 animate-[float_3s_ease-in-out_infinite]" />
+          <div className="flex flex-col justify-center bg-gradient-to-br from-white/5 to-white/[0.01] backdrop-blur-[10px] border border-white/5 rounded-[24px] p-8 shadow-[0_4px_30px_rgba(0,0,0,0.1)] transition-all duration-300 hover:-translate-y-[5px] hover:bg-white/5 animate-[fadeInUp_1s_ease-out_0.2s_both]">
+            <Stars
+              size={24}
+              color="#fbbf24"
+              className="mb-4 animate-[float_3s_ease-in-out_infinite]"
+            />
             <h3 className="text-[1.8rem] mb-6 text-[#e2e8f0] font-semibold">Charm Points</h3>
             <ul className="list-none p-0 m-0 flex flex-col gap-4">
-              {['✨ 이쁘고 아주 큰 귀 (나비 같은 매력!)', '✨ 반짝이는 눈망울', '✨ 활발하고 사랑스러운 성격'].map((item) => (
+              {[
+                '✨ 이쁘고 아주 큰 귀 (나비 같은 매력!)',
+                '✨ 반짝이는 눈망울',
+                '✨ 활발하고 사랑스러운 성격',
+              ].map((item) => (
                 <li
                   key={item}
                   className="text-[1.2rem] text-[#cbd5e1] bg-white/[0.02] py-4 px-6 rounded-[12px] border border-white/5"
@@ -197,15 +207,13 @@ export default function Portfolio() {
 
       {/* Work Section */}
       <section className="w-full max-w-[1200px] mt-24 flex flex-col items-center gap-8 animate-[fadeInUp_1s_ease-out_0.3s_both]">
-        <h2
-          className="text-[clamp(2rem,5vw,3rem)] font-bold text-[#e2e8f0] mb-8 relative after:content-[''] after:absolute after:-bottom-[10px] after:left-1/2 after:-translate-x-1/2 after:w-[60px] after:h-[4px] after:bg-gradient-to-r after:from-[#f43f5e] after:to-[#fbbf24] after:rounded-[2px]"
-        >
+        <h2 className="text-[clamp(2rem,5vw,3rem)] font-bold text-[#e2e8f0] mb-8 relative after:content-[''] after:absolute after:-bottom-[10px] after:left-1/2 after:-translate-x-1/2 after:w-[60px] after:h-[4px] after:bg-gradient-to-r after:from-[#f43f5e] after:to-[#fbbf24] after:rounded-[2px]">
           Modeling Work
         </h2>
         <div className="grid grid-cols-[repeat(auto-fill,minmax(300px,1fr))] gap-8 w-full">
-          {workItems.map((work, index) => (
+          {workItems.map((work) => (
             <a
-              key={index}
+              key={work.title}
               href={work.link}
               target="_blank"
               rel="noopener noreferrer"
@@ -236,43 +244,53 @@ export default function Portfolio() {
 
       {/* Gallery */}
       <section className="w-full max-w-[1200px] mt-24 flex flex-col items-center gap-8 animate-[fadeInUp_1s_ease-out_0.4s_both]">
-        <h2
-          className="text-[clamp(2rem,5vw,3rem)] font-bold text-[#e2e8f0] mb-8 relative after:content-[''] after:absolute after:-bottom-[10px] after:left-1/2 after:-translate-x-1/2 after:w-[60px] after:h-[4px] after:bg-gradient-to-r after:from-[#38bdf8] after:to-[#818cf8] after:rounded-[2px]"
-        >
+        <h2 className="text-[clamp(2rem,5vw,3rem)] font-bold text-[#e2e8f0] mb-8 relative after:content-[''] after:absolute after:-bottom-[10px] after:left-1/2 after:-translate-x-1/2 after:w-[60px] after:h-[4px] after:bg-gradient-to-r after:from-[#38bdf8] after:to-[#818cf8] after:rounded-[2px]">
           Photo Gallery
         </h2>
+        {/* biome-ignore lint/a11y/noStaticElementInteractions: drag-to-scroll — mouse events on scroll container are necessary UX */}
+        {/* biome-ignore lint/a11y/useAriaPropsSupportedByRole: aria-label on scroll container for screen reader context */}
         <div
+          aria-label="사진 갤러리"
           ref={scrollRef}
           className="w-screen max-w-full overflow-x-auto overflow-y-hidden py-4 [-webkit-overflow-scrolling:touch] [scrollbar-width:none] cursor-grab active:cursor-grabbing [&::-webkit-scrollbar]:hidden"
           onMouseDown={handleMouseDown}
           onMouseLeave={handleUpOrLeave}
           onMouseUp={handleUpOrLeave}
           onMouseMove={handleMouseMove}
-          onTouchStart={() => { isDragging.current = true; }}
-          onTouchEnd={() => { isDragging.current = false; }}
+          onTouchStart={() => {
+            isDragging.current = true
+          }}
+          onTouchEnd={() => {
+            isDragging.current = false
+          }}
         >
           <div className="flex gap-6 w-max">
-            {sliderImages.map((image, index) => (
-              <div
-                key={index}
-                className="shrink-0 w-[300px] h-[350px] bg-white/[0.03] backdrop-blur-[10px] border border-white/5 rounded-[24px] p-2 shadow-[0_4px_30px_rgba(0,0,0,0.1)] select-none transition-all duration-300 hover:-translate-y-[5px] hover:bg-white/5"
-              >
+            {sliderImages.map((image, index) => {
+              return (
                 <div
-                  className="relative w-full h-full rounded-[16px] overflow-hidden [&:hover_img]:scale-[1.1]"
-                  onDragStart={(e) => e.preventDefault()}
+                  // biome-ignore lint/suspicious/noArrayIndexKey: duplicated slider array for infinite scroll — index IS position identity
+                  key={index}
+                  className="shrink-0 w-[300px] h-[350px] bg-white/[0.03] backdrop-blur-[10px] border border-white/5 rounded-[24px] p-2 shadow-[0_4px_30px_rgba(0,0,0,0.1)] select-none transition-all duration-300 hover:-translate-y-[5px] hover:bg-white/5"
                 >
-                  <img
-                    src={image.src}
-                    alt={image.alt}
-                    className="w-full h-full object-cover transition-transform duration-500"
-                    draggable={false}
-                  />
+                  {/* biome-ignore lint/a11y/noStaticElementInteractions: drag-to-scroll container — onDragStart prevents browser default image drag */}
+                  <div
+                    role="presentation"
+                    className="relative w-full h-full rounded-[16px] overflow-hidden [&:hover_img]:scale-[1.1]"
+                    onDragStart={(e) => e.preventDefault()}
+                  >
+                    <img
+                      src={image.src}
+                      alt={image.alt}
+                      className="w-full h-full object-cover transition-transform duration-500"
+                      draggable={false}
+                    />
+                  </div>
                 </div>
-              </div>
-            ))}
+              )
+            })}
           </div>
         </div>
       </section>
     </div>
-  );
+  )
 }

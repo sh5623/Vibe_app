@@ -1,24 +1,24 @@
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
+import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from 'recharts'
 
 const data1 = [
   { name: 'Global Equities', value: 85 },
   { name: 'Other', value: 15 },
-];
+]
 const data2 = [
   { name: 'Fixed Income', value: 25 },
   { name: 'Other', value: 75 },
-];
+]
 const data3 = [
   { name: 'Alternative', value: 10 },
   { name: 'Other', value: 90 },
-];
+]
 
-const COLORS = ['#3b82f6', '#34d399'];
-const BG_COLOR = 'rgba(255, 255, 255, 0.05)';
+const COLORS = ['#3b82f6', '#34d399']
+const BG_COLOR = 'rgba(255, 255, 255, 0.05)'
 
 interface DonutSlice {
-  name: string;
-  value: number;
+  name: string
+  value: number
 }
 
 function Donut({ data, label, subLabel }: { data: DonutSlice[]; label: string; subLabel: string }) {
@@ -70,7 +70,7 @@ function Donut({ data, label, subLabel }: { data: DonutSlice[]; label: string; s
         <div className="text-[0.75rem] text-[#34d399] mt-1">{subLabel}</div>
       </div>
     </div>
-  );
+  )
 }
 
 export function PortfolioAllocation() {
@@ -80,5 +80,5 @@ export function PortfolioAllocation() {
       <Donut data={data2} label="Fixed Income" subLabel="(25%)" />
       <Donut data={data3} label="Alternative Investments" subLabel="(10%)" />
     </div>
-  );
+  )
 }

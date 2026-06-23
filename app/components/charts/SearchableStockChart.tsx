@@ -1,37 +1,37 @@
-import { useMemo } from 'react';
+import { ArrowDownRight, ArrowUpRight } from 'lucide-react'
+import { useMemo } from 'react'
 import {
-  LineChart,
+  CartesianGrid,
   Line,
+  LineChart,
+  ResponsiveContainer,
+  Tooltip,
   XAxis,
   YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-} from 'recharts';
-import { ArrowUpRight, ArrowDownRight } from 'lucide-react';
-import { useStockQuery } from '@/hooks/use-stock-query';
+} from 'recharts'
+import { useStockQuery } from '@/hooks/use-stock-query'
 
 interface Props {
-  symbol: string;
+  symbol: string
 }
 
 export function SearchableStockChart({ symbol }: Props) {
-  const { data: stockData, isLoading, isError } = useStockQuery(symbol, '1mo');
+  const { data: stockData, isLoading, isError } = useStockQuery(symbol, '1mo')
 
   const chartData = useMemo(() => {
-    if (!stockData?.history) return [];
+    if (!stockData?.history) return []
     return stockData.history.map((h) => ({
       name: h.date.split('T')[0],
       price: h.close,
-    }));
-  }, [stockData]);
+    }))
+  }, [stockData])
 
   if (isLoading) {
     return (
       <div className="h-[260px] flex items-center justify-center">
         데이터를 불러오는 중입니다...
       </div>
-    );
+    )
   }
 
   if (isError || stockData === undefined || stockData.quote === undefined) {
@@ -39,20 +39,19 @@ export function SearchableStockChart({ symbol }: Props) {
       <div className="h-[260px] flex items-center justify-center text-[#ef4444]">
         올바르지 않은 종목코드이거나 데이터를 불러올 수 없습니다.
       </div>
-    );
+    )
   }
 
-  const { quote } = stockData;
-  const isUp = quote.change >= 0;
-  const displayName = quote.name || symbol;
+  const { quote } = stockData
+  const isUp = quote.change >= 0
+  const displayName = quote.name || symbol
 
   return (
     <div>
       <div className="flex justify-between items-end mb-6">
         <div>
           <div className="text-[#94a3b8] text-[0.875rem] mb-1">
-            Stock / {displayName} &bull; {quote.price?.toLocaleString()}{' '}
-            {isUp ? '+' : ''}
+            Stock / {displayName} &bull; {quote.price?.toLocaleString()} {isUp ? '+' : ''}
             {quote.change?.toLocaleString()} ({isUp ? '+' : ''}
             {quote.changePercent?.toFixed(2)}%)
           </div>
@@ -62,8 +61,7 @@ export function SearchableStockChart({ symbol }: Props) {
               className="text-[1.125rem] flex items-center"
               style={{ color: isUp ? '#34d399' : '#ef4444' }}
             >
-              {isUp ? <ArrowUpRight size={18} /> : <ArrowDownRight size={18} />}{' '}
-              {isUp ? '+' : ''}
+              {isUp ? <ArrowUpRight size={18} /> : <ArrowDownRight size={18} />} {isUp ? '+' : ''}
               {quote.changePercent?.toFixed(2)}%
             </span>
           </div>
@@ -95,5 +93,5 @@ export function SearchableStockChart({ symbol }: Props) {
         </ResponsiveContainer>
       </div>
     </div>
-  );
+  )
 }

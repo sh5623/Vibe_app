@@ -1,8 +1,8 @@
-import type { Route } from './+types/invitation';
-import { InvitationCard } from '@/components/InvitationCard';
+import { InvitationCard } from '@/components/InvitationCard'
+import type { Route } from './+types/invitation'
 
 export function meta(_: Route.MetaArgs) {
-  return [{ title: '초대장 | Vibe' }];
+  return [{ title: '초대장 | Vibe' }]
 }
 
 export default function InvitationPage() {
@@ -10,5 +10,5 @@ export default function InvitationPage() {
     <div className="min-h-screen py-10 px-5 flex justify-center items-center">
       <InvitationCard />
     </div>
-  );
+  )
 }
