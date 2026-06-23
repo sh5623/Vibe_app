@@ -83,7 +83,7 @@ export default function Stack() {
       {skills.map(({ category, items }) => (
         <div key={category} className="mb-10 last:mb-0">
           <div
-            className="text-[0.7rem] tracking-[0.25em] text-[#4f46e5] uppercase mb-4 flex items-center gap-3 after:content-[''] after:h-px after:bg-gradient-to-r after:from-[rgba(79,70,229,0.25)] after:to-transparent after:flex-1"
+            className="text-[0.7rem] tracking-[0.25em] text-[#4f46e5] uppercase mb-4 flex items-center gap-3 after:content-[''] after:h-px after:bg-linear-to-r after:from-[rgba(79,70,229,0.25)] after:to-transparent after:flex-1"
             style={{ fontFamily: 'var(--font-mono), monospace' }}
           >
             {category}
@@ -94,7 +94,7 @@ export default function Stack() {
                 key={label}
                 className={`inline-flex items-center px-[1.1rem] py-2 rounded-[100px] text-[0.75rem] tracking-[0.05em] transition-all duration-200 cursor-default ${
                   accent
-                    ? 'bg-gradient-to-r from-[rgba(79,70,229,0.1)] to-[rgba(6,182,212,0.1)] border-[1.5px] border-[rgba(79,70,229,0.25)] text-[#4f46e5] font-semibold hover:from-[rgba(79,70,229,0.18)] hover:to-[rgba(6,182,212,0.18)] hover:border-[#4f46e5] hover:-translate-y-0.5 hover:shadow-[0_4px_14px_rgba(79,70,229,0.2)]'
+                    ? 'bg-linear-to-r from-[rgba(79,70,229,0.1)] to-[rgba(6,182,212,0.1)] border-[1.5px] border-[rgba(79,70,229,0.25)] text-[#4f46e5] font-semibold hover:from-[rgba(79,70,229,0.18)] hover:to-[rgba(6,182,212,0.18)] hover:border-[#4f46e5] hover:-translate-y-0.5 hover:shadow-[0_4px_14px_rgba(79,70,229,0.2)]'
                     : 'bg-[rgba(100,116,139,0.07)] border border-[rgba(100,116,139,0.16)] text-[#64748b] hover:bg-[rgba(79,70,229,0.05)] hover:border-[#4f46e5] hover:text-[#4f46e5] hover:-translate-y-0.5'
                 }`}
                 style={{ fontFamily: 'var(--font-mono), monospace' }}

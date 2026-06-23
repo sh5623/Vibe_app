@@ -421,7 +421,7 @@ export default function FeRailPage() {
             style={{ fontFamily: 'var(--font-mono), monospace' }}
           >
             <span
-              className="absolute top-[2px] bottom-[2px] w-[calc(50%-2px)] bg-gradient-to-br from-[#6366f1] to-[#4f46e5] rounded-[100px] transition-[left] duration-[250ms] shadow-[0_2px_8px_rgba(99,102,241,0.4)]"
+              className="absolute top-[2px] bottom-[2px] w-[calc(50%-2px)] bg-linear-to-br from-[#6366f1] to-[#4f46e5] rounded-[100px] transition-[left] duration-[250ms] shadow-[0_2px_8px_rgba(99,102,241,0.4)]"
               style={{ left: lang === 'ko' ? '2px' : 'calc(50%)' }}
             />
             <span
@@ -555,7 +555,7 @@ export default function FeRailPage() {
               <button
                 type="button"
                 onClick={() => scrollTo('install')}
-                className="inline-flex items-center gap-2 py-[0.9rem] px-[2.25rem] bg-gradient-to-br from-[#6366f1] to-[#4f46e5] text-white no-underline border-none rounded-[10px] transition-all duration-[250ms] shadow-[0_4px_20px_rgba(99,102,241,0.4)] cursor-pointer hover:-translate-y-[3px] hover:shadow-[0_12px_32px_rgba(99,102,241,0.55)] max-[480px]:flex-1 max-[480px]:justify-center"
+                className="inline-flex items-center gap-2 py-[0.9rem] px-[2.25rem] bg-linear-to-br from-[#6366f1] to-[#4f46e5] text-white no-underline border-none rounded-[10px] transition-all duration-[250ms] shadow-[0_4px_20px_rgba(99,102,241,0.4)] cursor-pointer hover:-translate-y-[3px] hover:shadow-[0_12px_32px_rgba(99,102,241,0.55)] max-[480px]:flex-1 max-[480px]:justify-center"
                 style={{
                   fontFamily: 'var(--font-mono), monospace',
                   fontSize: '0.8rem',
@@ -664,7 +664,7 @@ export default function FeRailPage() {
               {skills.map((skill) => (
                 <motion.div key={`detail-${skill.id}-${lang}`} variants={fadeUp}>
                   <div id={skill.id} style={{ scrollMarginTop: '100px' }}>
-                    <div className="relative bg-white/[0.03] border border-[rgba(99,102,241,0.12)] rounded-[16px] p-8 overflow-hidden transition-all duration-[250ms] before:content-[''] before:absolute before:top-0 before:left-0 before:right-0 before:h-[2px] before:bg-gradient-to-r before:from-[#6366f1] before:to-[#34d399] before:scale-x-0 before:origin-left before:transition-transform before:duration-[350ms] before:rounded-tl-[16px] before:rounded-tr-[16px] hover:border-[rgba(99,102,241,0.28)] hover:shadow-[0_8px_32px_rgba(99,102,241,0.12)] hover:bg-white/5 hover:before:scale-x-100">
+                    <div className="relative bg-white/[0.03] border border-[rgba(99,102,241,0.12)] rounded-[16px] p-8 overflow-hidden transition-all duration-[250ms] before:content-[''] before:absolute before:top-0 before:left-0 before:right-0 before:h-[2px] before:bg-linear-to-r before:from-[#6366f1] before:to-[#34d399] before:scale-x-0 before:origin-left before:transition-transform before:duration-[350ms] before:rounded-tl-[16px] before:rounded-tr-[16px] hover:border-[rgba(99,102,241,0.28)] hover:shadow-[0_8px_32px_rgba(99,102,241,0.12)] hover:bg-white/5 hover:before:scale-x-100">
                       <span className="text-[2rem] block mb-4">{skill.icon}</span>
                       <h3 className="text-[1.05rem] font-bold mb-[0.6rem] tracking-[-0.01em] text-[#f1f5f9]">
                         {skill.name}
@@ -798,7 +798,7 @@ export default function FeRailPage() {
                   {workflow.map((step, i) => (
                     <motion.div key={step.label} variants={fadeUp}>
                       <div
-                        className={`flex gap-6 items-start relative ${i < workflow.length - 1 ? "pb-9 before:content-[''] before:absolute before:left-[19px] before:top-[42px] before:w-px before:h-[calc(100%-42px)] before:bg-gradient-to-b before:from-[rgba(99,102,241,0.3)] before:to-transparent" : ''}`}
+                        className={`flex gap-6 items-start relative ${i < workflow.length - 1 ? "pb-9 before:content-[''] before:absolute before:left-[19px] before:top-[42px] before:w-px before:h-[calc(100%-42px)] before:bg-linear-to-b before:from-[rgba(99,102,241,0.3)] before:to-transparent" : ''}`}
                       >
                         <div
                           className="w-10 h-10 rounded-full bg-[rgba(99,102,241,0.1)] border-[1.5px] border-[rgba(99,102,241,0.25)] flex items-center justify-center text-[0.78rem] text-[#818cf8] font-bold shrink-0"

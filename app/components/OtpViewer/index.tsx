@@ -49,7 +49,7 @@ export function OtpViewer() {
   const { result, error, isLoading, verify, reset } = useOtpViewer()
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-5 py-6 bg-gradient-to-br from-[#0f0c29] via-[#302b63] to-[#24243e] relative overflow-hidden before:content-[''] before:absolute before:w-[400px] before:h-[400px] before:bg-[#6c63ff] before:rounded-full before:blur-[80px] before:opacity-25 before:pointer-events-none before:-top-[100px] before:-left-[100px] after:content-[''] after:absolute after:w-[300px] after:h-[300px] after:bg-[#a78bfa] after:rounded-full after:blur-[80px] after:opacity-25 after:pointer-events-none after:-bottom-[80px] after:-right-[80px]">
+    <div className="min-h-screen flex items-center justify-center px-5 py-6 bg-linear-to-br from-[#0f0c29] via-[#302b63] to-[#24243e] relative overflow-hidden before:content-[''] before:absolute before:w-[400px] before:h-[400px] before:bg-[#6c63ff] before:rounded-full before:blur-[80px] before:opacity-25 before:pointer-events-none before:-top-[100px] before:-left-[100px] after:content-[''] after:absolute after:w-[300px] after:h-[300px] after:bg-[#a78bfa] after:rounded-full after:blur-[80px] after:opacity-25 after:pointer-events-none after:-bottom-[80px] after:-right-[80px]">
       <motion.div
         className="w-full max-w-[420px] px-10 py-12 rounded-[24px] bg-white/[0.07] backdrop-blur-xl border border-white/[0.14] shadow-[0_8px_32px_rgba(0,0,0,0.4),inset_0_1px_0_rgba(255,255,255,0.1)] relative z-[1] max-[768px]:px-6 max-[768px]:py-9"
         initial={{ opacity: 0, y: 24 }}

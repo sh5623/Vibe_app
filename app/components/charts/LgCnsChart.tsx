@@ -12,7 +12,7 @@ import {
 import { useStockQuery } from '@/hooks/use-stock-query'
 
 export function LgCnsChart() {
-  const { data: stockData, isLoading, isError } = useStockQuery('064400.KS', '1mo')
+  const { data: stockData, isPending, isError } = useStockQuery('064400.KS', '1mo')
 
   const chartData = useMemo(() => {
     if (!stockData?.history) return []
@@ -22,7 +22,7 @@ export function LgCnsChart() {
     }))
   }, [stockData])
 
-  if (isLoading) {
+  if (isPending) {
     return <div className="h-[260px] flex items-center justify-center">Loading...</div>
   }
 

@@ -11,7 +11,7 @@ import {
 import { useStockQuery } from '@/hooks/use-stock-query'
 
 export function KospiChart() {
-  const { data: stockData, isLoading, isError } = useStockQuery('^KS11', '6mo')
+  const { data: stockData, isPending, isError } = useStockQuery('^KS11', '6mo')
 
   const chartData = useMemo(() => {
     if (!stockData?.history) return []
@@ -24,7 +24,7 @@ export function KospiChart() {
     })
   }, [stockData])
 
-  if (isLoading) {
+  if (isPending) {
     return (
       <div className="w-full h-[450px] flex items-center justify-center">
         Loading KOSPI Chart...

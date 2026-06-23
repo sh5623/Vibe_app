@@ -3,7 +3,7 @@ export default function Contact() {
     <>
       <section
         id="contact"
-        className="px-12 pt-48 pb-32 text-center relative overflow-hidden bg-gradient-to-br from-[rgba(79,70,229,0.05)] to-[rgba(6,182,212,0.04)] max-[768px]:px-6 max-[768px]:pt-32 max-[768px]:pb-20"
+        className="px-12 pt-48 pb-32 text-center relative overflow-hidden bg-linear-to-br from-[rgba(79,70,229,0.05)] to-[rgba(6,182,212,0.04)] max-[768px]:px-6 max-[768px]:pt-32 max-[768px]:pb-20"
       >
         <div
           className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[60vw] h-[60vw] pointer-events-none"

@@ -27,7 +27,7 @@ const marqueeRaw = [
 
 export default function Marquee() {
   return (
-    <div className="overflow-hidden bg-gradient-to-r from-[#4f46e5] via-[#06b6d4] to-[#4f46e5] bg-[length:200%_100%] py-[0.9rem]">
+    <div className="overflow-hidden bg-linear-to-r from-[#4f46e5] via-[#06b6d4] to-[#4f46e5] bg-[length:200%_100%] py-[0.9rem]">
       <div className="flex w-max animate-[marquee_22s_linear_infinite]">
         {[...marqueeRaw, ...marqueeRaw].map((item, i) => {
           return (

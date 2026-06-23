@@ -69,7 +69,7 @@ export default function About() {
           ].map(({ num, label }) => (
             <div
               key={label}
-              className="relative bg-white border border-[rgba(79,70,229,0.12)] rounded-[16px] p-8 py-8 px-7 transition-all duration-[250ms] overflow-hidden before:content-[''] before:absolute before:top-0 before:left-0 before:right-0 before:h-[3px] before:bg-gradient-to-r before:from-[#4f46e5] before:to-[#06b6d4] before:scale-x-0 before:origin-left before:transition-transform before:duration-[350ms] before:rounded-tl-[16px] before:rounded-tr-[16px] hover:border-[rgba(79,70,229,0.25)] hover:-translate-y-[5px] hover:shadow-[0_16px_40px_rgba(79,70,229,0.1)] hover:before:scale-x-100"
+              className="relative bg-white border border-[rgba(79,70,229,0.12)] rounded-[16px] p-8 py-8 px-7 transition-all duration-[250ms] overflow-hidden before:content-[''] before:absolute before:top-0 before:left-0 before:right-0 before:h-[3px] before:bg-linear-to-r before:from-[#4f46e5] before:to-[#06b6d4] before:scale-x-0 before:origin-left before:transition-transform before:duration-[350ms] before:rounded-tl-[16px] before:rounded-tr-[16px] hover:border-[rgba(79,70,229,0.25)] hover:-translate-y-[5px] hover:shadow-[0_16px_40px_rgba(79,70,229,0.1)] hover:before:scale-x-100"
             >
               <div
                 className="text-[2.5rem] font-extrabold leading-[1] mb-2"

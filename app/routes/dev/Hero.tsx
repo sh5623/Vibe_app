@@ -134,7 +134,7 @@ export default function Hero() {
       <div className="flex gap-4 flex-wrap animate-[fadeUp_0.7s_ease_0.3s_both] relative z-[1]">
         <a
           href="#work"
-          className="inline-flex items-center gap-2 py-[0.9rem] px-[2.25rem] bg-gradient-to-br from-[#4f46e5] to-[#6d28d9] text-white no-underline rounded-[10px] transition-all duration-[250ms] shadow-[0_4px_20px_rgba(79,70,229,0.35)] hover:-translate-y-[3px] hover:shadow-[0_10px_32px_rgba(79,70,229,0.45)] max-[480px]:flex-1 max-[480px]:justify-center max-[480px]:px-6"
+          className="inline-flex items-center gap-2 py-[0.9rem] px-[2.25rem] bg-linear-to-br from-[#4f46e5] to-[#6d28d9] text-white no-underline rounded-[10px] transition-all duration-[250ms] shadow-[0_4px_20px_rgba(79,70,229,0.35)] hover:-translate-y-[3px] hover:shadow-[0_10px_32px_rgba(79,70,229,0.45)] max-[480px]:flex-1 max-[480px]:justify-center max-[480px]:px-6"
           style={{
             fontFamily: 'var(--font-mono), monospace',
             fontSize: '0.8rem',
@@ -161,7 +161,7 @@ export default function Hero() {
       </div>
 
       <div
-        className="absolute bottom-10 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 text-[0.65rem] text-[#94a3b8] tracking-[0.25em] uppercase after:content-[''] after:w-px after:h-10 after:bg-gradient-to-b after:from-[#4f46e5] after:to-transparent animate-[slideIn_0.8s_ease_0.6s_both] max-[768px]:hidden"
+        className="absolute bottom-10 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 text-[0.65rem] text-[#94a3b8] tracking-[0.25em] uppercase after:content-[''] after:w-px after:h-10 after:bg-linear-to-b after:from-[#4f46e5] after:to-transparent animate-[slideIn_0.8s_ease_0.6s_both] max-[768px]:hidden"
         style={{ fontFamily: 'var(--font-mono), monospace' }}
       >
         Scroll

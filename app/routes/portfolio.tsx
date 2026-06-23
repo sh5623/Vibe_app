@@ -153,7 +153,7 @@ export default function Portfolio() {
 
         {/* Info Cards */}
         <div className="flex flex-col gap-8">
-          <div className="flex flex-col justify-center bg-gradient-to-br from-white/5 to-white/[0.01] backdrop-blur-[10px] border border-white/5 rounded-[24px] p-8 shadow-[0_4px_30px_rgba(0,0,0,0.1)] transition-all duration-300 hover:-translate-y-[5px] hover:bg-white/5 animate-[fadeInUp_1s_ease-out_0.1s_both]">
+          <div className="flex flex-col justify-center bg-linear-to-br from-white/5 to-white/[0.01] backdrop-blur-[10px] border border-white/5 rounded-[24px] p-8 shadow-[0_4px_30px_rgba(0,0,0,0.1)] transition-all duration-300 hover:-translate-y-[5px] hover:bg-white/5 animate-[fadeInUp_1s_ease-out_0.1s_both]">
             <Heart
               size={24}
               color="#f43f5e"
@@ -180,7 +180,7 @@ export default function Portfolio() {
             <p className="text-[1.2rem] text-[#cbd5e1] mb-3 leading-[1.6]">생일: 2021년 4월생</p>
           </div>
 
-          <div className="flex flex-col justify-center bg-gradient-to-br from-white/5 to-white/[0.01] backdrop-blur-[10px] border border-white/5 rounded-[24px] p-8 shadow-[0_4px_30px_rgba(0,0,0,0.1)] transition-all duration-300 hover:-translate-y-[5px] hover:bg-white/5 animate-[fadeInUp_1s_ease-out_0.2s_both]">
+          <div className="flex flex-col justify-center bg-linear-to-br from-white/5 to-white/[0.01] backdrop-blur-[10px] border border-white/5 rounded-[24px] p-8 shadow-[0_4px_30px_rgba(0,0,0,0.1)] transition-all duration-300 hover:-translate-y-[5px] hover:bg-white/5 animate-[fadeInUp_1s_ease-out_0.2s_both]">
             <Stars
               size={24}
               color="#fbbf24"
@@ -207,7 +207,7 @@ export default function Portfolio() {
 
       {/* Work Section */}
       <section className="w-full max-w-[1200px] mt-24 flex flex-col items-center gap-8 animate-[fadeInUp_1s_ease-out_0.3s_both]">
-        <h2 className="text-[clamp(2rem,5vw,3rem)] font-bold text-[#e2e8f0] mb-8 relative after:content-[''] after:absolute after:-bottom-[10px] after:left-1/2 after:-translate-x-1/2 after:w-[60px] after:h-[4px] after:bg-gradient-to-r after:from-[#f43f5e] after:to-[#fbbf24] after:rounded-[2px]">
+        <h2 className="text-[clamp(2rem,5vw,3rem)] font-bold text-[#e2e8f0] mb-8 relative after:content-[''] after:absolute after:-bottom-[10px] after:left-1/2 after:-translate-x-1/2 after:w-[60px] after:h-[4px] after:bg-linear-to-r after:from-[#f43f5e] after:to-[#fbbf24] after:rounded-[2px]">
           Modeling Work
         </h2>
         <div className="grid grid-cols-[repeat(auto-fill,minmax(300px,1fr))] gap-8 w-full">
@@ -244,7 +244,7 @@ export default function Portfolio() {
 
       {/* Gallery */}
       <section className="w-full max-w-[1200px] mt-24 flex flex-col items-center gap-8 animate-[fadeInUp_1s_ease-out_0.4s_both]">
-        <h2 className="text-[clamp(2rem,5vw,3rem)] font-bold text-[#e2e8f0] mb-8 relative after:content-[''] after:absolute after:-bottom-[10px] after:left-1/2 after:-translate-x-1/2 after:w-[60px] after:h-[4px] after:bg-gradient-to-r after:from-[#38bdf8] after:to-[#818cf8] after:rounded-[2px]">
+        <h2 className="text-[clamp(2rem,5vw,3rem)] font-bold text-[#e2e8f0] mb-8 relative after:content-[''] after:absolute after:-bottom-[10px] after:left-1/2 after:-translate-x-1/2 after:w-[60px] after:h-[4px] after:bg-linear-to-r after:from-[#38bdf8] after:to-[#818cf8] after:rounded-[2px]">
           Photo Gallery
         </h2>
         {/* biome-ignore lint/a11y/noStaticElementInteractions: drag-to-scroll — mouse events on scroll container are necessary UX */}

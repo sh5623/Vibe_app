@@ -18,7 +18,7 @@ export default function Navigation() {
           <a
             key={id}
             href={`#${id}`}
-            className="relative text-[0.75rem] text-[#64748b] no-underline tracking-[0.12em] uppercase transition-colors duration-200 hover:text-[#4f46e5] after:content-[''] after:absolute after:-bottom-[3px] after:left-0 after:w-0 after:h-[1.5px] after:bg-gradient-to-r after:from-[#4f46e5] after:to-[#06b6d4] after:transition-[width] after:duration-[250ms] hover:after:w-full max-[480px]:text-[0.68rem]"
+            className="relative text-[0.75rem] text-[#64748b] no-underline tracking-[0.12em] uppercase transition-colors duration-200 hover:text-[#4f46e5] after:content-[''] after:absolute after:-bottom-[3px] after:left-0 after:w-0 after:h-[1.5px] after:bg-linear-to-r after:from-[#4f46e5] after:to-[#06b6d4] after:transition-[width] after:duration-[250ms] hover:after:w-full max-[480px]:text-[0.68rem]"
             style={{ fontFamily: 'var(--font-mono), monospace' }}
           >
             {id.charAt(0).toUpperCase() + id.slice(1)}

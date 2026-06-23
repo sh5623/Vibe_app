@@ -23,9 +23,9 @@ export function SkillCard({ icon, name, title, desc, cmd, onClick }: SkillCardPr
           onClick()
         }
       }}
-      className="relative w-full bg-white/[0.04] border-[1.5px] border-[rgba(99,102,241,0.15)] rounded-[20px] p-8 text-left cursor-pointer overflow-hidden shadow-[0_2px_12px_rgba(0,0,0,0.3)] transition-[border-color,box-shadow,background] duration-[250ms] before:content-[''] before:absolute before:top-0 before:left-0 before:right-0 before:h-[3px] before:bg-gradient-to-r before:from-[#6366f1] before:to-[#34d399] before:scale-x-0 before:origin-left before:transition-transform before:duration-[350ms] before:rounded-tl-[20px] before:rounded-tr-[20px] hover:border-[rgba(99,102,241,0.35)] hover:shadow-[0_18px_48px_rgba(99,102,241,0.18)] hover:bg-white/[0.07] hover:before:scale-x-100 focus-visible:outline-2 focus-visible:outline-[#818cf8] focus-visible:outline-offset-[3px] active:scale-[0.985] max-[768px]:p-6"
+      className="relative w-full bg-white/[0.04] border-[1.5px] border-[rgba(99,102,241,0.15)] rounded-[20px] p-8 text-left cursor-pointer overflow-hidden shadow-[0_2px_12px_rgba(0,0,0,0.3)] transition-[border-color,box-shadow,background] duration-[250ms] before:content-[''] before:absolute before:top-0 before:left-0 before:right-0 before:h-[3px] before:bg-linear-to-r before:from-[#6366f1] before:to-[#34d399] before:scale-x-0 before:origin-left before:transition-transform before:duration-[350ms] before:rounded-tl-[20px] before:rounded-tr-[20px] hover:border-[rgba(99,102,241,0.35)] hover:shadow-[0_18px_48px_rgba(99,102,241,0.18)] hover:bg-white/[0.07] hover:before:scale-x-100 focus-visible:outline-2 focus-visible:outline-[#818cf8] focus-visible:outline-offset-[3px] active:scale-[0.985] max-[768px]:p-6"
     >
-      <div className="w-[52px] h-[52px] rounded-[14px] bg-gradient-to-br from-[rgba(99,102,241,0.12)] to-[rgba(52,211,153,0.08)] border border-[rgba(99,102,241,0.16)] flex items-center justify-center text-[1.5rem] mb-5 shrink-0">
+      <div className="w-[52px] h-[52px] rounded-[14px] bg-linear-to-br from-[rgba(99,102,241,0.12)] to-[rgba(52,211,153,0.08)] border border-[rgba(99,102,241,0.16)] flex items-center justify-center text-[1.5rem] mb-5 shrink-0">
         {icon}
       </div>
       <div

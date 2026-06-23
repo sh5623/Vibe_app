@@ -125,9 +125,9 @@ export function LoginForm({ onSubmit, isLoading, error }: LoginFormProps) {
                   key={i}
                   id={i === 0 ? 'pin-0' : undefined}
                   ref={pinRefs[i]}
-                  type="number"
+                  type="text"
                   inputMode="numeric"
-                  pattern="[0-9]"
+                  pattern="[0-9]*"
                   maxLength={1}
                   value={digit}
                   onChange={(e) => handlePinChange(i, e.target.value.slice(-1))}
@@ -159,7 +159,7 @@ export function LoginForm({ onSubmit, isLoading, error }: LoginFormProps) {
         onClick={handleSubmit}
         disabled={!isFormValid || isLoading}
         whileTap={{ scale: isLoading ? 1 : 0.97 }}
-        className={`w-full py-4 mt-2 border-none rounded-[12px] text-[0.95rem] font-semibold text-white tracking-[0.02em] transition-opacity duration-200 ${isLoading ? 'cursor-not-allowed bg-gradient-to-r from-[#4c3b99] via-[#6c63ff] to-[#a78bfa] animate-pulse' : 'cursor-pointer bg-gradient-to-br from-[#6c63ff] to-[#a78bfa] hover:opacity-90'}`}
+        className={`w-full py-4 mt-2 border-none rounded-[12px] text-[0.95rem] font-semibold text-white tracking-[0.02em] transition-opacity duration-200 ${isLoading ? 'cursor-not-allowed bg-linear-to-r from-[#4c3b99] via-[#6c63ff] to-[#a78bfa] animate-pulse' : 'cursor-pointer bg-linear-to-br from-[#6c63ff] to-[#a78bfa] hover:opacity-90'}`}
       >
         {isLoading ? '조회 중...' : '인증번호 조회'}
       </motion.button>
