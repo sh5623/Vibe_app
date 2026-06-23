@@ -50,12 +50,17 @@ function getParam(req: VercelRequest, key: string, fallback: string): string {
   return val ?? fallback
 }
 
+const ALLOWED_RANGES = new Set(['1mo', '6mo', '1y'])
+
 export default async function handler(req: VercelRequest, res: ServerResponse) {
-  res.setHeader('Access-Control-Allow-Origin', '*')
   res.setHeader('Content-Type', 'application/json')
 
-  const symbol = getParam(req, 'symbol', '^KS11')
-  const range = getParam(req, 'range', '1mo')
+  const rawSymbol = getParam(req, 'symbol', '^KS11')
+  const rawRange = getParam(req, 'range', '1mo')
+
+  // Sanitize inputs
+  const symbol = rawSymbol.slice(0, 20)
+  const range = ALLOWED_RANGES.has(rawRange) ? rawRange : '1mo'
 
   const { default: YahooFinance } = await import('yahoo-finance2')
   const yahooFinance = new YahooFinance()
@@ -168,15 +173,14 @@ export default async function handler(req: VercelRequest, res: ServerResponse) {
         )
         return
       } catch (fallbackError: unknown) {
-        const msg = fallbackError instanceof Error ? fallbackError.message : String(fallbackError)
+        console.error('Fallback quote error:', fallbackError)
         res.statusCode = 500
-        res.end(JSON.stringify({ error: msg }))
+        res.end(JSON.stringify({ error: 'Failed to fetch stock data' }))
         return
       }
     }
 
-    const msg = error instanceof Error ? error.message : String(error)
     res.statusCode = 500
-    res.end(JSON.stringify({ error: msg }))
+    res.end(JSON.stringify({ error: 'Failed to fetch stock data' }))
   }
 }

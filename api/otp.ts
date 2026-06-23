@@ -1,5 +1,7 @@
 import type { IncomingMessage, ServerResponse } from 'node:http'
 
+const MAX_BODY_BYTES = 4096
+
 interface GmailMessagePart {
   mimeType?: string
   body?: { data?: string }
@@ -40,29 +42,61 @@ function readBody(req: IncomingMessage): Promise<string> {
     let data = ''
     req.on('data', (chunk: Buffer) => {
       data += chunk.toString()
+      if (data.length > MAX_BODY_BYTES) {
+        req.destroy()
+        reject(new Error('Request body too large'))
+      }
     })
     req.on('end', () => resolve(data))
     req.on('error', reject)
   })
 }
 
+function json(res: ServerResponse, status: number, body: unknown) {
+  res.statusCode = status
+  res.end(JSON.stringify(body))
+}
+
 export default async function handler(req: IncomingMessage, res: ServerResponse) {
-  res.setHeader('Access-Control-Allow-Origin', '*')
   res.setHeader('Content-Type', 'application/json')
 
   if (req.method !== 'POST') {
-    res.statusCode = 405
-    res.end(JSON.stringify({ error: 'Method Not Allowed' }))
-    return
+    return json(res, 405, { error: 'Method Not Allowed' })
   }
 
-  const rawBody = await readBody(req)
-  const body = JSON.parse(rawBody) as { email?: string; pin?: string }
+  let rawBody: string
+  try {
+    rawBody = await readBody(req)
+  } catch {
+    return json(res, 400, { error: 'Bad Request' })
+  }
 
-  if (body.email !== process.env.ALLOWED_EMAIL || body.pin !== process.env.ALLOWED_PIN) {
-    res.statusCode = 401
-    res.end(JSON.stringify({ error: 'INVALID_CREDENTIALS' }))
-    return
+  let body: unknown
+  try {
+    body = JSON.parse(rawBody)
+  } catch {
+    return json(res, 400, { error: 'Invalid JSON' })
+  }
+
+  if (typeof body !== 'object' || body === null) {
+    return json(res, 400, { error: 'Invalid JSON' })
+  }
+
+  const { email, pin } = body as Record<string, unknown>
+
+  const allowedEmail = process.env.ALLOWED_EMAIL
+  const allowedPin = process.env.ALLOWED_PIN
+
+  // Guard: env vars must be set and non-empty, and must match as strings
+  if (
+    !allowedEmail ||
+    !allowedPin ||
+    typeof email !== 'string' ||
+    typeof pin !== 'string' ||
+    email !== allowedEmail ||
+    pin !== allowedPin
+  ) {
+    return json(res, 401, { error: 'INVALID_CREDENTIALS' })
   }
 
   const { google } = await import('googleapis')
@@ -84,16 +118,12 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
 
   const messages = listRes.data.messages
   if (!messages || messages.length === 0) {
-    res.statusCode = 404
-    res.end(JSON.stringify({ error: 'NO_MAIL_FOUND' }))
-    return
+    return json(res, 404, { error: 'NO_MAIL_FOUND' })
   }
 
   const firstMessage = messages[0]
   if (firstMessage === undefined) {
-    res.statusCode = 404
-    res.end(JSON.stringify({ error: 'NO_MAIL_FOUND' }))
-    return
+    return json(res, 404, { error: 'NO_MAIL_FOUND' })
   }
 
   const msgRes = await gmail.users.messages.get({
@@ -115,11 +145,8 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
   const match = text.match(new RegExp(`\\b\\d{${digits}}\\b`))
 
   if (match === null || match[0] === undefined) {
-    res.statusCode = 422
-    res.end(JSON.stringify({ error: 'PARSE_FAILED' }))
-    return
+    return json(res, 422, { error: 'PARSE_FAILED' })
   }
 
-  res.statusCode = 200
-  res.end(JSON.stringify({ code: match[0], receivedAt }))
+  return json(res, 200, { code: match[0], receivedAt })
 }
