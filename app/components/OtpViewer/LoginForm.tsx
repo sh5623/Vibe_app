@@ -132,6 +132,7 @@ export function LoginForm({ onSubmit, isLoading, error }: LoginFormProps) {
                   value={digit}
                   onChange={(e) => handlePinChange(i, e.target.value.slice(-1))}
                   onKeyDown={(e) => handlePinKeyDown(i, e)}
+                  onFocus={(e) => e.currentTarget.select()}
                   disabled={isLoading}
                   aria-label={`PIN ${i + 1}번째 자리`}
                   className={`flex-1 min-w-0 box-border py-[14px] px-0 bg-white/[0.06] border rounded-[12px] text-white text-[1.4rem] font-semibold text-center outline-none transition-[border-color,box-shadow] duration-200 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none ${hasError ? 'border-[rgba(248,113,113,0.7)] focus:border-[rgba(248,113,113,0.9)] focus:shadow-[0_0_0_3px_rgba(248,113,113,0.15)]' : 'border-white/[0.12] focus:border-[rgba(167,139,250,0.7)] focus:shadow-[0_0_0_3px_rgba(167,139,250,0.15)]'}`}
