@@ -1,6 +1,6 @@
 import { AnimatePresence, motion } from 'framer-motion'
 import { Lock } from 'lucide-react'
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { OtpErrorCode } from './index'
 
 interface LoginFormProps {
@@ -31,6 +31,14 @@ export function LoginForm({ onSubmit, isLoading, error }: LoginFormProps) {
   const pinRef2 = useRef<HTMLInputElement>(null)
   const pinRef3 = useRef<HTMLInputElement>(null)
   const pinRefs = [pinRef0, pinRef1, pinRef2, pinRef3]
+
+  useEffect(() => {
+    if (error !== null) {
+      setPin(['', '', '', ''])
+      pinRef0.current?.focus()
+    }
+    // biome-ignore lint/correctness/useExhaustiveDependencies: pinRef0 is a stable ref
+  }, [error])
 
   const handlePinChange = (index: number, value: string) => {
     if (!/^\d?$/.test(value)) return
