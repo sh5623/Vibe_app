@@ -1,6 +1,6 @@
 # Vibe App
 
-> Next.js App Router 기반 개인 포트폴리오 & 인터랙티브 경험 플랫폼
+> React Router 7 (SSR) 기반 개인 포트폴리오 & 인터랙티브 경험 플랫폼
 
 ## 페이지 구성
 
@@ -13,56 +13,75 @@
 | `/invitation` | 초대장 | 이벤트 초대카드 인터랙티브 경험 |
 | `/letter` | 편지 | 생일 인증 후 열람하는 편지 시스템 |
 | `/stock` | 주식 대시보드 | 야후 파이낸스 API 연동 실시간 주식 차트 |
+| `/otp` | OTP 뷰어 | OTP 코드 조회 |
 
 ## 기술 스택
 
-- **Framework:** Next.js 16+ (App Router, TypeScript strict)
-- **Styling:** @emotion/styled (CSS-in-JS, SSR 지원)
-- **Animation:** framer-motion — motion, AnimatePresence, whileInView
-- **State:** Jotai (전역), React Query (서버 상태, staleTime 1min)
-- **Charts:** Recharts
+- **Framework:** React Router 7.18 (프레임워크 모드, SSR) + Vite 8
+- **Language:** TypeScript 6 (`strict` + `noUncheckedIndexedAccess`)
+- **Styling:** Tailwind CSS 4.3 (CSS-first, `@theme` 변수)
+- **UI Components:** shadcn/ui (`app/components/ui/` — 수동 수정 금지)
+- **Animation:** framer-motion 12 — `motion`, `AnimatePresence`
+- **State:** Zustand 5 (전역 UI), TanStack Query 5.101 (서버 상태)
+- **Validation:** Zod 4 (`z.email()` / `z.url()` 최상위 함수)
+- **Charts:** Recharts 3
 - **Icons:** Lucide React
-- **Stock Data:** yahoo-finance2 (API Route)
+- **Stock Data:** yahoo-finance2 (resource route, server-only)
+- **Linter/Formatter:** Biome 2.5 (`biome.json`)
 
 ## 시작하기
 
 ```bash
 # 의존성 설치
-yarn install
+pnpm install
 
-# 환경변수 설정 (.env.local 파일을 직접 생성하고 NEXT_PUBLIC_BIRTHDAY 키 설정)
+# .env.local 직접 생성 후 환경변수 설정
+# VITE_BIRTHDAY=MMDD  (생일: 월2자리+일2자리, 예: 0314)
 
-# 개발 서버 실행 (localhost:3000)
-yarn dev
+# 개발 서버 실행 (localhost:5173)
+pnpm dev
 ```
 
 ## 명령어
 
 ```bash
-yarn dev      # 개발 서버
-yarn build    # 프로덕션 빌드
-yarn start    # 프로덕션 서버
-yarn lint     # ESLint 실행
+pnpm dev          # 개발 서버 (SSR, localhost:5173)
+pnpm build        # 프로덕션 빌드
+pnpm start        # 프로덕션 서버
+pnpm check        # biome check --write + Tailwind v3 문법 감지
+pnpm typecheck    # react-router typegen && tsc --noEmit
+pnpm test         # vitest run
+pnpm test:e2e     # playwright test
 ```
 
 ## 프로젝트 구조
 
 ```
-src/
-├── app/           # 페이지 · API 라우트 (파일 기반 라우팅)
-│   ├── fe-rail/   # fe-rail 플러그인 랜딩 페이지
-│   ├── dev/       # 개발자 포트폴리오
-│   ├── portfolio/ # Bambi 포트폴리오
-│   ├── stock/     # 주식 대시보드
-│   ├── invitation/
-│   ├── letter/
-│   └── api/       # 주식 데이터 API Route
-├── components/    # 공통 UI 컴포넌트
-├── hooks/         # React Query 커스텀 훅
-├── providers/     # QueryProvider · EmotionRegistry
-├── store/         # Jotai 전역 상태
-├── lib/           # Emotion SSR 레지스트리
-└── styles/        # GlobalStyles
+app/
+├── root.tsx                 # HTML 쉘 + 전역 Provider
+├── routes/
+│   ├── home.tsx             # /
+│   ├── fe-rail.tsx          # /fe-rail
+│   ├── dev.tsx              # /dev
+│   ├── portfolio.tsx        # /portfolio
+│   ├── invitation.tsx       # /invitation
+│   ├── letter.tsx           # /letter
+│   ├── stock.tsx            # /stock
+│   ├── otp.tsx              # /otp
+│   ├── api.stock.ts         # GET /api/stock (server-only)
+│   └── api.otp.ts           # POST /api/otp (server-only)
+├── components/
+│   ├── ui/                  # shadcn/ui — 수동 수정 금지
+│   └── [Feature]/           # index.tsx 단일 파일 원칙
+├── lib/
+│   ├── utils.ts             # cn()
+│   └── query-client.ts      # SSR-safe QueryClient
+├── store/                   # Zustand (*-store.ts)
+├── hooks/                   # TanStack Query (use-*.ts)
+├── schemas/                 # Zod (*.schema.ts)
+├── styles/
+│   └── globals.css          # @import "tailwindcss"
+└── assets/                  # 정적 이미지
 ```
 
 ## fe-rail 플러그인
@@ -71,7 +90,6 @@ src/
 spec → build → review → PR 사이클을 자동화하는 프론트엔드 개발 워크플로우 도구입니다.
 
 ```bash
-# Claude Code 내에서 설치
 /plugin marketplace add sh5623/fe-rail
 /plugin install fe-rail@fe-rail-market
 ```

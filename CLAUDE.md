@@ -6,19 +6,19 @@
 |---------|---------|---------|
 | Vite | 8.0.x | `@react-router/dev/vite` 플러그인 사용. `@vitejs/plugin-react` 별도 불필요 |
 | React | 19.x | ref prop 직접 전달. `forwardRef` 금지 |
-| React Router | 7.16.x | **프레임워크 모드 (SSR)**. `@react-router/dev` 사용 |
+| React Router | 7.18.x | **프레임워크 모드 (SSR)**. `@react-router/dev` 사용 |
 | TypeScript | 6.0.x | `strict` + `noUncheckedIndexedAccess` |
 | Zod | 4.x | `z.string().email()` 금지 → `z.email()` |
 | pnpm | 11.x | npm/yarn 금지 |
-| Biome | 2.4.x | `biome.json`만. ESLint/Prettier 없음 |
+| Biome | 2.5.x | `biome.json`만. ESLint/Prettier 없음 |
 | Tailwind | 4.3.x | `tailwind.config.js` 없음. CSS-first |
 | shadcn/ui | CLI 4.x | `app/components/ui/` — 수동 수정 금지 |
-| TanStack Query | 5.100.x | `isLoading` 없음 → `isPending`. SSR 패턴 사용 |
+| TanStack Query | 5.101.x | `isLoading` 없음 → `isPending`. SSR 패턴 사용 |
 | Zustand | 5.0.x | `create()` 패턴. equality fn 2번째 인자 금지 |
 | framer-motion | 12.x | 애니메이션. `motion`, `AnimatePresence` |
 | Vitest | 4.1.x | `vi.fn()`. `jest.fn()` 금지 |
 | RTL | 16.3.x | `@testing-library/user-event` v14 async |
-| Playwright | 1.60.x | E2E 전용 |
+| Playwright | 1.61.x | E2E 전용 |
 | Recharts | 3.x | 차트 |
 | Lucide React | latest | 아이콘 |
 
@@ -149,8 +149,11 @@ export async function loader({ request }: Route.LoaderArgs) {
 // vite.config.ts
 import { reactRouter } from '@react-router/dev/vite'
 import tailwindcss from '@tailwindcss/vite'
-import tsconfigPaths from 'vite-tsconfig-paths'
-export default defineConfig({ plugins: [reactRouter(), tailwindcss(), tsconfigPaths()] })
+import { defineConfig } from 'vite'
+export default defineConfig({
+  plugins: [reactRouter(), tailwindcss()],
+  resolve: { tsconfigPaths: true },
+})
 ```
 
 **금지 (grep 강제):** `tailwind.config.js` · `@tailwind` · `bg-gradient-to-*` → `bg-linear-to-*` · `flex-shrink-0` → `shrink-0`
