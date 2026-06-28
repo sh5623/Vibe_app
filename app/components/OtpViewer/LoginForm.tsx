@@ -37,7 +37,6 @@ export function LoginForm({ onSubmit, isLoading, error }: LoginFormProps) {
       setPin(['', '', '', ''])
       pinRef0.current?.focus()
     }
-    // biome-ignore lint/correctness/useExhaustiveDependencies: pinRef0 is a stable ref
   }, [error])
 
   const handlePinChange = (index: number, value: string) => {

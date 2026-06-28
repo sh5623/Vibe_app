@@ -20,6 +20,7 @@
 - **Framework:** React Router 7.18 (프레임워크 모드, SSR) + Vite 8
 - **Language:** TypeScript 6 (`strict` + `noUncheckedIndexedAccess`)
 - **Styling:** Tailwind CSS 4.3 (CSS-first, `@theme` 변수)
+- **UI Components:** shadcn/ui (`app/components/ui/` — 수동 수정 금지)
 - **Animation:** framer-motion 12 — `motion`, `AnimatePresence`
 - **State:** Zustand 5 (전역 UI), TanStack Query 5.101 (서버 상태)
 - **Validation:** Zod 4 (`z.email()` / `z.url()` 최상위 함수)
@@ -34,9 +35,8 @@
 # 의존성 설치
 pnpm install
 
-# 환경변수 설정
-cp .env.example .env.local
-# VITE_BIRTHDAY=MMDD 형태로 설정
+# .env.local 직접 생성 후 환경변수 설정
+# VITE_BIRTHDAY=MMDD  (생일: 월2자리+일2자리, 예: 0314)
 
 # 개발 서버 실행 (localhost:5173)
 pnpm dev

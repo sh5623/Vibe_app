@@ -6,7 +6,7 @@
 |---------|---------|---------|
 | Vite | 8.0.x | `@react-router/dev/vite` 플러그인 사용. `@vitejs/plugin-react` 별도 불필요 |
 | React | 19.x | ref prop 직접 전달. `forwardRef` 금지 |
-| React Router | 7.16.x | **프레임워크 모드 (SSR)**. `@react-router/dev` 사용 |
+| React Router | 7.18.x | **프레임워크 모드 (SSR)**. `@react-router/dev` 사용 |
 | TypeScript | 6.0.x | `strict` + `noUncheckedIndexedAccess` |
 | Zod | 4.x | `z.string().email()` 금지 → `z.email()` |
 | pnpm | 11.x | npm/yarn 금지 |
@@ -149,8 +149,11 @@ export async function loader({ request }: Route.LoaderArgs) {
 // vite.config.ts
 import { reactRouter } from '@react-router/dev/vite'
 import tailwindcss from '@tailwindcss/vite'
-import tsconfigPaths from 'vite-tsconfig-paths'
-export default defineConfig({ plugins: [reactRouter(), tailwindcss(), tsconfigPaths()] })
+import { defineConfig } from 'vite'
+export default defineConfig({
+  plugins: [reactRouter(), tailwindcss()],
+  resolve: { tsconfigPaths: true },
+})
 ```
 
 **금지 (grep 강제):** `tailwind.config.js` · `@tailwind` · `bg-gradient-to-*` → `bg-linear-to-*` · `flex-shrink-0` → `shrink-0`
