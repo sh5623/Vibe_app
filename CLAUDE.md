@@ -10,15 +10,15 @@
 | TypeScript | 6.0.x | `strict` + `noUncheckedIndexedAccess` |
 | Zod | 4.x | `z.string().email()` 금지 → `z.email()` |
 | pnpm | 11.x | npm/yarn 금지 |
-| Biome | 2.4.x | `biome.json`만. ESLint/Prettier 없음 |
+| Biome | 2.5.x | `biome.json`만. ESLint/Prettier 없음 |
 | Tailwind | 4.3.x | `tailwind.config.js` 없음. CSS-first |
 | shadcn/ui | CLI 4.x | `app/components/ui/` — 수동 수정 금지 |
-| TanStack Query | 5.100.x | `isLoading` 없음 → `isPending`. SSR 패턴 사용 |
+| TanStack Query | 5.101.x | `isLoading` 없음 → `isPending`. SSR 패턴 사용 |
 | Zustand | 5.0.x | `create()` 패턴. equality fn 2번째 인자 금지 |
 | framer-motion | 12.x | 애니메이션. `motion`, `AnimatePresence` |
 | Vitest | 4.1.x | `vi.fn()`. `jest.fn()` 금지 |
 | RTL | 16.3.x | `@testing-library/user-event` v14 async |
-| Playwright | 1.60.x | E2E 전용 |
+| Playwright | 1.61.x | E2E 전용 |
 | Recharts | 3.x | 차트 |
 | Lucide React | latest | 아이콘 |
 
