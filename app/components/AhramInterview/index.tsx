@@ -18,8 +18,8 @@ export type EditTarget =
   | { type: 'root'; field: 'selfIntro' | 'motivation' }
   | { type: 'item'; categoryId: string; itemId: string; field: 'answer' | 'answerB' }
 
-async function fetchAhramContent(): Promise<InterviewContent> {
-  const res = await fetch('/api/ahram')
+async function fetchAhramContent(pin: string): Promise<InterviewContent> {
+  const res = await fetch(`/api/ahram?pin=${encodeURIComponent(pin)}`)
   if (!res.ok) throw new Error('Failed to fetch interview content')
   return res.json() as Promise<InterviewContent>
 }
@@ -115,7 +115,7 @@ function InterviewContentView({ pin }: { pin: string }) {
   const queryClient = useQueryClient()
   const { data, isPending, isError } = useQuery({
     queryKey: QUERY_KEY,
-    queryFn: fetchAhramContent,
+    queryFn: () => fetchAhramContent(pin),
   })
   const [editingId, setEditingId] = useState<string | null>(null)
 

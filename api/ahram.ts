@@ -4,6 +4,15 @@ const MAX_BODY_BYTES = 65536
 const TABLE = 'interview_page_content'
 const ROW_ID = 'ahram-interview'
 
+interface VercelRequest extends IncomingMessage {
+  query: Record<string, string | string[]>
+}
+
+function getQueryParam(req: VercelRequest, key: string): string | undefined {
+  const val = req.query[key]
+  return Array.isArray(val) ? val[0] : val
+}
+
 interface InterviewQaItem {
   id: string
   question: string
@@ -227,7 +236,7 @@ function isValidContent(value: unknown): value is InterviewContent {
   )
 }
 
-export default async function handler(req: IncomingMessage, res: ServerResponse) {
+export default async function handler(req: VercelRequest, res: ServerResponse) {
   res.setHeader('Content-Type', 'application/json')
 
   const baseUrl = process.env.SUPABASE_URL
@@ -236,6 +245,13 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
   }
 
   if (req.method === 'GET') {
+    const pin = getQueryParam(req, 'pin')
+    const allowedPin = process.env.VITE_BIRTHDAY
+
+    if (!allowedPin || pin !== allowedPin) {
+      return json(res, 401, { error: 'UNAUTHORIZED' })
+    }
+
     try {
       const existing = await fetchContent(baseUrl)
       if (existing) return json(res, 200, existing)

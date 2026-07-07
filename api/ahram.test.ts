@@ -3,9 +3,16 @@ import type { IncomingMessage, ServerResponse } from 'node:http'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import handler from './ahram'
 
-function makeReq(method: string, body?: unknown): IncomingMessage {
-  const emitter = new EventEmitter() as unknown as IncomingMessage
+type MockRequest = IncomingMessage & { query: Record<string, string | string[]> }
+
+function makeReq(
+  method: string,
+  body?: unknown,
+  query: Record<string, string | string[]> = {}
+): MockRequest {
+  const emitter = new EventEmitter() as unknown as MockRequest
   ;(emitter as unknown as { method: string }).method = method
+  emitter.query = query
   queueMicrotask(() => {
     if (body !== undefined) {
       emitter.emit('data', Buffer.from(JSON.stringify(body)))
@@ -48,10 +55,21 @@ describe('api/ahram handler', () => {
     process.env.SUPABASE_URL = ''
     const res = makeRes()
 
-    await handler(makeReq('GET'), res)
+    await handler(makeReq('GET', undefined, { pin: '010101' }), res)
 
     expect(res.statusCode).toBe(503)
     expect(JSON.parse(res.body)).toEqual({ error: 'SUPABASE_UNAVAILABLE' })
+  })
+
+  it('GET rejects with 401 when pin query param is missing or wrong', async () => {
+    const fetchMock = vi.fn()
+    vi.stubGlobal('fetch', fetchMock)
+    const res = makeRes()
+
+    await handler(makeReq('GET', undefined, { pin: 'wrong' }), res)
+
+    expect(res.statusCode).toBe(401)
+    expect(fetchMock).not.toHaveBeenCalled()
   })
 
   it('GET returns the existing row content when found', async () => {
@@ -62,7 +80,7 @@ describe('api/ahram handler', () => {
     vi.stubGlobal('fetch', fetchMock)
     const res = makeRes()
 
-    await handler(makeReq('GET'), res)
+    await handler(makeReq('GET', undefined, { pin: '010101' }), res)
 
     expect(res.statusCode).toBe(200)
     expect(JSON.parse(res.body)).toEqual({ selfIntro: 'hi', motivation: 'why', categories: [] })
@@ -82,7 +100,7 @@ describe('api/ahram handler', () => {
     vi.stubGlobal('fetch', fetchMock)
     const res = makeRes()
 
-    await handler(makeReq('GET'), res)
+    await handler(makeReq('GET', undefined, { pin: '010101' }), res)
 
     expect(res.statusCode).toBe(200)
     expect(fetchMock).toHaveBeenCalledTimes(2)
@@ -97,7 +115,7 @@ describe('api/ahram handler', () => {
     )
     const res = makeRes()
 
-    await handler(makeReq('GET'), res)
+    await handler(makeReq('GET', undefined, { pin: '010101' }), res)
 
     expect(res.statusCode).toBe(503)
   })
