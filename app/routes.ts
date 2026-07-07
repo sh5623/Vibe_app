@@ -9,4 +9,5 @@ export default [
   route('letter', 'routes/letter.tsx'),
   route('stock', 'routes/stock.tsx'),
   route('otp', 'routes/otp.tsx'),
+  route('ahram', 'routes/ahram.tsx'),
 ] satisfies RouteConfig
