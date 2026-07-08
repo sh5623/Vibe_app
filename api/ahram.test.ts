@@ -142,6 +142,26 @@ describe('api/ahram handler', () => {
     expect(res.statusCode).toBe(400)
   })
 
+  it('PUT accepts answerB: null as a valid (missing) dual-answer variant', async () => {
+    const content = {
+      selfIntro: 'a',
+      motivation: 'b',
+      categories: [
+        {
+          id: 'personality',
+          label: '성격',
+          items: [{ id: 'weakness', question: '단점은?', answer: '느림', answerB: null }],
+        },
+      ],
+    }
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, json: async () => [{ content }] }))
+    const res = makeRes()
+
+    await handler(makeReq('PUT', { pin: '010101', content }), res)
+
+    expect(res.statusCode).toBe(200)
+  })
+
   it('PUT saves and returns the updated content when pin and content are valid', async () => {
     const savedContent = { selfIntro: 'a', motivation: 'b', categories: [] }
     vi.stubGlobal(

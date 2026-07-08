@@ -2,7 +2,7 @@ export interface InterviewQaItem {
   id: string
   question: string
   answer: string
-  answerB?: string
+  answerB?: string | null
 }
 
 export interface InterviewCategory {

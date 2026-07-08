@@ -17,7 +17,7 @@ interface InterviewQaItem {
   id: string
   question: string
   answer: string
-  answerB?: string
+  answerB?: string | null
 }
 
 interface InterviewCategory {
@@ -171,15 +171,18 @@ const DEFAULT_INTERVIEW_CONTENT: InterviewContent = {
 
 function readBody(req: IncomingMessage): Promise<string> {
   return new Promise((resolve, reject) => {
-    let data = ''
+    const chunks: Buffer[] = []
+    let bytesRead = 0
     req.on('data', (chunk: Buffer) => {
-      data += chunk.toString()
-      if (data.length > MAX_BODY_BYTES) {
-        req.destroy()
+      bytesRead += chunk.length
+      if (bytesRead > MAX_BODY_BYTES) {
+        req.pause()
         reject(new Error('Request body too large'))
+        return
       }
+      chunks.push(chunk)
     })
-    req.on('end', () => resolve(data))
+    req.on('end', () => resolve(Buffer.concat(chunks).toString('utf8')))
     req.on('error', reject)
   })
 }
@@ -224,6 +227,28 @@ async function upsertContent(
   return rows[0]?.content ?? content
 }
 
+function isValidQaItem(value: unknown): value is InterviewQaItem {
+  if (typeof value !== 'object' || value === null) return false
+  const item = value as Record<string, unknown>
+  return (
+    typeof item.id === 'string' &&
+    typeof item.question === 'string' &&
+    typeof item.answer === 'string' &&
+    (item.answerB === undefined || item.answerB === null || typeof item.answerB === 'string')
+  )
+}
+
+function isValidCategory(value: unknown): value is InterviewCategory {
+  if (typeof value !== 'object' || value === null) return false
+  const category = value as Record<string, unknown>
+  return (
+    typeof category.id === 'string' &&
+    typeof category.label === 'string' &&
+    Array.isArray(category.items) &&
+    category.items.every(isValidQaItem)
+  )
+}
+
 function isValidContent(value: unknown): value is InterviewContent {
   if (typeof value !== 'object' || value === null) return false
   const record = value as Record<string, unknown>
@@ -232,7 +257,8 @@ function isValidContent(value: unknown): value is InterviewContent {
     record.selfIntro.trim().length > 0 &&
     typeof record.motivation === 'string' &&
     record.motivation.trim().length > 0 &&
-    Array.isArray(record.categories)
+    Array.isArray(record.categories) &&
+    record.categories.every(isValidCategory)
   )
 }
 
@@ -240,7 +266,8 @@ export default async function handler(req: VercelRequest, res: ServerResponse) {
   res.setHeader('Content-Type', 'application/json')
 
   const baseUrl = process.env.SUPABASE_URL
-  if (!baseUrl) {
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+  if (!baseUrl || !serviceKey) {
     return json(res, 503, { error: 'SUPABASE_UNAVAILABLE' })
   }
 
