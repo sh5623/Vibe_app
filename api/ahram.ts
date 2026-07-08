@@ -17,7 +17,7 @@ interface InterviewQaItem {
   id: string
   question: string
   answer: string
-  answerB?: string
+  answerB?: string | null
 }
 
 interface InterviewCategory {
@@ -176,7 +176,7 @@ function readBody(req: IncomingMessage): Promise<string> {
     req.on('data', (chunk: Buffer) => {
       bytesRead += chunk.length
       if (bytesRead > MAX_BODY_BYTES) {
-        req.destroy()
+        req.pause()
         reject(new Error('Request body too large'))
         return
       }
@@ -234,7 +234,7 @@ function isValidQaItem(value: unknown): value is InterviewQaItem {
     typeof item.id === 'string' &&
     typeof item.question === 'string' &&
     typeof item.answer === 'string' &&
-    (item.answerB === undefined || typeof item.answerB === 'string')
+    (item.answerB === undefined || item.answerB === null || typeof item.answerB === 'string')
   )
 }
 

@@ -345,7 +345,7 @@ function QaAccordionItem({
   const [version, setVersion] = useState<'A' | 'B'>('A')
   const [draft, setDraft] = useState('')
 
-  const hasDualAnswer = item.answerB !== undefined
+  const hasDualAnswer = item.answerB !== undefined && item.answerB !== null
   const editingField: 'answer' | 'answerB' = version === 'B' ? 'answerB' : 'answer'
   const editingKey = `${item.id}:${editingField}`
   const isEditing = editingId === editingKey
