@@ -51,5 +51,8 @@ tsconfig.tsbuildinfo
 # Hallmark skill run artifacts (design log, local state)
 .hallmark/
 
+# Vendored/installed skill packages (reproducible via skills-lock.json)
+.agents/
+
 # Docs
 feature.md
