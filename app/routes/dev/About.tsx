@@ -32,7 +32,8 @@ export default function About() {
               백오피스·폐쇄몰 커머스까지 성격이 다른 프론트엔드 환경을 경험했습니다.
             </>,
             <>
-              현재 프로젝트 전용 AI 에이전트와 개발 규약을 정의해 AI 기반 개발 프로세스를 표준화하고, AI 디자인 도구로 UI/UX 개선 작업도 함께 진행하고 있습니다.
+              현재 프로젝트 전용 AI 에이전트와 개발 규약을 정의해 AI 기반 개발 프로세스를
+              표준화하고, AI 디자인 도구로 UI/UX 개선 작업도 함께 진행하고 있습니다.
             </>,
             <>
               React / Next.js를 주력으로, Vue.js까지 유연하게 활용합니다. TypeScript 환경의 디자인
@@ -40,7 +41,9 @@ export default function About() {
               해결에 강점을 가지고 있습니다.
             </>,
             <>
-              <strong>fe-rail</strong>을 직접 설계·구현해 오픈소스로 공개했습니다. Claude Code 기반 플러그인으로 spec → build → review → PR 사이클을 자동화하며, AI를 개발 프로세스에 내재화하는 데 관심을 갖고 있습니다.
+              <strong>fe-rail</strong>을 직접 설계·구현해 오픈소스로 공개했습니다. Claude Code 기반
+              플러그인으로 spec → build → review → PR 사이클을 자동화하며, AI를 개발 프로세스에
+              내재화하는 데 관심을 갖고 있습니다.
             </>,
           ].map((text, i) => {
             return (
