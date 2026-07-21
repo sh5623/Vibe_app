@@ -27,14 +27,13 @@ export default function About() {
           {[
             <>
               단순한 화면 구현을 넘어,{' '}
-              <strong>복잡한 비즈니스 맥락을 이해하고 지속 가능한 코드 구조로 전환</strong>하여
-              사용자 경험을 완성하는 프론트엔드 개발자입니다. 총 7년의 경력 동안 금융·공공 SI부터
-              대규모 B2C 서비스까지 다양한 도메인을 경험했습니다.
+              <strong>복잡한 비즈니스 요구사항을 이해하고 유지보수 가능한 코드 구조로 전환</strong>
+              하는 프론트엔드 개발자입니다. 총 7년의 경력 동안 금융·공공 SI부터 대규모 B2C 서비스,
+              백오피스·폐쇄몰 커머스까지 성격이 다른 프론트엔드 환경을 경험했습니다.
             </>,
             <>
-              현재 <strong>여기어때컴퍼니</strong>에서 광고센터 구축 및 고도화, 가격경쟁력 대시보드
-              CMS, 해외 숙소 공급사 관리 시스템 등을 개발하며 기획·디자인·백엔드·QA 팀과 협업해
-              안정적인 서비스 오픈을 주도하고 있습니다.
+              현재 프로젝트 전용 AI 에이전트와 개발 규약을 정의해 AI 기반 개발 프로세스를
+              표준화하고, AI 디자인 도구로 UI/UX 개선 작업도 함께 진행하고 있습니다.
             </>,
             <>
               React / Next.js를 주력으로, Vue.js까지 유연하게 활용합니다. TypeScript 환경의 디자인
@@ -42,10 +41,9 @@ export default function About() {
               해결에 강점을 가지고 있습니다.
             </>,
             <>
-              최근에는 <strong>fe-rail</strong>을 직접 설계·구현했습니다. Claude Code 플러그인으로,
-              spec → build → review → PR 사이클을 자동화하여 프론트엔드 개발 흐름 전체를 단일
-              워크플로로 연결합니다. AI 도구를 개발 생산성에 실질적으로 통합하는 데 관심을 갖고
-              있습니다.
+              <strong>fe-rail</strong>을 직접 설계·구현해 오픈소스로 공개했습니다. Claude Code 기반
+              플러그인으로 spec → build → review → PR 사이클을 자동화하며, AI를 개발 프로세스에
+              내재화하는 데 관심을 갖고 있습니다.
             </>,
           ].map((text, i) => {
             return (
@@ -65,7 +63,7 @@ export default function About() {
             { num: '7+', label: 'Years Exp' },
             { num: '10+', label: 'Projects' },
             { num: 'FE', label: 'Role' },
-            { num: '2', label: 'Companies' },
+            { num: '3', label: 'Companies' },
           ].map(({ num, label }) => (
             <div
               key={label}
