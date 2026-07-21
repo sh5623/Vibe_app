@@ -48,5 +48,8 @@ tsconfig.tsbuildinfo
 # Playwright MCP
 .playwright-mcp/
 
+# Hallmark skill run artifacts (design log, local state)
+.hallmark/
+
 # Docs
 feature.md
