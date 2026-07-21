@@ -33,7 +33,7 @@ const TEXT = {
     },
     agents: {
       label: 'Agents',
-      title: '14개 전용 에이전트',
+      title: '15개 전용 에이전트',
       desc: '각 단계마다 전용 에이전트가 독립적으로 동작합니다.',
       phases: { spec: 'Spec 단계', build: 'Build 단계', review: 'Review 단계', pr: 'PR 단계' },
     },
@@ -74,7 +74,7 @@ const TEXT = {
     },
     agents: {
       label: 'Agents',
-      title: '14 Dedicated Agents',
+      title: '15 Dedicated Agents',
       desc: 'Each phase has a dedicated agent running independently.',
       phases: { spec: 'Spec Phase', build: 'Build Phase', review: 'Review Phase', pr: 'PR Phase' },
     },
@@ -188,6 +188,11 @@ const SKILLS: Record<
 const AGENTS_KO = {
   spec: [
     { name: 'fe-analyst', role: '요구사항 갭 분석 (6갭 / 7섹션)', model: 'opus' },
+    {
+      name: 'fe-deck-reader',
+      role: 'PPT·기획서 덱 분해 → 정책/화면 목업/흐름/데이터 추출',
+      model: 'sonnet',
+    },
     { name: 'fe-vision', role: 'Figma·UI 스크린샷·PDF 분석', model: 'sonnet' },
     { name: 'fe-researcher', role: '외부 문서·라이브러리 조사', model: 'sonnet' },
     {
@@ -225,6 +230,11 @@ const AGENTS_KO = {
 const AGENTS_EN = {
   spec: [
     { name: 'fe-analyst', role: 'Requirements gap analysis (6 gaps / 7 sections)', model: 'opus' },
+    {
+      name: 'fe-deck-reader',
+      role: 'Decomposes PPT/planning decks into policy, mockups, flow, and data',
+      model: 'sonnet',
+    },
     { name: 'fe-vision', role: 'Figma · UI screenshot · PDF analysis', model: 'sonnet' },
     { name: 'fe-researcher', role: 'External docs & library research', model: 'sonnet' },
     {
