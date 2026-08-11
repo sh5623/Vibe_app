@@ -41,9 +41,11 @@ export default function About() {
               해결에 강점을 가지고 있습니다.
             </>,
             <>
-              <strong>fe-rail</strong>을 직접 설계·구현해 오픈소스로 공개했습니다. Claude Code 기반
-              플러그인으로 spec → build → review → PR 사이클을 자동화하며, AI를 개발 프로세스에
-              내재화하는 데 관심을 갖고 있습니다.
+              <strong>fe-rail</strong>과 <strong>self-improvement</strong>를 직접 설계·구현해
+              오픈소스로 공개했습니다. fe-rail은 spec → build → review → PR 사이클을 자동화하는
+              Claude Code 플러그인이고, self-improvement는 규약·문서에 물린 지점을 증거 기반으로
+              스스로 고치는 자가개선 루프입니다. AI를 개발 프로세스에 내재화하는 데 관심을 갖고
+              있습니다.
             </>,
           ].map((text, i) => {
             return (
