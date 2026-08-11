@@ -239,3 +239,7 @@ const [state, action, isPending] = useActionState(formAction, null)
 - 신규 파일: ≤ 3개
 - 신규 pnpm 의존성: 0개
 - 컴포넌트 depth: ≤ 3단계
+
+## 자가개선
+규약·문서가 없거나 틀려서 물리면 그 자리만 고치지 말고 규약 자체를 고친다(일반성+증거 충족 시, 같은 작업 단위 안에서).
+절차·라우팅·기록: `docs/conventions/CHANGELOG.md` 헤더. 작업 보고에 "자가개선: N건/해당 없음"을 명시한다.

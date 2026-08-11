@@ -32,6 +32,15 @@ export default function Home() {
         onClick={() => void navigate('/fe-rail')}
       />
       <HomeCard
+        title={
+          <>
+            self-improvement<span>Claude Code Plugin</span>
+          </>
+        }
+        buttonText="보러가기"
+        onClick={() => void navigate('/self-improvement')}
+      />
+      <HomeCard
         title="이승호 Portfolio"
         buttonText="보러가기"
         onClick={() => void navigate('/dev')}
