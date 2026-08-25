@@ -693,7 +693,8 @@ export default function SelfImprovementPage() {
             className="text-[0.8rem] text-stone-400 mt-6 font-mono leading-[1.8]"
           >
             설치는 기본 user 스코프 — 한 번 설치하면 모든 프로젝트의 모든 세션에 적용됩니다.
-            fe-rail도 같이 쓴다면 마켓 하나로 두 개 다 설치할 수 있습니다: sh5623/guardrail.
+            fe-rail·parallel-worktree와 같이 쓴다면 마켓 하나로 세 개 다 설치할 수 있습니다:
+            sh5623/guardrail.
           </motion.p>
         </div>
       </section>
