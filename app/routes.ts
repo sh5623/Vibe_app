@@ -4,6 +4,7 @@ export default [
   index('routes/home.tsx'),
   route('fe-rail', 'routes/fe-rail.tsx'),
   route('self-improvement', 'routes/self-improvement.tsx'),
+  route('parallel-worktree', 'routes/parallel-worktree.tsx'),
   route('dev', 'routes/dev.tsx'),
   route('portfolio', 'routes/portfolio.tsx'),
   route('invitation', 'routes/invitation.tsx'),
