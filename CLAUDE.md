@@ -53,6 +53,8 @@ Vibe App — 개인 포트폴리오 + 인터랙티브 경험. RR7 프레임워�
 | `/api/stock` | 주식 데이터 API (resource route, server-only) |
 | `/api/otp` | OTP API (resource route, server-only) |
 
+라우트를 추가·삭제하면 위 표, 아래 Directory Structure, `README.md`의 「페이지 구성」 표와 트리를 **같은 커밋**에서 갱신한다. (#35·#37 두 PR이 연속으로 빠뜨렸고 2026-09-05에 뒤늦게 채웠다.)
+
 ## Directory Structure
 
 ```
