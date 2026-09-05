@@ -42,6 +42,11 @@ const TEXT = {
       title: '원스톱 자동화',
       desc: '단 두 번의 확인으로 PR까지 완성됩니다.',
     },
+    changes: {
+      label: 'Changelog',
+      title: '최근 변경',
+      desc: 'v1.17.0과 v1.18.0은 2026년 9월 교차 레포 리뷰에서 재현된 지적을 고친 릴리스입니다.',
+    },
     install: {
       label: 'Install',
       title: '시작하기',
@@ -50,7 +55,7 @@ const TEXT = {
       comment2: '# Claude Code 터미널에서 실행',
     },
     faq: { label: 'FAQ', title: '자주 묻는 질문' },
-    footer: 'fe-rail — Claude Code Plugin',
+    footer: 'fe-rail · Claude Code Plugin',
   },
   en: {
     nav: { back: '← Home', github: 'GitHub →' },
@@ -61,7 +66,7 @@ const TEXT = {
       titlePost: ',',
       titleLine2: 'with Claude Code',
       subtitle:
-        'A Claude Code plugin that automates the full frontend workflow\n— spec → build → review → PR — for Next.js App Router / Vite SPA + TypeScript projects.',
+        'A Claude Code plugin that automates the full frontend workflow\n(spec → build → review → PR) for Next.js App Router / Vite SPA + TypeScript projects.',
       cta1: 'Get Started →',
       cta2: 'View on GitHub',
     },
@@ -83,6 +88,11 @@ const TEXT = {
       title: 'One-Shot Automation',
       desc: 'From feature.md to PR with only two confirmations.',
     },
+    changes: {
+      label: 'Changelog',
+      title: "What's New",
+      desc: 'v1.17.0 and v1.18.0 fix findings that a September 2026 cross-repo review reproduced.',
+    },
     install: {
       label: 'Install',
       title: 'Get Started',
@@ -91,7 +101,7 @@ const TEXT = {
       comment2: '# Run inside Claude Code terminal',
     },
     faq: { label: 'FAQ', title: 'Frequently Asked Questions' },
-    footer: 'fe-rail — Claude Code Plugin',
+    footer: 'fe-rail · Claude Code Plugin',
   },
 } as const
 
@@ -113,7 +123,7 @@ const SKILLS: Record<
       icon: '🔨',
       name: 'fe-build',
       title: '코드 구현',
-      desc: '타입 정의 → 훅/서비스 → 컴포넌트 → 테스트 순서로 구현합니다. Biome 또는 ESLint·Prettier 자동 적용, tsc/린터 오류 자동 수정.',
+      desc: '타입 정의 → 훅/서비스 → 컴포넌트 → 테스트 순서로 구현합니다. 플러그인의 프레임워크 규칙(공통 + Next.js/Vite 절)을 먼저 읽고 위임하는 에이전트에 그 경로를 넘깁니다. Biome 또는 ESLint·Prettier 자동 적용, tsc/린터 오류 자동 수정.',
       cmd: '/fe-rail:fe-build',
     },
     {
@@ -121,7 +131,7 @@ const SKILLS: Record<
       icon: '🔍',
       name: 'fe-review',
       title: '4축 코드 리뷰',
-      desc: '타입 안전성·성능·접근성(WCAG AA)·코드 품질 4개 축으로 리뷰합니다. 각 축은 전용 에이전트가 독립적으로 감사합니다.',
+      desc: '타입 안전성·성능·접근성(WCAG AA)·코드 품질 4개 축으로 리뷰합니다. 범위는 tracked 변경 ∪ 신규 파일이고, "커밋 준비 완료"는 리뷰 BLOCK 0 + 테스트 exit 0 + 추가 감사 BLOCK 0을 합산해 판정합니다.',
       cmd: '/fe-rail:fe-review',
     },
     {
@@ -129,7 +139,7 @@ const SKILLS: Record<
       icon: '⚡',
       name: 'fe-start',
       title: '원스톱 자동화',
-      desc: 'spec → build → review → PR 전 과정을 하나의 명령으로 실행합니다. 사람 개입은 두 번뿐입니다.',
+      desc: 'spec → build → review → PR 전 과정을 하나의 명령으로 실행합니다. 사람 개입은 두 번뿐이고, 검증 결과(명령·exit code·리비전)는 객체로 PR 본문까지 전달됩니다.',
       cmd: '/fe-rail:fe-start feature.md',
     },
     {
@@ -147,7 +157,7 @@ const SKILLS: Record<
       icon: '📋',
       name: 'fe-spec',
       title: 'Spec Automation',
-      desc: 'Converts feature requirements into a structured feature.md. Four agents collaborate — gap analysis → Figma analysis → external docs research → architecture advice.',
+      desc: 'Converts feature requirements into a structured feature.md. Four agents collaborate: gap analysis → Figma analysis → external docs research → architecture advice.',
       cmd: '/fe-rail:fe-spec',
     },
     {
@@ -155,7 +165,7 @@ const SKILLS: Record<
       icon: '🔨',
       name: 'fe-build',
       title: 'Code Implementation',
-      desc: 'Implements in order: type definitions → hooks/services → components → tests. Applies Biome or ESLint·Prettier automatically and auto-fixes tsc/linter errors.',
+      desc: 'Implements in order: type definitions → hooks/services → components → tests. Reads the plugin framework rules first (common + Next.js/Vite section) and hands the path to every delegated agent. Applies Biome or ESLint·Prettier automatically and auto-fixes tsc/linter errors.',
       cmd: '/fe-rail:fe-build',
     },
     {
@@ -163,7 +173,7 @@ const SKILLS: Record<
       icon: '🔍',
       name: 'fe-review',
       title: '4-Axis Code Review',
-      desc: 'Reviews across four axes — type safety, performance, accessibility (WCAG AA), and code quality. Each axis is audited by a dedicated agent independently.',
+      desc: 'Reviews across four axes: type safety, performance, accessibility (WCAG AA), and code quality. Scope is tracked changes plus new files, and "ready to commit" is a combined verdict of reviewer BLOCK 0, tests exit 0, and extra audits BLOCK 0.',
       cmd: '/fe-rail:fe-review',
     },
     {
@@ -171,7 +181,7 @@ const SKILLS: Record<
       icon: '⚡',
       name: 'fe-start',
       title: 'One-Shot Automation',
-      desc: 'Runs the entire spec → build → review → PR pipeline in a single command. Human intervention occurs only twice.',
+      desc: 'Runs the entire spec → build → review → PR pipeline in a single command. Human intervention occurs only twice, and the verification result (command · exit code · revision) travels as an object all the way into the PR body.',
       cmd: '/fe-rail:fe-start feature.md',
     },
     {
@@ -197,17 +207,21 @@ const AGENTS_KO = {
     { name: 'fe-researcher', role: '외부 문서·라이브러리 조사', model: 'sonnet' },
     {
       name: 'fe-architect',
-      role: 'Next.js(RSC 경계) / Vite SPA(TanStack Router·React Router 7) 아키텍처 자문',
+      role: 'Next.js(RSC 경계) / Vite SPA(TanStack Router·React Router 7·8) 아키텍처 자문. 플러그인 프레임워크 규칙을 받아 판단',
       model: 'opus',
     },
   ],
   build: [
     { name: 'fe-explorer', role: '코드베이스 탐색', model: 'haiku' },
     { name: 'fe-test-author', role: 'BDD 시나리오 + TDD Red-Green-Refactor', model: 'sonnet' },
-    { name: 'fe-build-fixer', role: 'tsc·린터(ESLint/Biome) 오류 최소 diff 수정', model: 'sonnet' },
+    {
+      name: 'fe-build-fixer',
+      role: 'tsc·린터(ESLint/Biome) 오류 최소 diff 수정. typecheck 스크립트 우선, exit code 보존',
+      model: 'sonnet',
+    },
   ],
   review: [
-    { name: 'fe-reviewer', role: '4축 통합 리뷰', model: 'opus' },
+    { name: 'fe-reviewer', role: '4축 통합 리뷰 (범위: tracked 변경 ∪ 신규 파일)', model: 'opus' },
     {
       name: 'fe-a11y-auditor',
       role: 'a11y 8축 감사 (Tailwind 팔레트 Color Contrast 포함)',
@@ -215,15 +229,27 @@ const AGENTS_KO = {
     },
     {
       name: 'fe-perf-auditor',
-      role: 'Next.js(RSC·next/image·next/font) / Vite SPA(번들·fetchpriority) 성능 감사',
+      role: 'Next.js(RSC·next/image·next/font) / Vite SPA(번들·fetchpriority) 성능 감사. 근거 등급을 [실측]/[추정]/[정적]으로 표기',
       model: 'sonnet',
     },
-    { name: 'fe-test-runner', role: '테스트 실행 + 실패 분류', model: 'sonnet' },
+    {
+      name: 'fe-test-runner',
+      role: '테스트 실행($PM run test) + 실패 분류. 종료 코드 보존',
+      model: 'sonnet',
+    },
     { name: 'fe-refactor-advisor', role: '6차원 리팩토링 분석 + Before/After', model: 'opus' },
   ],
   pr: [
-    { name: 'fe-git-operator', role: '커밋 분리·메시지 규칙·안전한 스테이징', model: 'sonnet' },
-    { name: 'fe-pr-author', role: 'PR 본문 작성 + gh pr create', model: 'sonnet' },
+    {
+      name: 'fe-git-operator',
+      role: '커밋 분리·메시지 규칙·기존 스테이징 격리(git commit --only) + push',
+      model: 'sonnet',
+    },
+    {
+      name: 'fe-pr-author',
+      role: '검증 결과 객체 기반 PR 본문 작성 + gh pr create (push는 폴백만)',
+      model: 'sonnet',
+    },
   ],
 }
 
@@ -239,7 +265,7 @@ const AGENTS_EN = {
     { name: 'fe-researcher', role: 'External docs & library research', model: 'sonnet' },
     {
       name: 'fe-architect',
-      role: 'Next.js(RSC boundary) / Vite SPA(TanStack Router · React Router 7) architecture advice',
+      role: 'Next.js(RSC boundary) / Vite SPA(TanStack Router · React Router 7·8) architecture advice, judged against the plugin framework rules',
       model: 'opus',
     },
   ],
@@ -248,12 +274,16 @@ const AGENTS_EN = {
     { name: 'fe-test-author', role: 'BDD scenarios + TDD Red-Green-Refactor', model: 'sonnet' },
     {
       name: 'fe-build-fixer',
-      role: 'Minimal diff fixes for tsc/linter (ESLint/Biome) errors',
+      role: 'Minimal diff fixes for tsc/linter (ESLint/Biome) errors. typecheck script first, exit codes preserved',
       model: 'sonnet',
     },
   ],
   review: [
-    { name: 'fe-reviewer', role: 'Integrated 4-axis review', model: 'opus' },
+    {
+      name: 'fe-reviewer',
+      role: 'Integrated 4-axis review (scope: tracked changes ∪ new files)',
+      model: 'opus',
+    },
     {
       name: 'fe-a11y-auditor',
       role: 'a11y 8-axis audit (Tailwind palette Color Contrast included)',
@@ -261,10 +291,14 @@ const AGENTS_EN = {
     },
     {
       name: 'fe-perf-auditor',
-      role: 'Next.js(RSC · next/image · next/font) / Vite SPA(bundle · fetchpriority) performance audit',
+      role: 'Next.js(RSC · next/image · next/font) / Vite SPA(bundle · fetchpriority) performance audit, evidence graded [measured]/[estimated]/[static]',
       model: 'sonnet',
     },
-    { name: 'fe-test-runner', role: 'Test execution + failure classification', model: 'sonnet' },
+    {
+      name: 'fe-test-runner',
+      role: 'Test execution ($PM run test) + failure classification, exit codes preserved',
+      model: 'sonnet',
+    },
     {
       name: 'fe-refactor-advisor',
       role: '6-dimension refactoring analysis + Before/After',
@@ -274,10 +308,14 @@ const AGENTS_EN = {
   pr: [
     {
       name: 'fe-git-operator',
-      role: 'Commit splitting · message rules · safe staging',
+      role: 'Commit splitting · message rules · leaves your pre-staged index alone (git commit --only) + push',
       model: 'sonnet',
     },
-    { name: 'fe-pr-author', role: 'PR body writing + gh pr create', model: 'sonnet' },
+    {
+      name: 'fe-pr-author',
+      role: 'PR body from the verification-result object + gh pr create (push only as fallback)',
+      model: 'sonnet',
+    },
   ],
 }
 
@@ -304,11 +342,58 @@ const WORKFLOW: Record<Lang, Array<{ label: string; desc: string }>> = {
   ],
 }
 
+const CHANGES: Record<Lang, Array<{ label: string; desc: string }>> = {
+  ko: [
+    {
+      label: 'v1.18.0: 프레임워크 규칙이 실제로 에이전트에 닿음',
+      desc: 'docs/framework-rules.md는 레포 CLAUDE.md의 @import로만 참조돼 소비자 세션에서 아무도 읽지 않았습니다. 이제 스킬이 해당 절만 읽고 위임하는 에이전트에 절대경로를 넘기며, claude plugin validate --strict가 경고 0으로 통과합니다.',
+    },
+    {
+      label: 'v1.17.0: 훅의 범위 규칙',
+      desc: '훅은 Git 루트가 아니라 파일에서 가장 가까운 package.json 기준으로 도구·설정을 찾고(모노레포), git -C·셸 래핑도 차단기에 걸리며, 설정 보호는 편집 전후 실파일을 비교합니다.',
+    },
+    {
+      label: 'v1.17.0: 검증 결과 객체',
+      desc: '타입·린트·테스트 결과(명령·exit code·리비전)가 fe-start에서 PR 본문까지 객체로 전달됩니다. 테스트 체크리스트는 추정으로 «통과»를 적지 않습니다.',
+    },
+    {
+      label: 'v1.17.0: 커밋·푸시 담당 분리',
+      desc: 'fe-git-operator가 git commit --only로 사용자의 기존 스테이징을 건드리지 않고 커밋·푸시하고, fe-pr-author는 upstream이 없을 때만 폴백으로 푸시합니다.',
+    },
+    {
+      label: 'v1.17.0: 회귀 eval 116 → 118',
+      desc: '교차 레포 리뷰 12건을 임시 저장소 재현으로 회귀에 고정했습니다. ruby·claude CLI가 있으면 실제 YAML 파서와 plugin validate --strict까지 돌립니다.',
+    },
+  ],
+  en: [
+    {
+      label: 'v1.18.0: framework rules actually reach the agents',
+      desc: 'docs/framework-rules.md was only @imported by the repo CLAUDE.md, which consumer sessions never load. Skills now read the relevant section and pass the absolute path to every delegated agent; claude plugin validate --strict passes with zero warnings.',
+    },
+    {
+      label: 'v1.17.0: hook scope rules',
+      desc: 'Hooks resolve tools and config from the nearest package.json rather than the git root (monorepos), git -C and shell wrapping reach the guard, and config protection compares the real file before and after the edit.',
+    },
+    {
+      label: 'v1.17.0: verification-result object',
+      desc: 'Type, lint and test results (command · exit code · revision) travel as an object from fe-start into the PR body. The test checklist never says "passed" by assumption.',
+    },
+    {
+      label: 'v1.17.0: commit/push ownership',
+      desc: 'fe-git-operator commits with git commit --only, leaving your pre-staged index alone, and pushes; fe-pr-author pushes only as a fallback when the branch has no upstream.',
+    },
+    {
+      label: 'v1.17.0: regression eval 116 → 118',
+      desc: 'Twelve cross-repo review findings were reproduced in throwaway repos and pinned as regressions. With ruby and the claude CLI present it also runs a real YAML parser and plugin validate --strict.',
+    },
+  ],
+}
+
 const FAQS: Record<Lang, Array<{ q: string; a: string }>> = {
   ko: [
     {
       q: 'fe-rail은 어떤 프로젝트에 사용하나요?',
-      a: 'React 또는 Next.js + TypeScript 프로젝트라면 어디든 사용할 수 있습니다. 번들러나 모노레포 구조와 무관하게 동작합니다.',
+      a: 'React 또는 Next.js + TypeScript 프로젝트라면 어디든 사용할 수 있습니다. 번들러나 모노레포 구조와 무관하게 동작합니다. 훅은 파일에서 가장 가까운 package.json(패키지 루트) 기준으로 설정과 도구를 찾습니다.',
     },
     {
       q: '기존 프로젝트에 설치해도 되나요?',
@@ -320,7 +405,7 @@ const FAQS: Record<Lang, Array<{ q: string; a: string }>> = {
     },
     {
       q: '훅이 기존 워크플로우를 방해하지 않나요?',
-      a: '훅은 위험한 명령만 차단하고, 품질 관련 항목은 경고만 출력합니다. ESLint/Prettier 자동 수정은 편집 후 즉시 적용됩니다.',
+      a: '훅은 위험한 명령만 차단하고(git -C·셸 래핑까지 정규화해 검사), 설정 보호는 편집 전후 실파일을 비교합니다. 품질 관련 항목은 경고만 출력하며 Biome/ESLint/Prettier 자동 수정은 편집 후 즉시 적용됩니다.',
     },
     {
       q: '어떤 테스트 프레임워크를 지원하나요?',
@@ -330,11 +415,11 @@ const FAQS: Record<Lang, Array<{ q: string; a: string }>> = {
   en: [
     {
       q: 'What projects is fe-rail designed for?',
-      a: 'Any React or Next.js + TypeScript project. It works regardless of bundler (Vite, Webpack, etc.) or monorepo structure.',
+      a: 'Any React or Next.js + TypeScript project. It works regardless of bundler (Vite, Webpack, etc.) or monorepo structure. Hooks resolve config and tools from the nearest package.json (package root).',
     },
     {
       q: 'Can I install it in an existing project?',
-      a: 'Yes. fe-rail works with both new and existing projects. The plugin does not modify project files — it adds agents, hooks, and skills to the Claude Code environment.',
+      a: 'Yes. fe-rail works with both new and existing projects. The plugin does not modify project files. It adds agents, hooks, and skills to the Claude Code environment.',
     },
     {
       q: 'Do I need to write feature.md manually?',
@@ -342,7 +427,7 @@ const FAQS: Record<Lang, Array<{ q: string; a: string }>> = {
     },
     {
       q: 'Will hooks interfere with my existing workflow?',
-      a: 'Hooks only block genuinely dangerous commands. Quality-related items emit warnings only. ESLint/Prettier auto-fixes are applied immediately after each edit.',
+      a: 'Hooks only block genuinely dangerous commands (normalizing git -C and shell wrapping before checking), and config protection compares the real file before and after the edit. Quality-related items emit warnings only. Biome/ESLint/Prettier auto-fixes are applied immediately after each edit.',
     },
     {
       q: 'What test frameworks are supported?',
@@ -375,6 +460,7 @@ export default function FeRailPage() {
   const skills = SKILLS[lang]
   const agents = lang === 'ko' ? AGENTS_KO : AGENTS_EN
   const workflow = WORKFLOW[lang]
+  const changes = CHANGES[lang]
   const faqs = FAQS[lang]
 
   const scrollTo = (id: string) => {
@@ -826,6 +912,70 @@ export default function FeRailPage() {
                           <div className="text-[0.82rem] text-[#64748b] leading-[1.65]">
                             {step.desc}
                           </div>
+                        </div>
+                      </div>
+                    </motion.div>
+                  ))}
+                </div>
+              </motion.div>
+            </motion.div>
+          </AnimatePresence>
+        </div>
+      </section>
+
+      {/* Changelog */}
+      <section id="changes" className={sectionClass}>
+        <div className={innerClass}>
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={`changes-header-${lang}`}
+              variants={langSwitch}
+              initial="enter"
+              animate="center"
+              exit="exit"
+            >
+              <motion.div
+                initial="hidden"
+                whileInView="visible"
+                viewport={{ once: true }}
+                variants={fadeUp}
+              >
+                <div className={labelClass} style={{ fontFamily: 'var(--font-mono), monospace' }}>
+                  {t.changes.label}
+                </div>
+                <h2 className={titleClass}>{t.changes.title}</h2>
+                <p className={descClass} style={{ fontFamily: 'var(--font-mono), monospace' }}>
+                  {t.changes.desc}
+                </p>
+              </motion.div>
+            </motion.div>
+          </AnimatePresence>
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={`changes-list-${lang}`}
+              variants={langSwitch}
+              initial="enter"
+              animate="center"
+              exit="exit"
+            >
+              <motion.div
+                variants={stagger}
+                initial="hidden"
+                whileInView="visible"
+                viewport={{ once: true }}
+              >
+                <div className="grid grid-cols-1 gap-4 max-w-[760px]">
+                  {changes.map((item) => (
+                    <motion.div key={item.label} variants={fadeUp}>
+                      <div className="rounded-[14px] border border-[rgba(99,102,241,0.18)] bg-[rgba(99,102,241,0.05)] px-6 py-5">
+                        <div
+                          className="text-[0.85rem] font-semibold text-[#f1f5f9] mb-2"
+                          style={{ fontFamily: 'var(--font-mono), monospace' }}
+                        >
+                          {item.label}
+                        </div>
+                        <div className="text-[0.82rem] text-[#94a3b8] leading-[1.7]">
+                          {item.desc}
                         </div>
                       </div>
                     </motion.div>

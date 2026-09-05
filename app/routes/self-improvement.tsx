@@ -43,12 +43,12 @@ const PRINCIPLES: Principle[] = [
   {
     n: '02',
     title: '증거 없으면 규약 없다',
-    desc: '재발 지점을 실명으로 2곳 이상 댈 수 있는 일반성과, 수치·로그·file:line 같은 증거 — 둘 다 없으면 규약화하지 않는다.',
+    desc: '재발 지점을 실명으로 2곳 이상 댈 수 있는 일반성과, 수치·로그·file:line 같은 증거. 둘 다 없으면 규약화하지 않는다.',
   },
   {
     n: '03',
     title: '문서에는 예산이 있다',
-    desc: '규약은 가장 좁은 스코프에 쓴다. 넘치면 강등·아카이브로 이관된다 — 무한히 자라는 문서는 아무도 읽지 않는다.',
+    desc: '규약은 가장 좁은 스코프에 쓴다. 넘치면 강등·아카이브로 이관된다. 무한히 자라는 문서는 아무도 읽지 않는다.',
   },
 ]
 
@@ -99,7 +99,7 @@ interface LoopStep {
 }
 
 const LOOP: LoopStep[] = [
-  { n: '1', label: '감지', desc: '갭을 만났나 — 게이트 진입' },
+  { n: '1', label: '감지', desc: '갭을 만났나? 게이트 진입' },
   { n: '2', label: '분류', desc: '일반성(재발 2곳↑) + 증거' },
   { n: '3', label: '검증', desc: '확정 전 문구의 효력을 확인' },
   { n: '4', label: '규약화', desc: '가장 좁은 층에 기록' },
@@ -127,7 +127,7 @@ const COMPONENTS: ComponentItem[] = [
     tag: 'SKILL',
     cmd: '/self-improvement:si-init',
     title: '부트스트랩',
-    desc: '문서 지형을 탐지해 데이터 파일을 생성한다. 기존 시스템이 있으면 등록만 하고 덮어쓰지 않는다. 멱등.',
+    desc: '문서 지형을 탐지해 데이터 파일을 생성한다. 기존 시스템이 있으면 등록만 하고 덮어쓰지 않되, 그 시스템에 없는 표를 무엇이 대신하는지 적은 형식 맵(데이터 파일·색인·로그 단위·라우팅·아카이브, none도 정식 값)을 함께 남긴다. 멱등.',
     icon: Layers,
   },
   {
@@ -141,7 +141,7 @@ const COMPONENTS: ComponentItem[] = [
     tag: 'SKILL',
     cmd: '/self-improvement:si-archive',
     title: '비대 관리',
-    desc: '예산 초과·사문화 조항을 하위 층·아카이브로 이관한다. 이동은 언제나 아래 방향으로만.',
+    desc: '진입 트리거가 둘로 독립돼 있다. 예산을 넘은 문서(A), 또는 지목된 사문화·중복 조항(B, 예산과 무관). 하위 층·아카이브로 이관하며 이동은 언제나 아래 방향으로만.',
     icon: Archive,
   },
   {
@@ -161,7 +161,7 @@ interface Incident {
 const INCIDENTS: Incident[] = [
   {
     bug: '자가개선이 "시키면 하는 별도 작업"으로 취급돼 대부분 유실됨',
-    rule: '자발 발동 + 보고 의무 — "자가개선: N건" 줄이 없으면 자문을 건너뛴 것',
+    rule: '자발 발동 + 보고 의무. "자가개선: N건" 줄이 없으면 자문을 건너뛴 것',
   },
   {
     bug: '캡이 파일 헤더에만 있어 아무도 트리거하지 않음 → 로그 42블록·949줄까지 자람',
@@ -173,7 +173,7 @@ const INCIDENTS: Incident[] = [
   },
   {
     bug: '워밍된 캐시 수치로 "성능 해소"를 게시했다가 같은 날 철회',
-    rule: '콜드 기준으로 잰다 — 워밍된 수치는 하한이지 진실이 아니다',
+    rule: '콜드 기준으로 잰다. 워밍된 수치는 하한이지 진실이 아니다',
   },
   {
     bug: '포인터를 AGENTS.md에만 썼는데 Claude Code는 CLAUDE.md만 읽음',
@@ -182,6 +182,14 @@ const INCIDENTS: Incident[] = [
   {
     bug: '기존 규약 시스템을 "위치 보고"로만 등록 → 세션과 함께 유실, 다음 세션은 README를 오선택',
     rule: '등록은 상시 로드 문서에 실제 경로를 쓴다. 다음 탐색은 그 선언부터 읽는다',
+  },
+  {
+    bug: 'si-init이 표 없는 기존 시스템을 (옳게) 표 이식 없이 등록했는데, si-improve·si-archive·convention-smith는 그 파일에 없는 §색인·§라우팅 표를 찾다 멈춤',
+    rule: '등록은 형식 맵을 쓴다. 색인·로그 단위·라우팅·아카이브를 무엇이 대신하는지 한 줄이면 되고, none도 정식 값이다. 소비자는 없는 헤딩을 grep 하는 대신 폴백 갈래를 탄다',
+  },
+  {
+    bug: 'si-archive 설명은 사문화·중복 정리를 약속했는데 첫 단계가 "전부 예산 내면 종료" → 삭제된 기능의 규칙이 든 100줄 문서가 분류 단계에 닿지 못함',
+    rule: '진입 트리거를 둘로 나눠 따로 잰다. 예산 초과, 또는 지목된 사문화·중복 조항. 후자는 예산에 묶이지 않는다',
   },
 ]
 
@@ -205,7 +213,7 @@ const FAQS: Faq[] = [
   },
   {
     q: '기존에 쓰던 규약 문서가 있으면 어떻게 되나요?',
-    a: 'si-init이 그 시스템을 감지해 등록만 하고 덮어쓰지 않습니다. 표·예산처럼 없는 요소는 제안으로만 알립니다.',
+    a: 'si-init이 그 시스템을 감지해 등록만 하고 덮어쓰지 않습니다. 등록에는 형식 맵(데이터 파일·색인·로그 단위·라우팅·아카이브, 없는 요소는 none)이 포함돼 si-improve·si-archive가 그 형식대로 동작합니다. 표·예산처럼 없는 요소는 제안으로만 알립니다.',
   },
   {
     q: 'fe-rail과 같이 써도 되나요?',
@@ -222,9 +230,9 @@ const TRANSCRIPT: TranscriptLine[] = [
   { text: '$ claude', tone: 'muted' },
   { text: '> 코스피 차트 옆에 종목 차트 하나 추가해줘' },
   { text: '' },
-  { text: '✔ KospiChart.tsx:82 — 색상 하드코딩 #34d399 (상승 그린)', tone: 'pass' },
+  { text: '✔ KospiChart.tsx:82: 색상 하드코딩 #34d399 (상승 그린)', tone: 'pass' },
   { text: '' },
-  { text: '끝내기 전 — 이거 다른 데서도 재발하나?' },
+  { text: '끝내기 전에, 이거 다른 데서도 재발하나?' },
   {
     text: ' · LgCnsChart.tsx:49 · SearchableStockChart.tsx:62 같은 값(grep) → 게이트 통과',
     tone: 'pass',
@@ -233,7 +241,7 @@ const TRANSCRIPT: TranscriptLine[] = [
   { text: '+ app/lib/chart-colors.ts          (경로 스코프 룰 층)', tone: 'diff' },
   { text: '+ docs/conventions/CHANGELOG.md    색인 1줄 + 로그 1블록', tone: 'diff' },
   { text: '' },
-  { text: '자가개선: 1건 — chart-colors 상수 + changelog', tone: 'diff' },
+  { text: '자가개선: 1건 (chart-colors 상수 + changelog)', tone: 'diff' },
 ]
 
 const fadeUp: Variants = {
@@ -338,8 +346,8 @@ export default function SelfImprovementPage() {
               className="text-[1rem] text-stone-500 leading-[1.85] max-w-[480px] mb-9"
             >
               작업 중 규약·문서·절차에 물리면, 그 자리만 우회하지 않습니다. 증거 게이트를 통과한
-              규약은 같은 세션이 그 자리에서 스스로 고칩니다. FE·BE·스크립트·문서 — 어떤
-              프로젝트에도 설치해 씁니다.
+              규약은 같은 세션이 그 자리에서 스스로 고칩니다. FE, BE, 스크립트, 문서 저장소 어디에나
+              설치해 씁니다.
             </motion.p>
             <motion.div variants={fadeUp} className="flex items-center gap-4 flex-wrap">
               <button
@@ -430,7 +438,7 @@ export default function SelfImprovementPage() {
             <div className={labelClass}>DOCUMENT MODEL</div>
             <h2 className={titleClass}>규약은 다섯 개의 층에 산다</h2>
             <p className={descClass}>
-              새 규약은 위에서부터 처음 맞는 층에 쓴다. 넘치거나 사문화되면 아래로만 이동한다 — 위로
+              새 규약은 위에서부터 처음 맞는 층에 쓴다. 넘치거나 사문화되면 아래로만 이동한다. 위로
               되돌아가는 경로는 없다.
             </p>
           </motion.div>
@@ -692,7 +700,7 @@ export default function SelfImprovementPage() {
             variants={fadeUp}
             className="text-[0.8rem] text-stone-400 mt-6 font-mono leading-[1.8]"
           >
-            설치는 기본 user 스코프 — 한 번 설치하면 모든 프로젝트의 모든 세션에 적용됩니다.
+            설치는 기본 user 스코프입니다. 한 번 설치하면 모든 프로젝트의 모든 세션에 적용됩니다.
             fe-rail도 같이 쓴다면 마켓 하나로 두 개 다 설치할 수 있습니다: sh5623/guardrail.
           </motion.p>
         </div>
@@ -754,7 +762,7 @@ export default function SelfImprovementPage() {
       {/* Footer */}
       <footer className="px-12 py-10 border-t border-stone-200 flex items-center justify-between flex-wrap gap-4 max-[768px]:px-6">
         <div className="text-[0.75rem] text-stone-400 font-mono tracking-[0.05em]">
-          self-improvement — Claude Code Plugin · MIT © 2026 Seungho
+          self-improvement · Claude Code Plugin · MIT © 2026 Seungho
         </div>
         <div className="flex items-center gap-5">
           <button

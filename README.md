@@ -7,7 +7,8 @@
 | 경로 | 이름 | 설명 |
 |------|------|------|
 | `/` | Home | 모든 페이지로 이동하는 카드형 허브 |
-| `/fe-rail` | fe-rail Landing | Claude Code 플러그인 소개 랜딩 — 한/EN 토글, framer-motion 애니메이션 |
+| `/fe-rail` | fe-rail Landing | Claude Code 플러그인 소개 랜딩 — 한/EN 토글, framer-motion 애니메이션, 최근 변경(v1.17.0 → v1.18.0) 섹션 |
+| `/self-improvement` | self-improvement Landing | 자가개선 플러그인 소개 랜딩 — 3원칙, 문서 층 모델, 6단계 루프, 사고에서 나온 규칙, FAQ |
 | `/dev` | Developer Portfolio | 이승호 개발자 포트폴리오 — About · Stack · Work · Contact |
 | `/portfolio` | Bambi Portfolio | 반려견 밤비 포트폴리오 — 갤러리, 무한 스크롤, 드래그 인터랙션 |
 | `/invitation` | 초대장 | 이벤트 초대카드 인터랙티브 경험 |
@@ -62,6 +63,7 @@ app/
 ├── routes/
 │   ├── home.tsx             # /
 │   ├── fe-rail.tsx          # /fe-rail
+│   ├── self-improvement.tsx # /self-improvement
 │   ├── dev.tsx              # /dev
 │   ├── portfolio.tsx        # /portfolio
 │   ├── invitation.tsx       # /invitation
