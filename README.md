@@ -9,6 +9,7 @@
 | `/` | Home | 모든 페이지로 이동하는 카드형 허브 |
 | `/fe-rail` | fe-rail Landing | Claude Code 플러그인 소개 랜딩 — 한/EN 토글, framer-motion 애니메이션, 최근 변경(v1.17.0 → v1.18.0) 섹션 |
 | `/self-improvement` | self-improvement Landing | 자가개선 플러그인 소개 랜딩 — 3원칙, 문서 층 모델, 6단계 루프, 사고에서 나온 규칙, FAQ |
+| `/parallel-worktree` | parallel-worktree Landing | 병렬 워크트리 스킬 소개 랜딩 — 컨텍스트 비용 곡선, 세션 vs 워크트리 비교, 스윔레인 사이클, 조용한 실패 6가지, FAQ |
 | `/dev` | Developer Portfolio | 이승호 개발자 포트폴리오 — About · Stack · Work · Contact |
 | `/portfolio` | Bambi Portfolio | 반려견 밤비 포트폴리오 — 갤러리, 무한 스크롤, 드래그 인터랙션 |
 | `/invitation` | 초대장 | 이벤트 초대카드 인터랙티브 경험 |
@@ -64,6 +65,7 @@ app/
 │   ├── home.tsx             # /
 │   ├── fe-rail.tsx          # /fe-rail
 │   ├── self-improvement.tsx # /self-improvement
+│   ├── parallel-worktree.tsx # /parallel-worktree
 │   ├── dev.tsx              # /dev
 │   ├── portfolio.tsx        # /portfolio
 │   ├── invitation.tsx       # /invitation

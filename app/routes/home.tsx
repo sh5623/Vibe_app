@@ -41,6 +41,15 @@ export default function Home() {
         onClick={() => void navigate('/self-improvement')}
       />
       <HomeCard
+        title={
+          <>
+            parallel-worktree<span>Claude Code Skill</span>
+          </>
+        }
+        buttonText="보러가기"
+        onClick={() => void navigate('/parallel-worktree')}
+      />
+      <HomeCard
         title="이승호 Portfolio"
         buttonText="보러가기"
         onClick={() => void navigate('/dev')}

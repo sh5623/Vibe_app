@@ -177,7 +177,7 @@ const INCIDENTS: Incident[] = [
   },
   {
     bug: '포인터를 AGENTS.md에만 썼는데 Claude Code는 CLAUDE.md만 읽음',
-    rule: 'AGENTS.md에 쓰면 같은 단계에서 CLAUDE.md의 import까지 보장한다',
+    rule: '등록은 런타임이 실제로 읽는 자리(Claude Code는 CLAUDE.md)에 쓰고, 보고에 실제 로드 경로를 적는다',
   },
   {
     bug: '기존 규약 시스템을 "위치 보고"로만 등록 → 세션과 함께 유실, 다음 세션은 README를 오선택',
@@ -701,7 +701,8 @@ export default function SelfImprovementPage() {
             className="text-[0.8rem] text-stone-400 mt-6 font-mono leading-[1.8]"
           >
             설치는 기본 user 스코프입니다. 한 번 설치하면 모든 프로젝트의 모든 세션에 적용됩니다.
-            fe-rail도 같이 쓴다면 마켓 하나로 두 개 다 설치할 수 있습니다: sh5623/guardrail.
+            fe-rail·parallel-worktree와 같이 쓴다면 마켓 하나로 세 개 다 설치할 수 있습니다:
+            sh5623/guardrail.
           </motion.p>
         </div>
       </section>
