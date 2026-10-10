@@ -36,10 +36,21 @@
 
 | 날짜 | 무엇에 물렸나 (≤120자 한 줄) | 안착 |
 | --- | --- | --- |
+| 2026-10-10 | CLAUDE.md·README가 SSR이라 적었으나 실제 `ssr: false`(SPA) — 서브에이전트 4개가 SSR HTML 검증에 실패·SSR 우회 코드 설계 | `CLAUDE.md` §Stack·§React Router 7·§상태 관리 · `README.md` |
 | 2026-09-05 | 라우트 페이지 PR 2건(#35·#37)이 README·CLAUDE.md 라우트 표·트리를 빠뜨림 → 표 갱신을 같은 커밋 규칙으로 | `CLAUDE.md` §Project Overview |
 | 2026-08-11 | self-improvement 시스템 부트스트랩 — 문서 지형 탐지·라우팅 표 작성 | 이 파일 |
 
 ## §로그 (최신이 위 · 블록 1개 = 작업 단위 1개 · 본문 최대 15블록)
+
+### 2026-10-10 — 포트폴리오·소개 페이지 모션 작업 중 「SSR」 문서 오류 정정
+
+- **계기**: `/dev`·소개 페이지 4종에 모션을 넣으며 서브에이전트 4개에 「`curl <라우트> | grep <본문>` ≥ 1(SSR 렌더 확인)」 검증을 지시했는데 **4개 전부 0건**으로 실패했다. 오케스트레이터도 CLAUDE.md 를 믿고 SSR 하이드레이션 대비 코드(`CountUp` 이 최종값을 먼저 그렸다가 0 으로 되돌림 → 첫 화면 숫자 깜빡임, `TypeLines` 의 SSR 자리잡기 주석 등)를 설계했다.
+- **증거**: `react-router.config.ts` = `ssr: false`(커밋 d8be8cd 「Vercel SPA 배포 설정」) · dev 서버 HTML 에 `"isSpaMode":true` · `pnpm build` 산출물에 `build/server` 없음(`pnpm start` 의 `react-router-serve ./build/server/index.js` 는 실행 불가) · `app/routes` 의 `loader` export 0건 · `/api/*` 는 루트 `api/*.ts` Vercel Functions(`vercel.json` rewrites). 재발 지점: 라우트 검증(4개 페이지), 데이터 로딩 설계(상태 관리 표의 `loader (SSR)`), SSR 안전 설계(`app/components/Motion`).
+- **변경**: 기존 규약 **정정**(실패 유형 = 조건 분기 — 「SSR 이면 X」가 사실이 아님). `CLAUDE.md` 스택 표·명령·개요·`/api` 라우트 표·디렉터리 트리·§React Router 7(SSR loader·resource route 예제 → SPA 데이터 흐름 + 「HTML grep 은 언제나 0건 → 브라우저로 검증」 + 「라우트에서 하이드레이션 우회 금지」)·상태 관리 표를 실제값으로 교체. `README.md` 동기화(SSR 3곳·resource route 2곳).
+- **소급(§5)**: 코드의 SSR 전제 4곳 정리 — `CountUp` 을 첫 렌더부터 0 으로 시작(깜빡임 제거), `useCycle`·`GanttPlayhead`·fe-rail 강조어 주석의 SSR 언급 삭제. `app/lib/query-client.ts` 의 `isServer` 분기는 빌드 때 `root.tsx` 프리렌더에서 실제로 쓰이므로 유지.
+- **위치**: `CLAUDE.md`(253 → 223줄, 상시 로드 예산 200줄 초과는 이전부터 — si-archive 필요) · `README.md`
+- **검증**: 효력 재판정 — 새 문장으로 이번 위반 2종(HTML grep 검증 · SSR 우회 설계)이 모두 「하지 말 것」으로 걸리고, 정상인 `root.tsx` 프리렌더는 문장이 명시적으로 제외. `grep -n "api\.stock\|api\.otp\|resource route"` → 새 정정 문장 1건만 남음. `pnpm check`·`typecheck`·`test`(41)·`build` 통과, 브라우저에서 e2e-rail STATS 최종값(0·5·1·~30분) 확인.
+- **커밋·PR**: 미커밋(워킹 트리)
 
 ### 2026-09-05 — 플러그인 소개 페이지 갱신 중 라우트 표 누락 규약화
 

@@ -6,14 +6,14 @@
 |---------|---------|---------|
 | Vite | 8.0.x | `@react-router/dev/vite` 플러그인 사용. `@vitejs/plugin-react` 별도 불필요 |
 | React | 19.x | ref prop 직접 전달. `forwardRef` 금지 |
-| React Router | 7.18.x | **프레임워크 모드 (SSR)**. `@react-router/dev` 사용 |
+| React Router | 7.18.x | **프레임워크 모드 · SPA(`ssr: false`)**. `@react-router/dev` 사용 — 아래 §React Router 7 |
 | TypeScript | 6.0.x | `strict` + `noUncheckedIndexedAccess` |
 | Zod | 4.x | `z.string().email()` 금지 → `z.email()` |
 | pnpm | 11.x | npm/yarn 금지 |
 | Biome | 2.5.x | `biome.json`만. ESLint/Prettier 없음 |
 | Tailwind | 4.3.x | `tailwind.config.js` 없음. CSS-first |
 | shadcn/ui | CLI 4.x | `app/components/ui/` — 수동 수정 금지 |
-| TanStack Query | 5.101.x | `isLoading` 없음 → `isPending`. SSR 패턴 사용 |
+| TanStack Query | 5.101.x | `isLoading` 없음 → `isPending`. 데이터 패칭의 기본(`app/hooks/use-*.ts`) |
 | Zustand | 5.0.x | `create()` 패턴. equality fn 2번째 인자 금지 |
 | framer-motion | 12.x | 애니메이션. `motion`, `AnimatePresence` |
 | Vitest | 4.1.x | `vi.fn()`. `jest.fn()` 금지 |
@@ -25,9 +25,9 @@
 ## Commands
 
 ```bash
-pnpm dev          # 개발 서버 (SSR, localhost:5173)
+pnpm dev          # 개발 서버 (SPA, localhost:5173)
 pnpm build        # 프로덕션 빌드
-pnpm start        # 프로덕션 서버
+pnpm start        # ⚠️ 동작 안 함 — SPA 빌드라 build/server 가 없다(배포는 Vercel 정적 + api/ 함수)
 pnpm check        # biome check --write + Tailwind v3 grep
 pnpm typecheck    # react-router typegen && tsc --noEmit
 pnpm test         # vitest run
@@ -36,7 +36,7 @@ pnpm test:e2e     # playwright test
 
 ## Project Overview
 
-Vibe App — 개인 포트폴리오 + 인터랙티브 경험. RR7 프레임워크 모드로 SSR 지원.
+Vibe App — 개인 포트폴리오 + 인터랙티브 경험. RR7 프레임워크 모드 SPA(`ssr: false`) — Vercel 이 `build/client` 정적 파일 + 루트 `api/*.ts` 함수로 서빙.
 
 | 라우트 | 설명 |
 |--------|------|
@@ -51,8 +51,8 @@ Vibe App — 개인 포트폴리오 + 인터랙티브 경험. RR7 프레임워�
 | `/letter` | 생일 인증 + 편지 |
 | `/stock` | 주식 대시보드 |
 | `/otp` | OTP 뷰어 |
-| `/api/stock` | 주식 데이터 API (resource route, server-only) |
-| `/api/otp` | OTP API (resource route, server-only) |
+| `/api/stock` | 주식 데이터 API (Vercel Function `api/stock.ts`) |
+| `/api/otp` | OTP API (Vercel Function `api/otp.ts`) |
 
 라우트를 추가·삭제하면 위 표, 아래 Directory Structure, `README.md`의 「페이지 구성」 표와 트리를 **같은 커밋**에서 갱신한다. (#35·#37 두 PR이 연속으로 빠뜨렸고 2026-09-05에 뒤늦게 채웠다.)
 
@@ -72,9 +72,7 @@ app/                         # RR7 appDirectory (source root)
 │   ├── invitation.tsx       # /invitation
 │   ├── letter.tsx           # /letter
 │   ├── stock.tsx            # /stock
-│   ├── otp.tsx              # /otp
-│   ├── api.stock.ts         # GET /api/stock (server-only resource route)
-│   └── api.otp.ts           # POST /api/otp (server-only resource route)
+│   └── otp.tsx              # /otp
 ├── components/
 │   ├── ui/                  # shadcn/ui — 손대지 말 것
 │   └── [Feature]/           # index.tsx 단일 파일 원칙
@@ -89,40 +87,13 @@ app/                         # RR7 appDirectory (source root)
 └── assets/                  # 정적 이미지
 ```
 
-## 🔴 React Router 7 — 프레임워크 모드
+## 🔴 React Router 7 — 프레임워크 모드 · SPA (`ssr: false`)
 
-```typescript
-// app/routes/stock.tsx — SSR loader (Node.js 접근 가능)
-import type { Route } from './+types/stock'
-
-export async function loader({ request }: Route.LoaderArgs) {
-  const url = new URL(request.url)
-  const symbol = url.searchParams.get('symbol') ?? 'AAPL'
-  const data = await fetchStockData(symbol)  // server-side: yahoo-finance2 사용 가능
-  return { data }
-}
-
-export default function StockPage({ loaderData }: Route.ComponentProps) {
-  return <main>{loaderData.data.price}</main>
-}
-
-export function meta(_: Route.MetaArgs) {
-  return [{ title: 'Stock Dashboard' }]
-}
-```
-
-```typescript
-// app/routes/api.stock.ts — Resource route (API endpoint)
-import type { Route } from './+types/api.stock'
-import yahooFinance from 'yahoo-finance2'
-
-export async function loader({ request }: Route.LoaderArgs) {
-  const { searchParams } = new URL(request.url)
-  const symbol = searchParams.get('symbol') ?? 'AAPL'
-  const data = await yahooFinance.quote(symbol)
-  return Response.json(data)
-}
-```
+- `react-router.config.ts` 가 `ssr: false` 다(커밋 d8be8cd, Vercel SPA 배포). 빌드는 `build/client` 만 만든다 — 서버 런타임이 없으므로 서버 `loader`·`action`·resource route 는 실행될 곳이 없다.
+- 데이터 흐름: `app/hooks/use-*.ts`(TanStack Query) → `fetch('/api/…')` → 루트 `api/*.ts`(Vercel Function). Node 전용 코드(`yahoo-finance2`·`googleapis` 등)는 `api/` 에만 둔다.
+- 라우트 모듈은 `meta` 와 default component(필요하면 `clientLoader`)만 export 한다.
+- 검증: dev 서버·배포의 HTML 은 `"isSpaMode":true` 셸뿐이라 `curl <라우트> | grep <본문 문구>` 는 언제나 0건이다 — 페이지 내용은 브라우저(Playwright)로 검증한다.
+- 라우트 컴포넌트는 브라우저에서만 렌더된다(빌드 때 프리렌더되는 것은 `root.tsx` 셸뿐) — 라우트 안에서는 첫 렌더에 `window`·`matchMedia` 를 바로 읽어도 되고, 하이드레이션 불일치를 피하려는 우회(`useEffect` 로 미루기·서버용 폴백 마크업)는 만들지 않는다.
 
 **import 규칙:**
 - `react-router` → 모든 것 (hooks, Link, Form, useNavigation 등)
@@ -136,7 +107,6 @@ export async function loader({ request }: Route.LoaderArgs) {
 |--------|-----|
 | `home.tsx` | `/` |
 | `stock.tsx` | `/stock` |
-| `api.stock.ts` | `/api/stock` |
 | `_auth.tsx` | 레이아웃 (URL 없음) |
 | `_auth.login.tsx` | `/login` |
 | `$.tsx` | 404 splat |
@@ -231,7 +201,7 @@ const [state, action, isPending] = useActionState(formAction, null)
 
 | 데이터 성격 | 사용 | 금지 |
 |------------|------|------|
-| 라우트 데이터 | `loader` (SSR) | TanStack Query 중복 |
+| 라우트·서버 데이터 | TanStack Query 훅(`app/hooks/use-*.ts` → `/api/*`) | 서버 `loader`(SPA 라 실행 안 됨) |
 | 서버 상태 캐시 | TanStack Query | Zustand에 저장 |
 | 전역 UI | Zustand | Context API |
 | 컴포넌트 로컬 | `useState` | 전역 store |

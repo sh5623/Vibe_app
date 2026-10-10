@@ -1,29 +1,21 @@
+import { motion } from 'framer-motion'
+import { CountUp, fadeUp, gradientText, SectionTitle, stagger, VIEWPORT } from './motion'
+
 export default function About() {
   return (
     <section
       id="about"
       className="px-12 py-32 border-b border-[rgba(79,70,229,0.07)] relative max-[768px]:px-6 max-[768px]:py-20"
     >
-      <div className="flex items-baseline gap-6 mb-20 max-[768px]:mb-12 max-[768px]:flex-col max-[768px]:gap-2">
-        <span
-          className="text-[0.75rem] tracking-[0.25em] font-semibold shrink-0"
-          style={{
-            fontFamily: 'var(--font-mono), monospace',
-            background: 'linear-gradient(135deg, #4f46e5, #06b6d4)',
-            WebkitBackgroundClip: 'text',
-            WebkitTextFillColor: 'transparent',
-            backgroundClip: 'text',
-          }}
-        >
-          [ 01 ]
-        </span>
-        <h2 className="text-[clamp(2.2rem,5.5vw,5rem)] font-extrabold tracking-[-0.025em] leading-[1] text-[#0f172a]">
-          ABOUT
-        </h2>
-      </div>
+      <SectionTitle index="01" title="ABOUT" />
 
       <div className="grid grid-cols-[1.1fr_0.9fr] gap-20 items-start max-[1024px]:gap-12 max-[768px]:grid-cols-1 max-[768px]:gap-12">
-        <div>
+        <motion.div
+          initial="hidden"
+          whileInView="visible"
+          viewport={VIEWPORT}
+          variants={stagger(0.1)}
+        >
           {[
             <>
               단순한 화면 구현을 넘어,{' '}
@@ -53,38 +45,39 @@ export default function About() {
             </>,
           ].map((text, i) => {
             return (
-              <p
+              <motion.p
                 // biome-ignore lint/suspicious/noArrayIndexKey: static text-only array, no stable ID available
                 key={i}
+                variants={fadeUp}
                 className="text-[clamp(1rem,1.4vw,1.1rem)] leading-[1.85] text-[#64748b] mb-5 [&_strong]:text-[#0f172a] [&_strong]:font-bold"
               >
                 {text}
-              </p>
+              </motion.p>
             )
           })}
-        </div>
+        </motion.div>
 
-        <div className="grid grid-cols-2 gap-4">
+        <motion.div
+          className="grid grid-cols-2 gap-4"
+          initial="hidden"
+          whileInView="visible"
+          viewport={VIEWPORT}
+          variants={stagger(0.08, 0.1)}
+        >
           {[
             { num: '7+', label: 'Years Exp' },
             { num: '10+', label: 'Projects' },
             { num: 'FE', label: 'Role' },
             { num: '3', label: 'Companies' },
           ].map(({ num, label }) => (
-            <div
+            // transition-all 대신 속성을 좁힌다 — framer 가 쓰는 transform·opacity 에 CSS 전환이 끼면 등장이 끈적해진다
+            <motion.div
               key={label}
-              className="relative bg-white border border-[rgba(79,70,229,0.12)] rounded-[16px] p-8 py-8 px-7 transition-all duration-[250ms] overflow-hidden before:content-[''] before:absolute before:top-0 before:left-0 before:right-0 before:h-[3px] before:bg-linear-to-r before:from-[#4f46e5] before:to-[#06b6d4] before:scale-x-0 before:origin-left before:transition-transform before:duration-[350ms] before:rounded-tl-[16px] before:rounded-tr-[16px] hover:border-[rgba(79,70,229,0.25)] hover:-translate-y-[5px] hover:shadow-[0_16px_40px_rgba(79,70,229,0.1)] hover:before:scale-x-100"
+              variants={fadeUp}
+              className="relative bg-white border border-[rgba(79,70,229,0.12)] rounded-[16px] p-8 py-8 px-7 transition-[translate,box-shadow,border-color] duration-[250ms] overflow-hidden before:content-[''] before:absolute before:top-0 before:left-0 before:right-0 before:h-[3px] before:bg-linear-to-r before:from-[#4f46e5] before:to-[#06b6d4] before:scale-x-0 before:origin-left before:transition-transform before:duration-[350ms] before:rounded-tl-[16px] before:rounded-tr-[16px] hover:border-[rgba(79,70,229,0.25)] hover:-translate-y-[5px] hover:shadow-[0_16px_40px_rgba(79,70,229,0.1)] hover:before:scale-x-100"
             >
-              <div
-                className="text-[2.5rem] font-extrabold leading-[1] mb-2"
-                style={{
-                  background: 'linear-gradient(135deg, #4f46e5, #06b6d4)',
-                  WebkitBackgroundClip: 'text',
-                  WebkitTextFillColor: 'transparent',
-                  backgroundClip: 'text',
-                }}
-              >
-                {num}
+              <div className="text-[2.5rem] font-extrabold leading-[1] mb-2" style={gradientText}>
+                <CountUp value={num} />
               </div>
               <div
                 className="text-[0.68rem] tracking-[0.2em] text-[#94a3b8] uppercase"
@@ -92,9 +85,9 @@ export default function About() {
               >
                 {label}
               </div>
-            </div>
+            </motion.div>
           ))}
-        </div>
+        </motion.div>
       </div>
     </section>
   )

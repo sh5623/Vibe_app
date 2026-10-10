@@ -1,5 +1,14 @@
+import {
+  motion,
+  useMotionTemplate,
+  useMotionValue,
+  useReducedMotion,
+  useSpring,
+} from 'framer-motion'
 import { ArrowUpRight } from 'lucide-react'
+import { useRef } from 'react'
 import { Link } from 'react-router'
+import { fadeUp, gradientText, SectionTitle, SPRING, tiltFromPointer, VIEWPORT } from './motion'
 
 interface Project {
   num: string
@@ -54,71 +63,105 @@ const projects: Project[] = [
   },
 ]
 
+interface ProjectCardProps {
+  project: Project
+  index: number
+}
+
+/** 커서를 따라 기우는 카드 + 커서 위치에 켜지는 스포트라이트. 등장은 뷰포트 진입 시 1회. */
+function ProjectCard({ project, index }: ProjectCardProps) {
+  const ref = useRef<HTMLDivElement>(null)
+  const reduceMotion = useReducedMotion()
+  const rotateX = useSpring(0, SPRING)
+  const rotateY = useSpring(0, SPRING)
+  const spotX = useMotionValue(-1000)
+  const spotY = useMotionValue(-1000)
+  const spotlight = useMotionTemplate`radial-gradient(420px circle at ${spotX}px ${spotY}px, rgba(79,70,229,0.10), transparent 65%)`
+
+  function handlePointerMove(e: React.PointerEvent<HTMLDivElement>) {
+    if (e.pointerType !== 'mouse') return
+    const rect = ref.current?.getBoundingClientRect()
+    if (!rect) return
+    spotX.set(e.clientX - rect.left)
+    spotY.set(e.clientY - rect.top)
+    if (reduceMotion) return
+    const tilt = tiltFromPointer(e.clientX, e.clientY, rect, 5)
+    rotateX.set(tilt.rotateX)
+    rotateY.set(tilt.rotateY)
+  }
+
+  function handlePointerLeave() {
+    rotateX.set(0)
+    rotateY.set(0)
+  }
+
+  return (
+    <motion.div
+      ref={ref}
+      initial="hidden"
+      whileInView="visible"
+      viewport={VIEWPORT}
+      variants={fadeUp}
+      custom={(index % 2) * 0.1}
+      className="h-full"
+      style={{ rotateX, rotateY, transformPerspective: 1100 }}
+      onPointerMove={handlePointerMove}
+      onPointerLeave={handlePointerLeave}
+    >
+      <Link
+        to={project.href}
+        className="group relative block h-full no-underline bg-white border border-[rgba(79,70,229,0.1)] rounded-[20px] p-10 cursor-pointer transition-all duration-300 overflow-hidden before:content-[''] before:absolute before:top-0 before:left-0 before:right-0 before:h-[4px] before:bg-linear-to-r before:from-[#4f46e5] before:to-[#06b6d4] before:scale-x-0 before:origin-left before:transition-transform before:duration-[350ms] before:rounded-tl-[20px] before:rounded-tr-[20px] hover:border-[rgba(79,70,229,0.2)] hover:-translate-y-[6px] hover:shadow-[0_20px_50px_rgba(79,70,229,0.12)] hover:before:scale-x-100 [&:hover_.arrow]:translate-x-1 [&:hover_.arrow]:-translate-y-1 [&:hover_.arrow]:text-[#4f46e5]"
+      >
+        <motion.div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-300 group-hover:opacity-100"
+          style={{ background: spotlight }}
+        />
+        <div className="relative">
+          <div className="flex justify-between items-start mb-6">
+            <div
+              className="text-[0.72rem] tracking-[0.2em] font-semibold"
+              style={{ fontFamily: 'var(--font-mono), monospace', ...gradientText }}
+            >
+              #{project.num}
+            </div>
+            <ArrowUpRight
+              size={18}
+              className="arrow text-[rgba(100,116,139,0.35)] transition-all duration-300 shrink-0"
+            />
+          </div>
+          <h3 className="text-[1.4rem] font-bold tracking-[-0.01em] mb-3 leading-[1.25] text-[#0f172a]">
+            {project.name}
+          </h3>
+          <p className="text-[0.9rem] text-[#64748b] leading-[1.75] mb-7">{project.desc}</p>
+          <div className="flex flex-wrap gap-[0.45rem]">
+            {project.tags.map((tag) => (
+              <span
+                key={tag}
+                className="text-[0.65rem] text-[#64748b] bg-[rgba(100,116,139,0.07)] border border-[rgba(100,116,139,0.14)] rounded-[6px] py-1 px-[0.65rem] tracking-[0.04em]"
+                style={{ fontFamily: 'var(--font-mono), monospace' }}
+              >
+                {tag}
+              </span>
+            ))}
+          </div>
+        </div>
+      </Link>
+    </motion.div>
+  )
+}
+
 export default function Work() {
   return (
     <section
       id="work"
       className="px-12 py-32 border-b border-[rgba(79,70,229,0.07)] relative max-[768px]:px-6 max-[768px]:py-20"
     >
-      <div className="flex items-baseline gap-6 mb-20 max-[768px]:mb-12 max-[768px]:flex-col max-[768px]:gap-2">
-        <span
-          className="text-[0.75rem] tracking-[0.25em] font-semibold shrink-0"
-          style={{
-            fontFamily: 'var(--font-mono), monospace',
-            background: 'linear-gradient(135deg, #4f46e5, #06b6d4)',
-            WebkitBackgroundClip: 'text',
-            WebkitTextFillColor: 'transparent',
-            backgroundClip: 'text',
-          }}
-        >
-          [ 03 ]
-        </span>
-        <h2 className="text-[clamp(2.2rem,5.5vw,5rem)] font-extrabold tracking-[-0.025em] leading-[1] text-[#0f172a]">
-          SELECTED WORK
-        </h2>
-      </div>
+      <SectionTitle index="03" title="SELECTED WORK" />
 
       <div className="grid grid-cols-2 gap-6 max-[768px]:grid-cols-1">
-        {projects.map((project) => (
-          <Link
-            key={project.num}
-            to={project.href}
-            className="relative block no-underline bg-white border border-[rgba(79,70,229,0.1)] rounded-[20px] p-10 cursor-pointer transition-all duration-300 overflow-hidden before:content-[''] before:absolute before:top-0 before:left-0 before:right-0 before:h-[4px] before:bg-linear-to-r before:from-[#4f46e5] before:to-[#06b6d4] before:scale-x-0 before:origin-left before:transition-transform before:duration-[350ms] before:rounded-tl-[20px] before:rounded-tr-[20px] hover:border-[rgba(79,70,229,0.2)] hover:-translate-y-[6px] hover:shadow-[0_20px_50px_rgba(79,70,229,0.12)] hover:before:scale-x-100 [&:hover_.arrow]:translate-x-1 [&:hover_.arrow]:-translate-y-1 [&:hover_.arrow]:text-[#4f46e5]"
-          >
-            <div className="flex justify-between items-start mb-6">
-              <div
-                className="text-[0.72rem] tracking-[0.2em] font-semibold"
-                style={{
-                  fontFamily: 'var(--font-mono), monospace',
-                  background: 'linear-gradient(135deg, #4f46e5, #06b6d4)',
-                  WebkitBackgroundClip: 'text',
-                  WebkitTextFillColor: 'transparent',
-                  backgroundClip: 'text',
-                }}
-              >
-                #{project.num}
-              </div>
-              <ArrowUpRight
-                size={18}
-                className="arrow text-[rgba(100,116,139,0.35)] transition-all duration-300 shrink-0"
-              />
-            </div>
-            <h3 className="text-[1.4rem] font-bold tracking-[-0.01em] mb-3 leading-[1.25] text-[#0f172a]">
-              {project.name}
-            </h3>
-            <p className="text-[0.9rem] text-[#64748b] leading-[1.75] mb-7">{project.desc}</p>
-            <div className="flex flex-wrap gap-[0.45rem]">
-              {project.tags.map((tag) => (
-                <span
-                  key={tag}
-                  className="text-[0.65rem] text-[#64748b] bg-[rgba(100,116,139,0.07)] border border-[rgba(100,116,139,0.14)] rounded-[6px] py-1 px-[0.65rem] tracking-[0.04em]"
-                  style={{ fontFamily: 'var(--font-mono), monospace' }}
-                >
-                  {tag}
-                </span>
-              ))}
-            </div>
-          </Link>
+        {projects.map((project, index) => (
+          <ProjectCard key={project.num} project={project} index={index} />
         ))}
       </div>
     </section>
