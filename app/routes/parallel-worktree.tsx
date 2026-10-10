@@ -1,4 +1,4 @@
-import { motion, type Variants } from 'framer-motion'
+import { motion, type Transition, useReducedMotion, type Variants } from 'framer-motion'
 import {
   ArrowRight,
   Ban,
@@ -13,8 +13,9 @@ import {
   Users,
   Wrench,
 } from 'lucide-react'
-import { useState } from 'react'
+import { type ReactNode, useRef, useState } from 'react'
 import { useNavigate } from 'react-router'
+import { Collapse, CountUp, EASE_OUT, PageMotion, TypeLines, useCycle } from '@/components/Motion'
 import type { Route } from './+types/parallel-worktree'
 
 export function meta(_: Route.MetaArgs) {
@@ -233,6 +234,187 @@ const stagger: Variants = {
   visible: { transition: { staggerChildren: 0.09 } },
 }
 
+/** 모션 최소화일 때 쓰는 즉시 전환. */
+const INSTANT: Transition = { duration: 0 }
+
+// ── 히어로 스윔레인: 재생 헤드가 한 번 쓸고 지나가는 동안 막대가 시작 위치 순서대로 자란다 ──
+/** 히어로 카드 fadeUp(0.36s 지연 + 0.5s)이 끝날 무렵 시작한다. */
+const GANTT_DELAY = 0.85
+/** 트랙 전체(0 → 100%)를 쓰는 데 걸리는 시간(초). 막대 성장 속도와 재생 헤드 속도가 같다. */
+const GANTT_SWEEP = 3.2
+/** 재생 헤드가 오른쪽 끝에 닿은 뒤 다시 출발하기까지 쉬는 시간(초). */
+const GANTT_REST = 0.7
+/** 모션 최소화일 때 재생 헤드가 서 있는 자리 — 두 번째 투입 직후. */
+const PLAYHEAD_STILL = '60%'
+
+/** at·span 은 트랙 너비 대비 비율(0~1). 막대 오른쪽 끝이 재생 헤드와 같은 속도로 나아간다. */
+function ganttTiming(at: number, span: number, reduce: boolean): Transition {
+  if (reduce) return INSTANT
+  return { delay: GANTT_DELAY + at * GANTT_SWEEP, duration: span * GANTT_SWEEP, ease: 'linear' }
+}
+
+interface GanttSegmentProps {
+  at: number
+  span: number
+  className: string
+  title?: string
+}
+
+/** 채워진 막대(투입·실행·수확) — 왼쪽 기준 scaleX 로 자란다. */
+function GanttBar({ at, span, className, title }: GanttSegmentProps) {
+  const reduce = useReducedMotion() === true
+  return (
+    <motion.div
+      className={className}
+      title={title}
+      style={{ originX: 0 }}
+      initial={{ scaleX: 0 }}
+      animate={{ scaleX: 1 }}
+      transition={ganttTiming(at, span, reduce)}
+    />
+  )
+}
+
+/** 점선 구간(침묵) — scaleX 는 점선 간격을 찌그러뜨리므로 clip-path 로 왼쪽부터 드러낸다. */
+function GanttGap({ at, span, className }: GanttSegmentProps) {
+  const reduce = useReducedMotion() === true
+  return (
+    <motion.div
+      className={className}
+      initial={{ clipPath: 'inset(0 100% 0 0)' }}
+      animate={{ clipPath: 'inset(0 0% 0 0)' }}
+      transition={ganttTiming(at, span, reduce)}
+    />
+  )
+}
+
+/**
+ * 세 레인의 트랙 영역(레이블 92px + 간격 12px 오른쪽)을 덮는 재생 헤드.
+ * opacity 도 무한 반복하므로 MotionConfig 만으로는 멈추지 않는다 — 모션 최소화면 한 자리에 세운다.
+ */
+function GanttPlayhead() {
+  const reduce = useReducedMotion() === true
+  const sweep = {
+    delay: GANTT_DELAY,
+    duration: GANTT_SWEEP,
+    ease: 'linear',
+    repeat: Number.POSITIVE_INFINITY,
+    repeatDelay: GANTT_REST,
+  } as const
+  return (
+    <div
+      aria-hidden="true"
+      className="pointer-events-none absolute -inset-y-1 left-[104px] right-0 overflow-hidden"
+    >
+      <motion.div
+        className="absolute inset-0"
+        initial={{ x: '0%', opacity: 0 }}
+        animate={
+          reduce ? { x: PLAYHEAD_STILL, opacity: 1 } : { x: ['0%', '100%'], opacity: [0, 1, 1, 0] }
+        }
+        transition={
+          reduce ? INSTANT : { ...sweep, opacity: { ...sweep, times: [0, 0.04, 0.93, 1] } }
+        }
+      >
+        <span className="absolute inset-y-0 left-0 w-px bg-[#2dd4bf] shadow-[0_0_8px_rgba(45,212,191,0.9)]" />
+        <span className="absolute -top-px -left-[2px] w-[5px] h-[5px] rounded-full bg-[#2dd4bf]" />
+      </motion.div>
+    </div>
+  )
+}
+
+// ── 비용 차트: 선형 기준선 → n² 곡선 → 음영 → 점 순서. custom 은 모션 최소화 여부 ──
+/** 곡선이 다 그려질 무렵 점이 차례로 튀어나온다. */
+const COST_POINTS_AT = 1.85
+const POP_EASE = [0.34, 1.56, 0.64, 1] as const
+
+interface PopCustom {
+  order: number
+  reduce: boolean
+}
+
+const costDraw: Variants = {
+  hidden: { pathLength: 0 },
+  visible: (reduce: boolean) => ({
+    pathLength: 1,
+    transition: reduce ? INSTANT : { delay: 0.35, duration: 1.5, ease: 'easeInOut' },
+  }),
+}
+
+/** 점선 기준선은 pathLength 를 쓰면 dasharray 가 덮여 실선이 되므로, clipPath 사각형의 너비로 드러낸다. */
+const costWipe: Variants = {
+  hidden: { width: 0 },
+  visible: (reduce: boolean) => ({
+    width: CHART_W,
+    transition: reduce ? INSTANT : { delay: 0.2, duration: 1.3, ease: 'easeInOut' },
+  }),
+}
+
+const costArea: Variants = {
+  hidden: { opacity: 0 },
+  visible: (reduce: boolean) => ({
+    opacity: 1,
+    transition: reduce ? INSTANT : { delay: 1.6, duration: 0.8, ease: 'easeOut' },
+  }),
+}
+
+const costPoint: Variants = {
+  hidden: { opacity: 0, scale: 0 },
+  visible: ({ order, reduce }: PopCustom) => ({
+    opacity: 1,
+    scale: 1,
+    transition: reduce
+      ? INSTANT
+      : { delay: COST_POINTS_AT + order * 0.3, duration: 0.45, ease: POP_EASE },
+  }),
+}
+
+const costLabel: Variants = {
+  hidden: { opacity: 0 },
+  visible: ({ order, reduce }: PopCustom) => ({
+    opacity: 1,
+    transition: reduce
+      ? INSTANT
+      : { delay: COST_POINTS_AT + order * 0.3 + 0.12, duration: 0.35, ease: EASE_OUT },
+  }),
+}
+
+// ── 사이클: 강조가 단계를 차례로 돈다 ──
+const CYCLE_MS = 1100
+
+function cycleCardClass(isSilence: boolean, isActive: boolean): string {
+  const base =
+    'border rounded-[4px] p-4 relative transition-[border-color,background-color,box-shadow] duration-300'
+  if (isSilence) {
+    return `${base} bg-[#2dd4bf]/[0.08] ${
+      isActive
+        ? 'border-[#2dd4bf]/80 shadow-[0_0_24px_-6px_rgba(45,212,191,0.55)]'
+        : 'border-[#2dd4bf]/30'
+    }`
+  }
+  if (isActive) {
+    return `${base} bg-[#2dd4bf]/[0.04] border-[#2dd4bf]/60 shadow-[0_0_20px_-8px_rgba(45,212,191,0.45)]`
+  }
+  return `${base} bg-white/[0.03] border-white/10`
+}
+
+// ── 설치: 명령 줄은 한 글자씩 타이핑, 주석·프롬프트 줄은 통째로 나타난다 ──
+const INSTALL_LINES: ReactNode[] = [
+  <span key="comment-run" className="text-slate-500">
+    # Claude Code 터미널에서 실행
+  </span>,
+  '/plugin marketplace add sh5623/parallel-worktree',
+  '/plugin install parallel-worktree@parallel-worktree',
+  '/reload-plugins',
+  ' ',
+  <span key="comment-bootstrap" className="text-slate-500">
+    # 첫 프로젝트 부트스트랩
+  </span>,
+  <span key="prompt" className="text-slate-300">
+    "이 프로젝트에 parallel worktree 세팅해줘"
+  </span>,
+]
+
 function formatM(v: number): string {
   return `${(v / 1_000_000).toFixed(1)}M`
 }
@@ -240,6 +422,11 @@ function formatM(v: number): string {
 export default function ParallelWorktreePage() {
   const navigate = useNavigate()
   const [openFaq, setOpenFaq] = useState<number | null>(0)
+  const reduceMotion = useReducedMotion() === true
+
+  // 사이클 강조 — 그리드가 화면에 있을 때만 돈다(화면 밖·모션 최소화면 useCycle 이 null 이라 강조 없음).
+  const cycleRef = useRef<HTMLDivElement>(null)
+  const activeStep = useCycle(CYCLE.length, CYCLE_MS, cycleRef)
 
   const scrollTo = (id: string) => {
     document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' })
@@ -255,663 +442,756 @@ export default function ParallelWorktreePage() {
     'text-[0.95rem] text-slate-400 leading-[1.8] max-w-[620px] mb-14 max-[768px]:mb-9'
 
   return (
-    <div
-      className="min-h-screen text-slate-50 overflow-x-hidden"
-      style={{
-        backgroundColor: '#0a0d0f',
-        backgroundImage:
-          'repeating-linear-gradient(rgba(45,212,191,0.05) 0px, rgba(45,212,191,0.05) 1px, transparent 1px, transparent 64px)',
-      }}
-    >
-      {/* Nav */}
-      <nav className="fixed top-0 left-0 right-0 z-[100] flex items-center justify-between px-12 py-5 bg-[rgba(10,13,15,0.85)] backdrop-blur-[12px] border-b border-white/[0.06] max-[768px]:px-6 max-[768px]:py-4">
-        <button
-          type="button"
-          onClick={() => void navigate('/')}
-          className="inline-flex items-center gap-2 text-[0.75rem] text-slate-400 tracking-[0.1em] font-mono bg-none border-none cursor-pointer p-0 transition-colors duration-200 hover:text-[#2dd4bf]"
-        >
-          ← Home
-        </button>
-        <div className="inline-flex items-center gap-2 text-[0.9rem] font-bold tracking-[0.12em] uppercase font-mono text-slate-50">
-          <span className="w-2 h-2 rounded-full bg-[#2dd4bf]" aria-hidden="true" />
-          parallel-worktree
-        </div>
-        <a
-          href="https://github.com/sh5623/parallel-worktree"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-flex items-center gap-1.5 text-[0.75rem] text-slate-400 tracking-[0.1em] font-mono no-underline transition-colors duration-200 hover:text-[#2dd4bf]"
-        >
-          <Github className="w-3.5 h-3.5" aria-hidden="true" />
-          GitHub
-        </a>
-      </nav>
-
-      {/* Hero */}
-      <header className="relative pt-[9rem] pb-24 px-12 max-[768px]:pt-32 max-[768px]:pb-16 max-[768px]:px-6">
-        <motion.div
-          initial="hidden"
-          animate="visible"
-          variants={stagger}
-          className={`${innerClass} grid grid-cols-[1.05fr_0.95fr] gap-16 items-start max-[960px]:grid-cols-1`}
-        >
-          <div>
-            <motion.span
-              variants={fadeUp}
-              className="inline-flex items-center gap-2 text-[0.72rem] text-[#2dd4bf] tracking-[0.25em] uppercase font-mono font-semibold border border-[#2dd4bf]/25 bg-[#2dd4bf]/[0.06] rounded-full py-1.5 px-3.5 mb-7"
-            >
-              <Split className="w-3.5 h-3.5" aria-hidden="true" />
-              Claude Code Skill
-            </motion.span>
-            <motion.h1
-              variants={fadeUp}
-              className="text-[clamp(2.1rem,5vw,3.8rem)] font-extrabold tracking-[-0.03em] leading-[1.12] mb-6 text-slate-50"
-            >
-              혼자서,
-              <br />
-              <span className="relative inline-block">
-                병렬로 돈다
-                <span
-                  className="absolute left-0 right-0 -bottom-1 h-[0.4em] bg-[#2dd4bf]/20 -z-10"
-                  aria-hidden="true"
-                />
-              </span>
-            </motion.h1>
-            <motion.p
-              variants={fadeUp}
-              className="text-[1rem] text-slate-400 leading-[1.85] max-w-[500px] mb-9"
-            >
-              한 명의 오케스트레이터가 격리된 git worktree 여러 개에서 서브에이전트를 병렬로 돌리고,
-              작업을 잃지 않는 순서로 끝난 것부터 수확합니다. 진짜 비용은 git 명령이 아닙니다.
-              기다리는 동안 오케스트레이터가 잡일로 턴을 채워서 컨텍스트가 제곱으로 불어나는
-              쪽입니다.
-            </motion.p>
-            <motion.div variants={fadeUp} className="flex items-center gap-4 flex-wrap">
-              <button
-                type="button"
-                onClick={() => scrollTo('install')}
-                className="inline-flex items-center gap-2 text-[0.85rem] font-semibold font-mono bg-[#2dd4bf] text-[#06231f] rounded-md py-3 px-6 cursor-pointer transition-transform duration-200 hover:-translate-y-0.5"
-              >
-                설치 명령 보기 <ArrowRight className="w-4 h-4" aria-hidden="true" />
-              </button>
-              <a
-                href="https://github.com/sh5623/parallel-worktree"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 text-[0.85rem] font-semibold font-mono text-slate-300 border border-white/15 rounded-md py-3 px-6 no-underline transition-colors duration-200 hover:border-white/35 hover:text-slate-50"
-              >
-                GitHub에서 보기
-              </a>
-            </motion.div>
-          </div>
-
-          {/* Hero swimlane preview */}
-          <motion.div
-            variants={fadeUp}
-            className="relative bg-white/[0.03] border border-white/10 rounded-[4px] p-6 max-[960px]:rotate-0"
-          >
-            <div className="text-[0.7rem] text-slate-500 font-mono mb-4 tracking-[0.08em]">
-              ORCHESTRATOR · 2 WORKTREES
-            </div>
-            <div className="flex flex-col gap-3">
-              <div className="flex items-center gap-3">
-                <span className="text-[0.68rem] text-slate-500 font-mono w-[92px] shrink-0">
-                  orchestrator
-                </span>
-                <div className="flex-1 h-5 flex gap-[2px]">
-                  <div className="w-[10%] bg-[#2dd4bf] rounded-[2px]" title="dispatch" />
-                  <div className="flex-1 border border-dashed border-white/15 rounded-[2px]" />
-                  <div className="w-[8%] bg-[#fb7185] rounded-[2px]" title="harvest" />
-                  <div className="w-[10%] bg-[#2dd4bf] rounded-[2px]" title="dispatch" />
-                  <div className="flex-1 border border-dashed border-white/15 rounded-[2px]" />
-                  <div className="w-[8%] bg-[#fb7185] rounded-[2px]" title="harvest" />
-                </div>
-              </div>
-              <div className="flex items-center gap-3">
-                <span className="text-[0.68rem] text-slate-500 font-mono w-[92px] shrink-0">
-                  worktree A
-                </span>
-                <div className="flex-1 h-5 flex gap-[2px]">
-                  <div className="w-[52%] bg-[#2dd4bf]/40 rounded-[2px]" />
-                  <div className="flex-1" />
-                </div>
-              </div>
-              <div className="flex items-center gap-3">
-                <span className="text-[0.68rem] text-slate-500 font-mono w-[92px] shrink-0">
-                  worktree B
-                </span>
-                <div className="flex-1 h-5 flex gap-[2px]">
-                  <div className="w-[18%]" />
-                  <div className="w-[60%] bg-[#2dd4bf]/40 rounded-[2px]" />
-                  <div className="flex-1" />
-                </div>
-              </div>
-            </div>
-            <div className="flex items-center gap-4 mt-5 pt-4 border-t border-white/[0.06] text-[0.66rem] text-slate-500 font-mono flex-wrap">
-              <span className="inline-flex items-center gap-1.5">
-                <span className="w-2 h-2 rounded-[2px] bg-[#2dd4bf]" aria-hidden="true" /> dispatch
-              </span>
-              <span className="inline-flex items-center gap-1.5">
-                <span className="w-2 h-2 rounded-[2px] bg-[#2dd4bf]/40" aria-hidden="true" />{' '}
-                running
-              </span>
-              <span className="inline-flex items-center gap-1.5">
-                <span
-                  className="w-2 h-2 border border-dashed border-white/25 rounded-[2px]"
-                  aria-hidden="true"
-                />{' '}
-                silence
-              </span>
-              <span className="inline-flex items-center gap-1.5">
-                <span className="w-2 h-2 rounded-[2px] bg-[#fb7185]" aria-hidden="true" /> harvest
-              </span>
-            </div>
-          </motion.div>
-        </motion.div>
-      </header>
-
-      {/* 세션 vs 워크트리 */}
-      <section className={sectionClass}>
-        <div className={innerClass}>
-          <motion.div
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true }}
-            variants={fadeUp}
-          >
-            <div className={labelClass}>
-              <Users className="w-3.5 h-3.5" aria-hidden="true" /> ISOLATION
-            </div>
-            <h2 className={titleClass}>세션 두 개가 아니라, worktree 하나</h2>
-            <p className={descClass}>
-              같은 레포에 세션을 하나 더 열어도 격리되는 건 없습니다. worktree는 파일시스템과 git
-              인덱스를 진짜로 분리합니다. 쓰는 사람 하나, 수확하는 사람 하나.
-            </p>
-          </motion.div>
-          <motion.div
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true }}
-            variants={stagger}
-            className="bg-white/[0.03] border border-white/10 rounded-[4px] overflow-hidden"
-          >
-            <div className="grid grid-cols-[220px_1fr] text-[0.72rem] text-slate-500 font-mono uppercase tracking-[0.08em] border-b border-white/[0.06] max-[600px]:grid-cols-1">
-              <div className="py-3 px-6">쪼개고 싶었던 것</div>
-              <div className="py-3 px-6 border-l border-white/[0.06] max-[600px]:border-l-0 max-[600px]:border-t">
-                세션을 하나 더 열면 실제로 일어나는 일
-              </div>
-            </div>
-            {COMPARE_ROWS.map((row) => (
-              <motion.div
-                key={row.hoped}
-                variants={fadeUp}
-                className="grid grid-cols-[220px_1fr] border-b border-white/[0.06] last:border-b-0 max-[600px]:grid-cols-1"
-              >
-                <div className="py-5 px-6 text-[0.9rem] font-semibold text-slate-100">
-                  {row.hoped}
-                </div>
-                <div className="py-5 px-6 text-[0.85rem] text-slate-400 leading-[1.75] border-l border-white/[0.06] max-[600px]:border-l-0 max-[600px]:border-t">
-                  {row.reality}
-                </div>
-              </motion.div>
-            ))}
-          </motion.div>
-        </div>
-      </section>
-
-      {/* 비용 곡선 */}
-      <section className={sectionClass}>
-        <div className={innerClass}>
-          <motion.div
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true }}
-            variants={fadeUp}
-          >
-            <div className={labelClass}>
-              <TrendingUp className="w-3.5 h-3.5" aria-hidden="true" /> COST
-            </div>
-            <h2 className={titleClass}>기다리는 시간이 비용의 전부다</h2>
-            <p className={descClass}>
-              오케스트레이터의 컨텍스트 적분은 c₀·n + g·n²/2입니다. 턴 수 n에 대해 제곱으로
-              자랍니다. 기다리는 동안 잡일로 턴을 채우는 것이 n을 키우는 원인입니다. 319턴은
-              실측이고, 30턴 지점의 2.3M은 두 번째 실행이 아니라 같은 세션의 c₀와 g를 30턴에서
-              계산한 모델값입니다. (표본 n=1, 측정 방법은 레포의 RUNBOOK.md 6-0)
-            </p>
-          </motion.div>
-          <motion.div
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true }}
-            variants={fadeUp}
-            className="bg-white/[0.03] border border-white/10 rounded-[4px] p-6 max-[600px]:p-4"
-          >
-            <svg
-              viewBox={`0 0 ${CHART_W} ${CHART_H}`}
-              className="w-full h-auto"
-              role="img"
-              aria-label="턴 수에 따른 컨텍스트 적분 곡선: 30턴에서 2.3M, 319턴에서 68.0M"
-            >
-              <title>턴 수 대비 컨텍스트 적분 곡선</title>
-              {[0, 0.25, 0.5, 0.75, 1].map((f) => (
-                <line
-                  key={f}
-                  x1={PAD_L}
-                  x2={CHART_W - PAD_R}
-                  y1={yAt(MAX_V * f)}
-                  y2={yAt(MAX_V * f)}
-                  stroke="rgba(255,255,255,0.06)"
-                  strokeWidth={1}
-                />
-              ))}
-              <path d={areaPath} fill="rgba(45,212,191,0.08)" />
-              <path
-                d={linearPath}
-                fill="none"
-                stroke="#475569"
-                strokeWidth={1.5}
-                strokeDasharray="4 4"
-              />
-              <path d={quadPath} fill="none" stroke="#2dd4bf" strokeWidth={2.5} />
-              {[POINT_30, POINT_319].map((p) => (
-                <g key={p.n}>
-                  <circle cx={xAt(p.n)} cy={yAt(p.quad)} r={4} fill="#fb7185" />
-                  <text
-                    x={xAt(p.n)}
-                    y={yAt(p.quad) - 10}
-                    fill="#e2e8f0"
-                    fontSize="11"
-                    fontFamily="monospace"
-                    textAnchor={p.n > 250 ? 'end' : 'middle'}
-                  >
-                    {p.n}턴 · {formatM(p.quad)}
-                  </text>
-                </g>
-              ))}
-              <text x={PAD_L} y={CHART_H - 10} fill="#64748b" fontSize="10" fontFamily="monospace">
-                턴 수 →
-              </text>
-              <text
-                x={12}
-                y={PAD_T + 4}
-                fill="#64748b"
-                fontSize="10"
-                fontFamily="monospace"
-                transform={`rotate(-90 12 ${PAD_T + 4})`}
-              >
-                컨텍스트
-              </text>
-            </svg>
-            <div className="flex items-center gap-5 mt-4 text-[0.7rem] text-slate-500 font-mono flex-wrap">
-              <span className="inline-flex items-center gap-1.5">
-                <span className="w-3 h-0.5 bg-[#2dd4bf]" aria-hidden="true" /> ∫ = c₀·n + g·n²/2
-              </span>
-              <span className="inline-flex items-center gap-1.5">
-                <span
-                  className="w-3 h-0.5 border-t border-dashed border-slate-500"
-                  aria-hidden="true"
-                />{' '}
-                선형 기준선 c₀·n
-              </span>
-              <span className="text-[#2dd4bf]/70">음영 = 침묵으로 피하는 n² 몫</span>
-            </div>
-          </motion.div>
-          <motion.div
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true }}
-            variants={stagger}
-            className="grid grid-cols-2 gap-5 mt-6 max-[600px]:grid-cols-1"
-          >
-            <motion.div
-              variants={fadeUp}
-              className="bg-white/[0.03] border border-white/10 rounded-[4px] p-6"
-            >
-              <div className="text-[1.7rem] font-extrabold text-[#2dd4bf] font-mono mb-1">71%</div>
-              <p className="text-[0.82rem] text-slate-400 leading-[1.7]">
-                전체 적분에서 n² 항이 차지하는 비중 (같은 작업량, 같은 하루, 턴 수만 다를 때)
-              </p>
-            </motion.div>
-            <motion.div
-              variants={fadeUp}
-              className="bg-white/[0.03] border border-white/10 rounded-[4px] p-6"
-            >
-              <div className="text-[1.7rem] font-extrabold text-[#fb7185] font-mono mb-1">64%</div>
-              <p className="text-[0.82rem] text-slate-400 leading-[1.7]">
-                청구 금액에서 캐시 읽기가 차지하는 비중. 쓴 것이 아니라 같은 컨텍스트를 매 턴 다시
-                읽는 값
-              </p>
-            </motion.div>
-          </motion.div>
-        </div>
-      </section>
-
-      {/* 사이클 */}
-      <section id="cycle" className={sectionClass}>
-        <div className={innerClass}>
-          <motion.div
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true }}
-            variants={fadeUp}
-          >
-            <div className={labelClass}>
-              <GitMerge className="w-3.5 h-3.5" aria-hidden="true" /> THE CYCLE
-            </div>
-            <h2 className={titleClass}>
-              측정 → 분리 → 브리핑 → 침묵 → 수확 → 확인 → 기록 → 클리어
-            </h2>
-            <p className={descClass}>
-              사용자는 두 마디만 합니다: "다음 것 띄워줘"와 "수확해줘". 인수인계 노트가 자동
-              로드되는 곳에 있으면 두 번째는 보통 "계속해줘"로 줄어듭니다.
-            </p>
-          </motion.div>
-          <motion.div
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true }}
-            variants={stagger}
-            className="grid grid-cols-5 gap-3 max-[900px]:grid-cols-3 max-[560px]:grid-cols-2"
-          >
-            {CYCLE.map((step) => (
-              <motion.div
-                key={step.n}
-                variants={fadeUp}
-                className={`border rounded-[4px] p-4 relative ${
-                  step.label === '침묵'
-                    ? 'bg-[#2dd4bf]/[0.08] border-[#2dd4bf]/30'
-                    : 'bg-white/[0.03] border-white/10'
-                }`}
-              >
-                <div className="text-[0.7rem] text-slate-500 font-mono mb-2">
-                  {step.n}/{CYCLE.length}
-                </div>
-                <h3
-                  className={`text-[0.92rem] font-bold mb-1.5 ${
-                    step.label === '침묵' ? 'text-[#2dd4bf]' : 'text-slate-100'
-                  }`}
-                >
-                  {step.label}
-                </h3>
-                <p className="text-[0.74rem] text-slate-500 leading-[1.55]">{step.desc}</p>
-              </motion.div>
-            ))}
-          </motion.div>
-        </div>
-      </section>
-
-      {/* 6가지 거짓 green */}
-      <section className={sectionClass}>
-        <div className={innerClass}>
-          <motion.div
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true }}
-            variants={fadeUp}
-          >
-            <div className={labelClass} style={{ color: '#fb7185' }}>
-              <ShieldAlert className="w-3.5 h-3.5" aria-hidden="true" /> SILENT FAILURES
-            </div>
-            <h2 className={titleClass}>게이트는 이렇게 거짓말한다</h2>
-            <p className={descClass}>
-              여섯 가지 모두 lint·타입·유닛테스트·e2e가 전부 통과한 상태에서 관측됐습니다. 6번은 이
-              파이프라인에만 있는 특이 케이스입니다. 세션이 인수인계 문서로 이어지기 때문에, 한
-              세션이 적은 우회가 다음 세션에는 "승인된 절차"로 읽힙니다.
-            </p>
-          </motion.div>
-          <motion.div
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true }}
-            variants={stagger}
-            className="bg-white/[0.03] border border-white/10 rounded-[4px] divide-y divide-white/[0.06]"
-          >
-            {FAILURES.map((f) => (
-              <motion.div
-                key={f.n}
-                variants={fadeUp}
-                className="grid grid-cols-[auto_1fr] gap-x-5 gap-y-2 p-6 items-start max-[700px]:grid-cols-1"
-              >
-                <span className="text-[0.72rem] font-mono font-bold text-[#fb7185] tracking-[0.05em] border border-[#fb7185]/30 bg-[#fb7185]/[0.06] rounded-full py-1 px-2.5 whitespace-nowrap self-start mt-0.5 w-fit">
-                  #{f.n}
-                </span>
-                <div>
-                  <p className="text-[0.9rem] text-slate-100 leading-[1.7] font-semibold mb-1.5">
-                    {f.title}
-                  </p>
-                  <p className="text-[0.82rem] text-slate-500 leading-[1.75] font-mono">{f.tell}</p>
-                </div>
-              </motion.div>
-            ))}
-          </motion.div>
-        </div>
-      </section>
-
-      {/* 언제 쓰지 말아야 하나 */}
-      <section className={sectionClass}>
-        <div className={innerClass}>
-          <motion.div
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true }}
-            variants={fadeUp}
-          >
-            <div className={labelClass}>
-              <Ban className="w-3.5 h-3.5" aria-hidden="true" /> WHEN NOT TO
-            </div>
-            <h2 className={titleClass}>이 조건을 다 만족할 때만 씁니다</h2>
-            <p className={descClass}>
-              하나라도 빠지면 이 파이프라인은 순손실입니다. 단일 세션으로 끝날 작은 기능, 범위가
-              계속 바뀌는 탐색성 작업, 두 트랙이 같은 파일을 고쳐야 하는 경우, 자동 체크가 없는
-              레포에는 쓰지 않습니다.
-            </p>
-          </motion.div>
-          <motion.div
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true }}
-            variants={stagger}
-            className="grid grid-cols-2 gap-5 max-[700px]:grid-cols-1"
-          >
-            {CONDITIONS.map((c) => (
-              <motion.div
-                key={c.label}
-                variants={fadeUp}
-                className="flex items-start gap-4 bg-white/[0.03] border border-white/10 rounded-[4px] p-6"
-              >
-                <Layers className="w-5 h-5 text-[#2dd4bf] shrink-0 mt-0.5" aria-hidden="true" />
-                <div>
-                  <h3 className="text-[0.92rem] font-bold text-slate-100 mb-1.5">{c.label}</h3>
-                  <p className="text-[0.82rem] text-slate-500 leading-[1.7]">{c.desc}</p>
-                </div>
-              </motion.div>
-            ))}
-          </motion.div>
-        </div>
-      </section>
-
-      {/* v0.4.0 */}
-      <section className={sectionClass}>
-        <div className={innerClass}>
-          <motion.div
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true }}
-            variants={fadeUp}
-          >
-            <div className={labelClass}>
-              <Wrench className="w-3.5 h-3.5" aria-hidden="true" /> CHANGELOG · v0.4.0
-            </div>
-            <h2 className={titleClass}>리뷰에서 재현된 것만 고쳤다</h2>
-            <p className={descClass}>
-              2026년 9월 교차 레포 리뷰가 file:line이 붙은 결함을 냈고, 전부 재현한 뒤에
-              받아들였습니다. 같은 리뷰가 규칙 둘을 좁히라고 했고 그렇게 했습니다. 침묵은 모든 턴이
-              아니라 잡일과 폴링을 금지하고, 재현의 위임은 허용하되 판정은 오케스트레이터에
-              남습니다.
-            </p>
-          </motion.div>
-          <motion.div
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true }}
-            variants={stagger}
-            className="bg-white/[0.03] border border-white/10 rounded-[4px] divide-y divide-white/[0.06]"
-          >
-            {RELEASE_0_4_0.map((item) => (
-              <motion.div
-                key={item.title}
-                variants={fadeUp}
-                className="grid grid-cols-[auto_1fr] gap-x-5 gap-y-2 p-6 items-start max-[700px]:grid-cols-1"
-              >
-                <span className="text-[0.66rem] font-mono font-bold text-slate-500 tracking-[0.08em] border border-white/15 rounded-full py-1 px-2.5 whitespace-nowrap self-start mt-0.5 w-fit">
-                  결함
-                </span>
-                <p className="text-[0.86rem] text-slate-300 leading-[1.7] font-mono">
-                  {item.title}
-                </p>
-                <span className="text-[0.66rem] font-mono font-bold text-[#2dd4bf] tracking-[0.08em] border border-[#2dd4bf]/30 bg-[#2dd4bf]/[0.06] rounded-full py-1 px-2.5 whitespace-nowrap self-start mt-0.5 w-fit">
-                  수정
-                </span>
-                <p className="text-[0.9rem] text-slate-100 leading-[1.75] font-semibold">
-                  {item.fix}
-                </p>
-              </motion.div>
-            ))}
-          </motion.div>
-        </div>
-      </section>
-
-      {/* 설치 */}
-      <section id="install" className={sectionClass}>
-        <div className={innerClass}>
-          <motion.div
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true }}
-            variants={fadeUp}
-          >
-            <div className={labelClass}>
-              <Timer className="w-3.5 h-3.5" aria-hidden="true" /> INSTALL
-            </div>
-            <h2 className={titleClass}>시작하기</h2>
-            <p className={descClass}>
-              Claude Code 터미널에서 세 줄로 설치합니다. 설치되는 것은 스킬 1개와 레퍼런스 파일
-              3개뿐이고, 훅·에이전트·의존성은 없습니다.
-            </p>
-          </motion.div>
-          <motion.div
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true }}
-            variants={fadeUp}
-          >
-            <pre className="bg-[#050706] border border-white/10 rounded-[4px] py-7 px-8 text-[0.82rem] leading-[1.9] text-slate-200 overflow-x-auto max-[768px]:py-5 max-[768px]:px-5 max-[768px]:text-[0.75rem] font-mono">
-              <span className="text-slate-500"># Claude Code 터미널에서 실행</span>
-              {'\n'}
-              <span className="text-[#2dd4bf]">
-                /plugin marketplace add sh5623/parallel-worktree
-              </span>
-              {'\n'}
-              <span className="text-[#2dd4bf]">
-                /plugin install parallel-worktree@parallel-worktree
-              </span>
-              {'\n'}
-              <span className="text-[#2dd4bf]">/reload-plugins</span>
-              {'\n\n'}
-              <span className="text-slate-500"># 첫 프로젝트 부트스트랩</span>
-              {'\n'}
-              <span className="text-slate-300">"이 프로젝트에 parallel worktree 세팅해줘"</span>
-            </pre>
-          </motion.div>
-          <motion.p
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true }}
-            variants={fadeUp}
-            className="text-[0.8rem] text-slate-500 mt-6 font-mono leading-[1.8]"
-          >
-            fe-rail·self-improvement와 같이 쓴다면 마켓 하나로 세 개 다 설치할 수 있습니다:
-            sh5623/guardrail.
-          </motion.p>
-        </div>
-      </section>
-
-      {/* FAQ */}
-      <section className={sectionClass}>
-        <div className={innerClass}>
-          <motion.div
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true }}
-            variants={fadeUp}
-          >
-            <div className={labelClass}>FAQ</div>
-            <h2 className={titleClass}>자주 묻는 질문</h2>
-          </motion.div>
-          <motion.div
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true }}
-            variants={stagger}
-            className="max-w-[780px]"
-          >
-            {FAQS.map((faq, i) => {
-              const isOpen = openFaq === i
-              return (
-                <motion.div
-                  key={faq.q}
-                  variants={fadeUp}
-                  className="border-b border-white/[0.06] last:border-b-0"
-                >
-                  <button
-                    type="button"
-                    onClick={() => setOpenFaq(isOpen ? null : i)}
-                    aria-expanded={isOpen}
-                    className="w-full flex items-center justify-between gap-4 py-5 text-left bg-none border-none cursor-pointer"
-                  >
-                    <span className="text-[0.95rem] font-semibold text-slate-100">{faq.q}</span>
-                    <ChevronDown
-                      className={`w-4 h-4 text-slate-500 shrink-0 transition-transform duration-200 ${
-                        isOpen ? 'rotate-180' : ''
-                      }`}
-                      aria-hidden="true"
-                    />
-                  </button>
-                  {isOpen && (
-                    <p className="text-[0.86rem] text-slate-400 leading-[1.85] pb-5 max-w-[640px]">
-                      {faq.a}
-                    </p>
-                  )}
-                </motion.div>
-              )
-            })}
-          </motion.div>
-        </div>
-      </section>
-
-      {/* Footer */}
-      <footer className="px-12 py-10 border-t border-white/[0.06] flex items-center justify-between flex-wrap gap-4 max-[768px]:px-6">
-        <div className="text-[0.75rem] text-slate-500 font-mono tracking-[0.05em]">
-          parallel-worktree · Claude Code Skill · MIT © 2026 Seungho
-        </div>
-        <div className="flex items-center gap-5">
+    <PageMotion>
+      <div
+        className="motion-scope min-h-screen text-slate-50 overflow-x-hidden"
+        style={{
+          backgroundColor: '#0a0d0f',
+          backgroundImage:
+            'repeating-linear-gradient(rgba(45,212,191,0.05) 0px, rgba(45,212,191,0.05) 1px, transparent 1px, transparent 64px)',
+        }}
+      >
+        {/* Nav */}
+        <nav className="fixed top-0 left-0 right-0 z-[100] flex items-center justify-between px-12 py-5 bg-[rgba(10,13,15,0.85)] backdrop-blur-[12px] border-b border-white/[0.06] max-[768px]:px-6 max-[768px]:py-4">
           <button
             type="button"
-            onClick={() => void navigate('/')}
-            className="text-[0.75rem] text-slate-400 font-mono bg-none border-none cursor-pointer p-0 transition-colors duration-200 hover:text-[#2dd4bf]"
+            onClick={() => void navigate('/dev')}
+            className="inline-flex items-center gap-2 text-[0.75rem] text-slate-400 tracking-[0.1em] font-mono bg-none border-none cursor-pointer p-0 transition-colors duration-200 hover:text-[#2dd4bf]"
           >
             ← Home
           </button>
+          <div className="inline-flex items-center gap-2 text-[0.9rem] font-bold tracking-[0.12em] uppercase font-mono text-slate-50">
+            <span className="w-2 h-2 rounded-full bg-[#2dd4bf]" aria-hidden="true" />
+            parallel-worktree
+          </div>
           <a
             href="https://github.com/sh5623/parallel-worktree"
             target="_blank"
             rel="noopener noreferrer"
-            className="text-[0.75rem] text-slate-400 font-mono no-underline transition-colors duration-200 hover:text-[#2dd4bf]"
+            className="inline-flex items-center gap-1.5 text-[0.75rem] text-slate-400 tracking-[0.1em] font-mono no-underline transition-colors duration-200 hover:text-[#2dd4bf]"
           >
-            GitHub →
+            <Github className="w-3.5 h-3.5" aria-hidden="true" />
+            GitHub
           </a>
-        </div>
-      </footer>
-    </div>
+        </nav>
+
+        {/* Hero */}
+        <header className="relative pt-[9rem] pb-24 px-12 max-[768px]:pt-32 max-[768px]:pb-16 max-[768px]:px-6">
+          <motion.div
+            initial="hidden"
+            animate="visible"
+            variants={stagger}
+            className={`${innerClass} grid grid-cols-[1.05fr_0.95fr] gap-16 items-start max-[960px]:grid-cols-1`}
+          >
+            <div>
+              <motion.span
+                variants={fadeUp}
+                className="inline-flex items-center gap-2 text-[0.72rem] text-[#2dd4bf] tracking-[0.25em] uppercase font-mono font-semibold border border-[#2dd4bf]/25 bg-[#2dd4bf]/[0.06] rounded-full py-1.5 px-3.5 mb-7"
+              >
+                <Split className="w-3.5 h-3.5" aria-hidden="true" />
+                Claude Code Skill
+              </motion.span>
+              <motion.h1
+                variants={fadeUp}
+                className="text-[clamp(2.1rem,5vw,3.8rem)] font-extrabold tracking-[-0.03em] leading-[1.12] mb-6 text-slate-50"
+              >
+                혼자서,
+                <br />
+                <span className="relative inline-block">
+                  병렬로 돈다
+                  <span
+                    className="absolute left-0 right-0 -bottom-1 h-[0.4em] bg-[#2dd4bf]/20 -z-10"
+                    aria-hidden="true"
+                  />
+                </span>
+              </motion.h1>
+              <motion.p
+                variants={fadeUp}
+                className="text-[1rem] text-slate-400 leading-[1.85] max-w-[500px] mb-9"
+              >
+                한 명의 오케스트레이터가 격리된 git worktree 여러 개에서 서브에이전트를 병렬로
+                돌리고, 작업을 잃지 않는 순서로 끝난 것부터 수확합니다. 진짜 비용은 git 명령이
+                아닙니다. 기다리는 동안 오케스트레이터가 잡일로 턴을 채워서 컨텍스트가 제곱으로
+                불어나는 쪽입니다.
+              </motion.p>
+              <motion.div variants={fadeUp} className="flex items-center gap-4 flex-wrap">
+                <button
+                  type="button"
+                  onClick={() => scrollTo('install')}
+                  className="inline-flex items-center gap-2 text-[0.85rem] font-semibold font-mono bg-[#2dd4bf] text-[#06231f] rounded-md py-3 px-6 cursor-pointer transition-transform duration-200 hover:-translate-y-0.5"
+                >
+                  설치 명령 보기 <ArrowRight className="w-4 h-4" aria-hidden="true" />
+                </button>
+                <a
+                  href="https://github.com/sh5623/parallel-worktree"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 text-[0.85rem] font-semibold font-mono text-slate-300 border border-white/15 rounded-md py-3 px-6 no-underline transition-colors duration-200 hover:border-white/35 hover:text-slate-50"
+                >
+                  GitHub에서 보기
+                </a>
+              </motion.div>
+            </div>
+
+            {/* Hero swimlane preview */}
+            <motion.div
+              variants={fadeUp}
+              className="relative bg-white/[0.03] border border-white/10 rounded-[4px] p-6 max-[960px]:rotate-0"
+            >
+              <div className="text-[0.7rem] text-slate-500 font-mono mb-4 tracking-[0.08em]">
+                ORCHESTRATOR · 2 WORKTREES
+              </div>
+              <div className="relative flex flex-col gap-3">
+                <div className="flex items-center gap-3">
+                  <span className="text-[0.68rem] text-slate-500 font-mono w-[92px] shrink-0">
+                    orchestrator
+                  </span>
+                  <div className="flex-1 h-5 flex gap-[2px]">
+                    <GanttBar
+                      at={0}
+                      span={0.1}
+                      className="w-[10%] bg-[#2dd4bf] rounded-[2px]"
+                      title="dispatch"
+                    />
+                    <GanttGap
+                      at={0.1}
+                      span={0.32}
+                      className="flex-1 border border-dashed border-white/15 rounded-[2px]"
+                    />
+                    <GanttBar
+                      at={0.42}
+                      span={0.08}
+                      className="w-[8%] bg-[#fb7185] rounded-[2px]"
+                      title="harvest"
+                    />
+                    <GanttBar
+                      at={0.5}
+                      span={0.1}
+                      className="w-[10%] bg-[#2dd4bf] rounded-[2px]"
+                      title="dispatch"
+                    />
+                    <GanttGap
+                      at={0.6}
+                      span={0.32}
+                      className="flex-1 border border-dashed border-white/15 rounded-[2px]"
+                    />
+                    <GanttBar
+                      at={0.92}
+                      span={0.08}
+                      className="w-[8%] bg-[#fb7185] rounded-[2px]"
+                      title="harvest"
+                    />
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <span className="text-[0.68rem] text-slate-500 font-mono w-[92px] shrink-0">
+                    worktree A
+                  </span>
+                  <div className="flex-1 h-5 flex gap-[2px]">
+                    <GanttBar
+                      at={0}
+                      span={0.52}
+                      className="w-[52%] bg-[#2dd4bf]/40 rounded-[2px]"
+                    />
+                    <div className="flex-1" />
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <span className="text-[0.68rem] text-slate-500 font-mono w-[92px] shrink-0">
+                    worktree B
+                  </span>
+                  <div className="flex-1 h-5 flex gap-[2px]">
+                    <div className="w-[18%]" />
+                    <GanttBar
+                      at={0.18}
+                      span={0.6}
+                      className="w-[60%] bg-[#2dd4bf]/40 rounded-[2px]"
+                    />
+                    <div className="flex-1" />
+                  </div>
+                </div>
+                <GanttPlayhead />
+              </div>
+              <div className="flex items-center gap-4 mt-5 pt-4 border-t border-white/[0.06] text-[0.66rem] text-slate-500 font-mono flex-wrap">
+                <span className="inline-flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-[2px] bg-[#2dd4bf]" aria-hidden="true" />{' '}
+                  dispatch
+                </span>
+                <span className="inline-flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-[2px] bg-[#2dd4bf]/40" aria-hidden="true" />{' '}
+                  running
+                </span>
+                <span className="inline-flex items-center gap-1.5">
+                  <span
+                    className="w-2 h-2 border border-dashed border-white/25 rounded-[2px]"
+                    aria-hidden="true"
+                  />{' '}
+                  silence
+                </span>
+                <span className="inline-flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-[2px] bg-[#fb7185]" aria-hidden="true" /> harvest
+                </span>
+              </div>
+            </motion.div>
+          </motion.div>
+        </header>
+
+        {/* 세션 vs 워크트리 */}
+        <section className={sectionClass}>
+          <div className={innerClass}>
+            <motion.div
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true }}
+              variants={fadeUp}
+            >
+              <div className={labelClass}>
+                <Users className="w-3.5 h-3.5" aria-hidden="true" /> ISOLATION
+              </div>
+              <h2 className={titleClass}>세션 두 개가 아니라, worktree 하나</h2>
+              <p className={descClass}>
+                같은 레포에 세션을 하나 더 열어도 격리되는 건 없습니다. worktree는 파일시스템과 git
+                인덱스를 진짜로 분리합니다. 쓰는 사람 하나, 수확하는 사람 하나.
+              </p>
+            </motion.div>
+            <motion.div
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true }}
+              variants={stagger}
+              className="bg-white/[0.03] border border-white/10 rounded-[4px] overflow-hidden"
+            >
+              <div className="grid grid-cols-[220px_1fr] text-[0.72rem] text-slate-500 font-mono uppercase tracking-[0.08em] border-b border-white/[0.06] max-[600px]:grid-cols-1">
+                <div className="py-3 px-6">쪼개고 싶었던 것</div>
+                <div className="py-3 px-6 border-l border-white/[0.06] max-[600px]:border-l-0 max-[600px]:border-t">
+                  세션을 하나 더 열면 실제로 일어나는 일
+                </div>
+              </div>
+              {COMPARE_ROWS.map((row) => (
+                <motion.div
+                  key={row.hoped}
+                  variants={fadeUp}
+                  className="grid grid-cols-[220px_1fr] border-b border-white/[0.06] last:border-b-0 max-[600px]:grid-cols-1"
+                >
+                  <div className="py-5 px-6 text-[0.9rem] font-semibold text-slate-100">
+                    {row.hoped}
+                  </div>
+                  <div className="py-5 px-6 text-[0.85rem] text-slate-400 leading-[1.75] border-l border-white/[0.06] max-[600px]:border-l-0 max-[600px]:border-t">
+                    {row.reality}
+                  </div>
+                </motion.div>
+              ))}
+            </motion.div>
+          </div>
+        </section>
+
+        {/* 비용 곡선 */}
+        <section className={sectionClass}>
+          <div className={innerClass}>
+            <motion.div
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true }}
+              variants={fadeUp}
+            >
+              <div className={labelClass}>
+                <TrendingUp className="w-3.5 h-3.5" aria-hidden="true" /> COST
+              </div>
+              <h2 className={titleClass}>기다리는 시간이 비용의 전부다</h2>
+              <p className={descClass}>
+                오케스트레이터의 컨텍스트 적분은 c₀·n + g·n²/2입니다. 턴 수 n에 대해 제곱으로
+                자랍니다. 기다리는 동안 잡일로 턴을 채우는 것이 n을 키우는 원인입니다. 319턴은
+                실측이고, 30턴 지점의 2.3M은 두 번째 실행이 아니라 같은 세션의 c₀와 g를 30턴에서
+                계산한 모델값입니다. (표본 n=1, 측정 방법은 레포의 RUNBOOK.md 6-0)
+              </p>
+            </motion.div>
+            <motion.div
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true }}
+              variants={fadeUp}
+              className="bg-white/[0.03] border border-white/10 rounded-[4px] p-6 max-[600px]:p-4"
+            >
+              <svg
+                viewBox={`0 0 ${CHART_W} ${CHART_H}`}
+                className="w-full h-auto"
+                role="img"
+                aria-label="턴 수에 따른 컨텍스트 적분 곡선: 30턴에서 2.3M, 319턴에서 68.0M"
+              >
+                <title>턴 수 대비 컨텍스트 적분 곡선</title>
+                <defs>
+                  <clipPath id="pw-cost-wipe">
+                    <motion.rect height={CHART_H} variants={costWipe} custom={reduceMotion} />
+                  </clipPath>
+                </defs>
+                {[0, 0.25, 0.5, 0.75, 1].map((f) => (
+                  <line
+                    key={f}
+                    x1={PAD_L}
+                    x2={CHART_W - PAD_R}
+                    y1={yAt(MAX_V * f)}
+                    y2={yAt(MAX_V * f)}
+                    stroke="rgba(255,255,255,0.06)"
+                    strokeWidth={1}
+                  />
+                ))}
+                <motion.path
+                  d={areaPath}
+                  fill="rgba(45,212,191,0.08)"
+                  variants={costArea}
+                  custom={reduceMotion}
+                />
+                <g clipPath="url(#pw-cost-wipe)">
+                  <path
+                    d={linearPath}
+                    fill="none"
+                    stroke="#475569"
+                    strokeWidth={1.5}
+                    strokeDasharray="4 4"
+                  />
+                </g>
+                <motion.path
+                  d={quadPath}
+                  fill="none"
+                  stroke="#2dd4bf"
+                  strokeWidth={2.5}
+                  variants={costDraw}
+                  custom={reduceMotion}
+                />
+                {[POINT_30, POINT_319].map((p, i) => (
+                  <g key={p.n}>
+                    <motion.circle
+                      cx={xAt(p.n)}
+                      cy={yAt(p.quad)}
+                      r={4}
+                      fill="#fb7185"
+                      variants={costPoint}
+                      custom={{ order: i, reduce: reduceMotion } satisfies PopCustom}
+                    />
+                    <motion.g
+                      variants={costLabel}
+                      custom={{ order: i, reduce: reduceMotion } satisfies PopCustom}
+                    >
+                      <text
+                        x={xAt(p.n)}
+                        y={yAt(p.quad) - 10}
+                        fill="#e2e8f0"
+                        fontSize="11"
+                        fontFamily="monospace"
+                        textAnchor={p.n > 250 ? 'end' : 'middle'}
+                      >
+                        {p.n}턴 · {formatM(p.quad)}
+                      </text>
+                    </motion.g>
+                  </g>
+                ))}
+                <text
+                  x={PAD_L}
+                  y={CHART_H - 10}
+                  fill="#64748b"
+                  fontSize="10"
+                  fontFamily="monospace"
+                >
+                  턴 수 →
+                </text>
+                <text
+                  x={12}
+                  y={PAD_T + 4}
+                  fill="#64748b"
+                  fontSize="10"
+                  fontFamily="monospace"
+                  transform={`rotate(-90 12 ${PAD_T + 4})`}
+                >
+                  컨텍스트
+                </text>
+              </svg>
+              <div className="flex items-center gap-5 mt-4 text-[0.7rem] text-slate-500 font-mono flex-wrap">
+                <span className="inline-flex items-center gap-1.5">
+                  <span className="w-3 h-0.5 bg-[#2dd4bf]" aria-hidden="true" /> ∫ = c₀·n + g·n²/2
+                </span>
+                <span className="inline-flex items-center gap-1.5">
+                  <span
+                    className="w-3 h-0.5 border-t border-dashed border-slate-500"
+                    aria-hidden="true"
+                  />{' '}
+                  선형 기준선 c₀·n
+                </span>
+                <span className="text-[#2dd4bf]/70">음영 = 침묵으로 피하는 n² 몫</span>
+              </div>
+            </motion.div>
+            <motion.div
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true }}
+              variants={stagger}
+              className="grid grid-cols-2 gap-5 mt-6 max-[600px]:grid-cols-1"
+            >
+              <motion.div
+                variants={fadeUp}
+                className="bg-white/[0.03] border border-white/10 rounded-[4px] p-6"
+              >
+                <div className="text-[1.7rem] font-extrabold text-[#2dd4bf] font-mono mb-1">
+                  <CountUp value="71%" />
+                </div>
+                <p className="text-[0.82rem] text-slate-400 leading-[1.7]">
+                  전체 적분에서 n² 항이 차지하는 비중 (같은 작업량, 같은 하루, 턴 수만 다를 때)
+                </p>
+              </motion.div>
+              <motion.div
+                variants={fadeUp}
+                className="bg-white/[0.03] border border-white/10 rounded-[4px] p-6"
+              >
+                <div className="text-[1.7rem] font-extrabold text-[#fb7185] font-mono mb-1">
+                  <CountUp value="64%" />
+                </div>
+                <p className="text-[0.82rem] text-slate-400 leading-[1.7]">
+                  청구 금액에서 캐시 읽기가 차지하는 비중. 쓴 것이 아니라 같은 컨텍스트를 매 턴 다시
+                  읽는 값
+                </p>
+              </motion.div>
+            </motion.div>
+          </div>
+        </section>
+
+        {/* 사이클 */}
+        <section id="cycle" className={sectionClass}>
+          <div className={innerClass}>
+            <motion.div
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true }}
+              variants={fadeUp}
+            >
+              <div className={labelClass}>
+                <GitMerge className="w-3.5 h-3.5" aria-hidden="true" /> THE CYCLE
+              </div>
+              <h2 className={titleClass}>
+                측정 → 분리 → 브리핑 → 침묵 → 수확 → 확인 → 기록 → 클리어
+              </h2>
+              <p className={descClass}>
+                사용자는 두 마디만 합니다: "다음 것 띄워줘"와 "수확해줘". 인수인계 노트가 자동
+                로드되는 곳에 있으면 두 번째는 보통 "계속해줘"로 줄어듭니다.
+              </p>
+            </motion.div>
+            <motion.div
+              ref={cycleRef}
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true }}
+              variants={stagger}
+              className="grid grid-cols-5 gap-3 max-[900px]:grid-cols-3 max-[560px]:grid-cols-2"
+            >
+              {CYCLE.map((step, i) => {
+                const isSilence = step.label === '침묵'
+                const isActive = activeStep === i
+                return (
+                  <motion.div
+                    key={step.n}
+                    variants={fadeUp}
+                    className={cycleCardClass(isSilence, isActive)}
+                  >
+                    {isActive && isSilence && (
+                      <motion.span
+                        aria-hidden="true"
+                        className="pointer-events-none absolute -inset-px rounded-[4px] border border-[#2dd4bf]"
+                        initial={{ opacity: 0.85, scale: 1 }}
+                        animate={{ opacity: 0, scale: 1.1 }}
+                        transition={{ duration: CYCLE_MS / 2000, ease: EASE_OUT, repeat: 1 }}
+                      />
+                    )}
+                    <div
+                      className={`text-[0.7rem] font-mono mb-2 transition-colors duration-300 ${
+                        isActive ? 'text-[#2dd4bf]/80' : 'text-slate-500'
+                      }`}
+                    >
+                      {step.n}/{CYCLE.length}
+                    </div>
+                    <h3
+                      className={`text-[0.92rem] font-bold mb-1.5 ${
+                        isSilence ? 'text-[#2dd4bf]' : 'text-slate-100'
+                      }`}
+                    >
+                      {step.label}
+                    </h3>
+                    <p className="text-[0.74rem] text-slate-500 leading-[1.55]">{step.desc}</p>
+                    {isActive && (
+                      <motion.span
+                        aria-hidden="true"
+                        className="absolute left-2 right-2 bottom-1.5 h-[2px] rounded-full bg-[#2dd4bf]/70"
+                        style={{ originX: 0 }}
+                        initial={{ scaleX: 0 }}
+                        animate={{ scaleX: 1 }}
+                        transition={{ duration: CYCLE_MS / 1000, ease: 'linear' }}
+                      />
+                    )}
+                  </motion.div>
+                )
+              })}
+            </motion.div>
+          </div>
+        </section>
+
+        {/* 6가지 거짓 green */}
+        <section className={sectionClass}>
+          <div className={innerClass}>
+            <motion.div
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true }}
+              variants={fadeUp}
+            >
+              <div className={labelClass} style={{ color: '#fb7185' }}>
+                <ShieldAlert className="w-3.5 h-3.5" aria-hidden="true" /> SILENT FAILURES
+              </div>
+              <h2 className={titleClass}>게이트는 이렇게 거짓말한다</h2>
+              <p className={descClass}>
+                여섯 가지 모두 lint·타입·유닛테스트·e2e가 전부 통과한 상태에서 관측됐습니다. 6번은
+                이 파이프라인에만 있는 특이 케이스입니다. 세션이 인수인계 문서로 이어지기 때문에, 한
+                세션이 적은 우회가 다음 세션에는 "승인된 절차"로 읽힙니다.
+              </p>
+            </motion.div>
+            <motion.div
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true }}
+              variants={stagger}
+              className="bg-white/[0.03] border border-white/10 rounded-[4px] divide-y divide-white/[0.06]"
+            >
+              {FAILURES.map((f) => (
+                <motion.div
+                  key={f.n}
+                  variants={fadeUp}
+                  className="grid grid-cols-[auto_1fr] gap-x-5 gap-y-2 p-6 items-start max-[700px]:grid-cols-1"
+                >
+                  <span className="text-[0.72rem] font-mono font-bold text-[#fb7185] tracking-[0.05em] border border-[#fb7185]/30 bg-[#fb7185]/[0.06] rounded-full py-1 px-2.5 whitespace-nowrap self-start mt-0.5 w-fit">
+                    #{f.n}
+                  </span>
+                  <div>
+                    <p className="text-[0.9rem] text-slate-100 leading-[1.7] font-semibold mb-1.5">
+                      {f.title}
+                    </p>
+                    <p className="text-[0.82rem] text-slate-500 leading-[1.75] font-mono">
+                      {f.tell}
+                    </p>
+                  </div>
+                </motion.div>
+              ))}
+            </motion.div>
+          </div>
+        </section>
+
+        {/* 언제 쓰지 말아야 하나 */}
+        <section className={sectionClass}>
+          <div className={innerClass}>
+            <motion.div
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true }}
+              variants={fadeUp}
+            >
+              <div className={labelClass}>
+                <Ban className="w-3.5 h-3.5" aria-hidden="true" /> WHEN NOT TO
+              </div>
+              <h2 className={titleClass}>이 조건을 다 만족할 때만 씁니다</h2>
+              <p className={descClass}>
+                하나라도 빠지면 이 파이프라인은 순손실입니다. 단일 세션으로 끝날 작은 기능, 범위가
+                계속 바뀌는 탐색성 작업, 두 트랙이 같은 파일을 고쳐야 하는 경우, 자동 체크가 없는
+                레포에는 쓰지 않습니다.
+              </p>
+            </motion.div>
+            <motion.div
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true }}
+              variants={stagger}
+              className="grid grid-cols-2 gap-5 max-[700px]:grid-cols-1"
+            >
+              {CONDITIONS.map((c) => (
+                <motion.div
+                  key={c.label}
+                  variants={fadeUp}
+                  className="flex items-start gap-4 bg-white/[0.03] border border-white/10 rounded-[4px] p-6"
+                >
+                  <Layers className="w-5 h-5 text-[#2dd4bf] shrink-0 mt-0.5" aria-hidden="true" />
+                  <div>
+                    <h3 className="text-[0.92rem] font-bold text-slate-100 mb-1.5">{c.label}</h3>
+                    <p className="text-[0.82rem] text-slate-500 leading-[1.7]">{c.desc}</p>
+                  </div>
+                </motion.div>
+              ))}
+            </motion.div>
+          </div>
+        </section>
+
+        {/* v0.4.0 */}
+        <section className={sectionClass}>
+          <div className={innerClass}>
+            <motion.div
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true }}
+              variants={fadeUp}
+            >
+              <div className={labelClass}>
+                <Wrench className="w-3.5 h-3.5" aria-hidden="true" /> CHANGELOG · v0.4.0
+              </div>
+              <h2 className={titleClass}>리뷰에서 재현된 것만 고쳤다</h2>
+              <p className={descClass}>
+                2026년 9월 교차 레포 리뷰가 file:line이 붙은 결함을 냈고, 전부 재현한 뒤에
+                받아들였습니다. 같은 리뷰가 규칙 둘을 좁히라고 했고 그렇게 했습니다. 침묵은 모든
+                턴이 아니라 잡일과 폴링을 금지하고, 재현의 위임은 허용하되 판정은 오케스트레이터에
+                남습니다.
+              </p>
+            </motion.div>
+            <motion.div
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true }}
+              variants={stagger}
+              className="bg-white/[0.03] border border-white/10 rounded-[4px] divide-y divide-white/[0.06]"
+            >
+              {RELEASE_0_4_0.map((item) => (
+                <motion.div
+                  key={item.title}
+                  variants={fadeUp}
+                  className="grid grid-cols-[auto_1fr] gap-x-5 gap-y-2 p-6 items-start max-[700px]:grid-cols-1"
+                >
+                  <span className="text-[0.66rem] font-mono font-bold text-slate-500 tracking-[0.08em] border border-white/15 rounded-full py-1 px-2.5 whitespace-nowrap self-start mt-0.5 w-fit">
+                    결함
+                  </span>
+                  <p className="text-[0.86rem] text-slate-300 leading-[1.7] font-mono">
+                    {item.title}
+                  </p>
+                  <span className="text-[0.66rem] font-mono font-bold text-[#2dd4bf] tracking-[0.08em] border border-[#2dd4bf]/30 bg-[#2dd4bf]/[0.06] rounded-full py-1 px-2.5 whitespace-nowrap self-start mt-0.5 w-fit">
+                    수정
+                  </span>
+                  <p className="text-[0.9rem] text-slate-100 leading-[1.75] font-semibold">
+                    {item.fix}
+                  </p>
+                </motion.div>
+              ))}
+            </motion.div>
+          </div>
+        </section>
+
+        {/* 설치 */}
+        <section id="install" className={sectionClass}>
+          <div className={innerClass}>
+            <motion.div
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true }}
+              variants={fadeUp}
+            >
+              <div className={labelClass}>
+                <Timer className="w-3.5 h-3.5" aria-hidden="true" /> INSTALL
+              </div>
+              <h2 className={titleClass}>시작하기</h2>
+              <p className={descClass}>
+                Claude Code 터미널에서 세 줄로 설치합니다. 설치되는 것은 스킬 1개와 레퍼런스 파일
+                3개뿐이고, 훅·에이전트·의존성은 없습니다.
+              </p>
+            </motion.div>
+            <motion.div
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true }}
+              variants={fadeUp}
+            >
+              <pre className="bg-[#050706] border border-white/10 rounded-[4px] py-7 px-8 text-[0.82rem] leading-[1.9] text-slate-200 overflow-x-auto max-[768px]:py-5 max-[768px]:px-5 max-[768px]:text-[0.75rem] font-mono">
+                <TypeLines lines={INSTALL_LINES} className="text-[#2dd4bf]" />
+              </pre>
+            </motion.div>
+            <motion.p
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true }}
+              variants={fadeUp}
+              className="text-[0.8rem] text-slate-500 mt-6 font-mono leading-[1.8]"
+            >
+              fe-rail·self-improvement와 같이 쓴다면 마켓 하나로 세 개 다 설치할 수 있습니다:
+              sh5623/guardrail.
+            </motion.p>
+          </div>
+        </section>
+
+        {/* FAQ */}
+        <section className={sectionClass}>
+          <div className={innerClass}>
+            <motion.div
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true }}
+              variants={fadeUp}
+            >
+              <div className={labelClass}>FAQ</div>
+              <h2 className={titleClass}>자주 묻는 질문</h2>
+            </motion.div>
+            <motion.div
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true }}
+              variants={stagger}
+              className="max-w-[780px]"
+            >
+              {FAQS.map((faq, i) => {
+                const isOpen = openFaq === i
+                return (
+                  <motion.div
+                    key={faq.q}
+                    variants={fadeUp}
+                    className="border-b border-white/[0.06] last:border-b-0"
+                  >
+                    <button
+                      type="button"
+                      onClick={() => setOpenFaq(isOpen ? null : i)}
+                      aria-expanded={isOpen}
+                      className="w-full flex items-center justify-between gap-4 py-5 text-left bg-none border-none cursor-pointer"
+                    >
+                      <span className="text-[0.95rem] font-semibold text-slate-100">{faq.q}</span>
+                      <ChevronDown
+                        className={`w-4 h-4 text-slate-500 shrink-0 transition-transform duration-200 ${
+                          isOpen ? 'rotate-180' : ''
+                        }`}
+                        aria-hidden="true"
+                      />
+                    </button>
+                    <Collapse open={isOpen}>
+                      <p className="text-[0.86rem] text-slate-400 leading-[1.85] pb-5 max-w-[640px]">
+                        {faq.a}
+                      </p>
+                    </Collapse>
+                  </motion.div>
+                )
+              })}
+            </motion.div>
+          </div>
+        </section>
+
+        {/* Footer */}
+        <footer className="px-12 py-10 border-t border-white/[0.06] flex items-center justify-between flex-wrap gap-4 max-[768px]:px-6">
+          <div className="text-[0.75rem] text-slate-500 font-mono tracking-[0.05em]">
+            parallel-worktree · Claude Code Skill · MIT © 2026 Seungho
+          </div>
+          <div className="flex items-center gap-5">
+            <button
+              type="button"
+              onClick={() => void navigate('/dev')}
+              className="text-[0.75rem] text-slate-400 font-mono bg-none border-none cursor-pointer p-0 transition-colors duration-200 hover:text-[#2dd4bf]"
+            >
+              ← Home
+            </button>
+            <a
+              href="https://github.com/sh5623/parallel-worktree"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-[0.75rem] text-slate-400 font-mono no-underline transition-colors duration-200 hover:text-[#2dd4bf]"
+            >
+              GitHub →
+            </a>
+          </div>
+        </footer>
+      </div>
+    </PageMotion>
   )
 }

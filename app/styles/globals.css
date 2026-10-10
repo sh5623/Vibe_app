@@ -106,3 +106,31 @@
       0 0 60px rgba(167, 139, 250, 0.5);
   }
 }
+
+/* /dev 히어로 이름 — 글자마다 위상을 달리해 물결처럼 떠다닌다(Hero.tsx 의 animationDelay) */
+@keyframes letterWave {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-0.05em);
+  }
+}
+
+/* /dev·소개 페이지 — 모션 최소화 설정이면 CSS 반복 애니메이션(marquee·orb·커서)을 멈추고 콘텐츠를 바로 보여 준다.
+   framer-motion 쪽은 <MotionConfig reducedMotion="user">(dev.tsx · components/Motion 의 PageMotion)가 처리한다.
+   새 페이지는 루트 요소에 motion-scope 클래스를 주면 이 규칙을 받는다. */
+@media (prefers-reduced-motion: reduce) {
+  .dev-portfolio *,
+  .dev-portfolio *::before,
+  .dev-portfolio *::after,
+  .motion-scope *,
+  .motion-scope *::before,
+  .motion-scope *::after {
+    /* biome-ignore lint/complexity/noImportantStyles: 유틸리티 클래스의 animate-[…]·transition 을 접근성 설정으로 덮어써야 한다 */
+    animation: none !important;
+    /* biome-ignore lint/complexity/noImportantStyles: 위와 같은 이유 */
+    transition-duration: 0.01ms !important;
+  }
+}

@@ -1,4 +1,4 @@
-import { motion } from 'framer-motion'
+import { motion, type Variants } from 'framer-motion'
 
 export interface SkillCardProps {
   icon: string
@@ -9,11 +9,27 @@ export interface SkillCardProps {
   onClick: () => void
 }
 
+// hover 는 framer 가 transform(y·scale)을 맡고, 테두리·그림자·배경·상단 바는 CSS transition 이 맡는다.
+// 탭 축소는 whileTap 하나로만 한다 — CSS active:scale 은 `scale` 속성이라 transform 과 곱해져 이중으로 줄어든다.
+const card: Variants = {
+  hover: { y: -4 },
+  tap: { scale: 0.985 },
+}
+
+const iconTile: Variants = {
+  hover: { scale: 1.08, rotate: -4 },
+}
+
+const spring = { type: 'spring', stiffness: 380, damping: 24 } as const
+
 export function SkillCard({ icon, name, title, desc, cmd, onClick }: SkillCardProps) {
   return (
     <motion.button
       onClick={onClick}
-      whileTap={{ scale: 0.985 }}
+      variants={card}
+      whileHover="hover"
+      whileTap="tap"
+      transition={spring}
       role="button"
       tabIndex={0}
       aria-label={`${name}: ${title}`}
@@ -23,11 +39,15 @@ export function SkillCard({ icon, name, title, desc, cmd, onClick }: SkillCardPr
           onClick()
         }
       }}
-      className="relative w-full bg-white/[0.04] border-[1.5px] border-[rgba(99,102,241,0.15)] rounded-[20px] p-8 text-left cursor-pointer overflow-hidden shadow-[0_2px_12px_rgba(0,0,0,0.3)] transition-[border-color,box-shadow,background] duration-[250ms] before:content-[''] before:absolute before:top-0 before:left-0 before:right-0 before:h-[3px] before:bg-linear-to-r before:from-[#6366f1] before:to-[#34d399] before:scale-x-0 before:origin-left before:transition-transform before:duration-[350ms] before:rounded-tl-[20px] before:rounded-tr-[20px] hover:border-[rgba(99,102,241,0.35)] hover:shadow-[0_18px_48px_rgba(99,102,241,0.18)] hover:bg-white/[0.07] hover:before:scale-x-100 focus-visible:outline-2 focus-visible:outline-[#818cf8] focus-visible:outline-offset-[3px] active:scale-[0.985] max-[768px]:p-6"
+      className="relative w-full bg-white/[0.04] border-[1.5px] border-[rgba(99,102,241,0.15)] rounded-[20px] p-8 text-left cursor-pointer overflow-hidden shadow-[0_2px_12px_rgba(0,0,0,0.3)] transition-[border-color,box-shadow,background] duration-[250ms] before:content-[''] before:absolute before:top-0 before:left-0 before:right-0 before:h-[3px] before:bg-linear-to-r before:from-[#6366f1] before:to-[#34d399] before:scale-x-0 before:origin-left before:transition-transform before:duration-[350ms] before:rounded-tl-[20px] before:rounded-tr-[20px] hover:border-[rgba(99,102,241,0.35)] hover:shadow-[0_18px_48px_rgba(99,102,241,0.18)] hover:bg-white/[0.07] hover:before:scale-x-100 focus-visible:outline-2 focus-visible:outline-[#818cf8] focus-visible:outline-offset-[3px] max-[768px]:p-6"
     >
-      <div className="w-[52px] h-[52px] rounded-[14px] bg-linear-to-br from-[rgba(99,102,241,0.12)] to-[rgba(52,211,153,0.08)] border border-[rgba(99,102,241,0.16)] flex items-center justify-center text-[1.5rem] mb-5 shrink-0">
+      <motion.div
+        variants={iconTile}
+        transition={spring}
+        className="w-[52px] h-[52px] rounded-[14px] bg-linear-to-br from-[rgba(99,102,241,0.12)] to-[rgba(52,211,153,0.08)] border border-[rgba(99,102,241,0.16)] flex items-center justify-center text-[1.5rem] mb-5 shrink-0"
+      >
         {icon}
-      </div>
+      </motion.div>
       <div
         className="text-[0.82rem] text-[#818cf8] font-bold tracking-[0.06em] mb-[0.35rem]"
         style={{ fontFamily: 'var(--font-mono), monospace' }}

@@ -4,6 +4,7 @@ import {
   ArrowRight,
   BookOpenCheck,
   ChevronDown,
+  ChevronRight,
   ClipboardCheck,
   FileText,
   Github,
@@ -13,8 +14,9 @@ import {
   ShieldCheck,
   Workflow,
 } from 'lucide-react'
-import { useState } from 'react'
+import { type ReactNode, useRef, useState } from 'react'
 import { useNavigate } from 'react-router'
+import { Collapse, EASE_OUT, PageMotion, TypeLines, useCycle } from '@/components/Motion'
 import type { Route } from './+types/self-improvement'
 
 export function meta(_: Route.MetaArgs) {
@@ -254,6 +256,76 @@ const stagger: Variants = {
   visible: { transition: { staggerChildren: 0.08 } },
 }
 
+/** 자기 값은 없고 자식에게 hidden → visible 만 흘려 보내는 트리거. 자식이 각자 delay 를 정한다. */
+const trigger: Variants = { hidden: {}, visible: {} }
+
+// ── PRINCIPLES: 카드가 떠오른 뒤 큰 번호가 튀어나온다 ───────────────────
+// delayChildren 은 카드 자신의 stagger 시작 기준이라 카드마다 순서대로 터진다.
+const principleCard: Variants = {
+  hidden: { opacity: 0, y: 18 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.45, ease: 'easeOut', delayChildren: 0.18 },
+  },
+}
+
+const numeralPop: Variants = {
+  hidden: { opacity: 0, scale: 0.5 },
+  visible: {
+    opacity: 1,
+    scale: 1,
+    transition: { type: 'spring', stiffness: 420, damping: 14 },
+  },
+}
+
+// ── DOCUMENT MODEL: 레일이 위에서 아래로 그려지고, 레일이 지나가는 층마다 점이 튄다 ──
+/** 레일이 층 하나를 지나는 시간(초). 점·카드 delay 를 이 값에 맞춰 레일과 동기화한다. */
+const LADDER_STEP = 0.24
+
+const ladderRail: Variants = {
+  hidden: { scaleY: 0 },
+  visible: { scaleY: 1, transition: { duration: LADDER_STEP * LAYERS.length, ease: 'linear' } },
+}
+
+const ladderDot: Variants = {
+  hidden: { opacity: 0, scale: 0 },
+  visible: (i: number) => {
+    const delay = 0.06 + i * LADDER_STEP
+    return {
+      opacity: 1,
+      scale: 1,
+      transition: {
+        scale: { type: 'spring', stiffness: 560, damping: 13, delay },
+        opacity: { duration: 0.12, delay },
+      },
+    }
+  },
+}
+
+const ladderCard: Variants = {
+  hidden: { opacity: 0, x: -14 },
+  visible: (i: number) => ({
+    opacity: 1,
+    x: 0,
+    transition: { duration: 0.45, ease: EASE_OUT, delay: 0.12 + i * LADDER_STEP },
+  }),
+}
+
+// ── FIELD EVIDENCE: 사고가 먼저 뜨고, 규칙이 옆에서 밀려 들어온다 (행마다 스크롤 진입 시) ──
+const incidentIn: Variants = {
+  hidden: { opacity: 0, y: 8 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.4, ease: EASE_OUT } },
+}
+
+const ruleIn: Variants = {
+  hidden: { opacity: 0, x: 22 },
+  visible: { opacity: 1, x: 0, transition: { duration: 0.5, ease: EASE_OUT, delay: 0.34 } },
+}
+
+// ── THE LOOP: 강조가 6단계를 돈다 ──────────────────────────────────────
+const LOOP_STEP_MS = 1400
+
 function toneClass(tone: TranscriptLine['tone']): string {
   if (tone === 'pass') return 'text-emerald-700'
   if (tone === 'diff') return 'text-amber-800'
@@ -261,9 +333,49 @@ function toneClass(tone: TranscriptLine['tone']): string {
   return 'text-stone-600'
 }
 
+/**
+ * 히어로 터미널 줄. 명령·프롬프트(기본·muted 톤)는 문자열로 넘겨 한 글자씩 타이핑하고,
+ * 결과 줄(✔·+·자가개선)과 빈 줄은 톤 색을 입힌 JSX 로 넘겨 한 번에 뜨게 한다.
+ * 문자열 줄은 TypeLines 가 색을 받지 않으므로 기본색은 컨테이너에, muted 줄(첫 줄 `$ claude`)은
+ * TRANSCRIPT_CLASS 의 first-child 선택자로 칠한다.
+ */
+const TRANSCRIPT_LINES: ReactNode[] = TRANSCRIPT.map((line, i) =>
+  line.text && (line.tone === undefined || line.tone === 'muted') ? (
+    line.text
+  ) : (
+    // biome-ignore lint/suspicious/noArrayIndexKey: static transcript, order never changes
+    <span key={i} className={toneClass(line.tone)}>
+      {line.text || ' '}
+    </span>
+  )
+)
+const TRANSCRIPT_CLASS = 'text-stone-600 [&>span:first-child]:text-stone-400'
+
+const INSTALL_LINES = [
+  '/plugin marketplace add sh5623/self-improvement',
+  '/plugin install self-improvement@self-improvement',
+  '/reload-plugins',
+]
+
+const USAGE_LINES: ReactNode[] = [
+  { cmd: '/self-improvement:si-init', note: ' # 최초 1회' },
+  { cmd: '/self-improvement:si-improve', note: ' # 물렸을 때' },
+  { cmd: '/self-improvement:si-archive', note: ' # 문서가 길어졌을 때' },
+].map((u) => (
+  <span key={u.cmd}>
+    <span className="text-amber-800 font-semibold">{u.cmd}</span>
+    <span className="text-stone-400">{u.note}</span>
+  </span>
+))
+
 export default function SelfImprovementPage() {
   const navigate = useNavigate()
   const [openFaq, setOpenFaq] = useState<number | null>(0)
+
+  // 루프 강조 — 화면에 들어온 뒤에만 돈다(화면 밖·모션 최소화면 useCycle 이 null 이라 강조 없음).
+  // 진입할 때마다 1단계 진행 바부터 차오른다.
+  const loopRef = useRef<HTMLDivElement>(null)
+  const activeStep = useCycle(LOOP.length, LOOP_STEP_MS, loopRef)
 
   const scrollTo = (id: string) => {
     document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' })
@@ -279,510 +391,566 @@ export default function SelfImprovementPage() {
     'text-[0.95rem] text-stone-500 leading-[1.8] max-w-[600px] mb-14 max-[768px]:mb-9'
 
   return (
-    <div
-      className="min-h-screen text-stone-900 overflow-x-hidden"
-      style={{
-        backgroundColor: '#FAF9F4',
-        backgroundImage:
-          'linear-gradient(rgba(28,25,23,0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(28,25,23,0.05) 1px, transparent 1px)',
-        backgroundSize: '40px 40px',
-      }}
-    >
-      {/* Nav */}
-      <nav className="fixed top-0 left-0 right-0 z-[100] flex items-center justify-between px-12 py-5 bg-[rgba(250,249,244,0.9)] backdrop-blur-[10px] border-b border-stone-200 max-[768px]:px-6 max-[768px]:py-4">
-        <button
-          type="button"
-          onClick={() => void navigate('/')}
-          className="inline-flex items-center gap-2 text-[0.75rem] text-stone-500 tracking-[0.1em] font-mono bg-none border-none cursor-pointer p-0 transition-colors duration-200 hover:text-amber-800"
-        >
-          ← Home
-        </button>
-        <div className="inline-flex items-center gap-2 text-[0.9rem] font-bold tracking-[0.12em] uppercase font-mono text-stone-900">
-          <span className="w-2 h-2 rounded-full bg-amber-700" aria-hidden="true" />
-          self-improvement
-        </div>
-        <a
-          href="https://github.com/sh5623/self-improvement"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-flex items-center gap-1.5 text-[0.75rem] text-stone-500 tracking-[0.1em] font-mono no-underline transition-colors duration-200 hover:text-amber-800"
-        >
-          <Github className="w-3.5 h-3.5" aria-hidden="true" />
-          GitHub
-        </a>
-      </nav>
-
-      {/* Hero */}
-      <header className="relative pt-[9rem] pb-24 px-12 max-[768px]:pt-32 max-[768px]:pb-16 max-[768px]:px-6">
-        <motion.div
-          initial="hidden"
-          animate="visible"
-          variants={stagger}
-          className={`${innerClass} grid grid-cols-[1.05fr_0.95fr] gap-16 items-start max-[960px]:grid-cols-1`}
-        >
-          <div>
-            <motion.span
-              variants={fadeUp}
-              className="inline-flex items-center gap-2 text-[0.72rem] text-amber-800 tracking-[0.25em] uppercase font-mono font-semibold border border-amber-800/25 bg-amber-800/[0.06] rounded-full py-1.5 px-3.5 mb-7"
-            >
-              Claude Code Plugin
-            </motion.span>
-            <motion.h1
-              variants={fadeUp}
-              className="text-[clamp(2.1rem,5vw,3.8rem)] font-extrabold tracking-[-0.03em] leading-[1.12] mb-6 text-stone-900"
-            >
-              규약은,
-              <br />
-              <span className="relative inline-block">
-                얼어있지 않다
-                <span
-                  className="absolute left-0 right-0 -bottom-1 h-[0.4em] bg-amber-300/50 -z-10"
-                  aria-hidden="true"
-                />
-              </span>
-            </motion.h1>
-            <motion.p
-              variants={fadeUp}
-              className="text-[1rem] text-stone-500 leading-[1.85] max-w-[480px] mb-9"
-            >
-              작업 중 규약·문서·절차에 물리면, 그 자리만 우회하지 않습니다. 증거 게이트를 통과한
-              규약은 같은 세션이 그 자리에서 스스로 고칩니다. FE, BE, 스크립트, 문서 저장소 어디에나
-              설치해 씁니다.
-            </motion.p>
-            <motion.div variants={fadeUp} className="flex items-center gap-4 flex-wrap">
-              <button
-                type="button"
-                onClick={() => scrollTo('install')}
-                className="inline-flex items-center gap-2 text-[0.85rem] font-semibold font-mono bg-stone-900 text-[#FAF9F4] rounded-md py-3 px-6 cursor-pointer transition-transform duration-200 hover:-translate-y-0.5"
-              >
-                설치 명령 보기 <ArrowRight className="w-4 h-4" aria-hidden="true" />
-              </button>
-              <a
-                href="https://github.com/sh5623/self-improvement"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 text-[0.85rem] font-semibold font-mono text-stone-600 border border-stone-300 rounded-md py-3 px-6 no-underline transition-colors duration-200 hover:border-stone-500 hover:text-stone-900"
-              >
-                GitHub에서 보기
-              </a>
-            </motion.div>
-          </div>
-
-          <motion.div
-            variants={fadeUp}
-            className="relative bg-white border border-stone-200 rounded-[4px] p-6 shadow-[0_10px_30px_rgba(28,25,23,0.06)] -rotate-1 max-[960px]:rotate-0"
-          >
-            <div className="text-[0.7rem] text-stone-400 font-mono mb-3 tracking-[0.08em]">
-              SESSION TRANSCRIPT
-            </div>
-            <pre className="text-[0.76rem] leading-[1.7] font-mono whitespace-pre-wrap m-0">
-              {TRANSCRIPT.map((line, i) => (
-                // biome-ignore lint/suspicious/noArrayIndexKey: static transcript, order never changes
-                <div key={i} className={toneClass(line.tone)}>
-                  {line.text || ' '}
-                </div>
-              ))}
-            </pre>
-          </motion.div>
-        </motion.div>
-      </header>
-
-      {/* 3원칙 */}
-      <section className={sectionClass}>
-        <div className={innerClass}>
-          <motion.div
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true }}
-            variants={fadeUp}
-          >
-            <div className={labelClass}>PRINCIPLES</div>
-            <h2 className={titleClass}>3원칙</h2>
-            <p className={descClass}>이 위에 모든 절차가 서 있습니다.</p>
-          </motion.div>
-          <motion.div
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true }}
-            variants={stagger}
-            className="grid grid-cols-3 gap-6 max-[900px]:grid-cols-1"
-          >
-            {PRINCIPLES.map((p) => (
-              <motion.div
-                key={p.n}
-                variants={fadeUp}
-                className="bg-white border border-stone-200 rounded-[4px] p-7"
-              >
-                <div className="text-[1.6rem] font-extrabold text-amber-800/40 font-mono mb-4">
-                  {p.n}
-                </div>
-                <h3 className="text-[1.05rem] font-bold text-stone-900 mb-2.5 tracking-[-0.01em]">
-                  {p.title}
-                </h3>
-                <p className="text-[0.86rem] text-stone-500 leading-[1.75]">{p.desc}</p>
-              </motion.div>
-            ))}
-          </motion.div>
-        </div>
-      </section>
-
-      {/* 층 모델 */}
-      <section className={sectionClass}>
-        <div className={innerClass}>
-          <motion.div
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true }}
-            variants={fadeUp}
-          >
-            <div className={labelClass}>DOCUMENT MODEL</div>
-            <h2 className={titleClass}>규약은 다섯 개의 층에 산다</h2>
-            <p className={descClass}>
-              새 규약은 위에서부터 처음 맞는 층에 쓴다. 넘치거나 사문화되면 아래로만 이동한다. 위로
-              되돌아가는 경로는 없다.
-            </p>
-          </motion.div>
-          <motion.div
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true }}
-            variants={stagger}
-            className="relative border-l-2 border-dashed border-amber-800/30 ml-3 max-[600px]:ml-1.5"
-          >
-            {LAYERS.map((layer) => {
-              const Icon = layer.icon
-              return (
-                <motion.div
-                  key={layer.name}
-                  variants={fadeUp}
-                  className="relative pl-9 pb-6 last:pb-0 max-[600px]:pl-6"
-                >
-                  <span
-                    className="absolute left-[-9px] top-1 w-4 h-4 rounded-full bg-[#FAF9F4] border-2 border-amber-800/50"
-                    aria-hidden="true"
-                  />
-                  <div className="flex items-center gap-4 bg-white border border-stone-200 rounded-[4px] py-4 px-5 flex-wrap">
-                    <Icon className="w-5 h-5 text-amber-800 shrink-0" aria-hidden="true" />
-                    <div className="font-bold text-stone-900 text-[0.95rem] w-[190px] shrink-0 max-[600px]:w-full">
-                      {layer.name}
-                    </div>
-                    <div className="text-[0.8rem] text-stone-500 font-mono flex-1 min-w-[180px]">
-                      {layer.trigger}
-                    </div>
-                    <div className="text-[0.72rem] text-amber-800 font-mono font-semibold bg-amber-800/[0.07] border border-amber-800/20 rounded-full py-1 px-3 whitespace-nowrap">
-                      {layer.budget}
-                    </div>
-                  </div>
-                </motion.div>
-              )
-            })}
-          </motion.div>
-        </div>
-      </section>
-
-      {/* 루프 */}
-      <section className={sectionClass}>
-        <div className={innerClass}>
-          <motion.div
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true }}
-            variants={fadeUp}
-          >
-            <div className={labelClass}>THE LOOP</div>
-            <h2 className={titleClass}>감지 → 분류 → 검증 → 규약화 → 전파 → 기록</h2>
-            <p className={descClass}>
-              하나의 갭이 규약이 되기까지 거치는 6단계. 게이트를 통과하지 못하면 로컬 문서에 남고
-              끝난다.
-            </p>
-          </motion.div>
-          <motion.div
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true }}
-            variants={stagger}
-            className="grid grid-cols-6 gap-4 max-[900px]:grid-cols-2 max-[500px]:grid-cols-1"
-          >
-            {LOOP.map((step) => (
-              <motion.div
-                key={step.n}
-                variants={fadeUp}
-                className="bg-white border border-stone-200 rounded-[4px] p-5 relative"
-              >
-                <div className="text-[0.72rem] text-stone-400 font-mono mb-3">
-                  {step.n}/{LOOP.length}
-                </div>
-                <h3 className="text-[0.98rem] font-bold text-stone-900 mb-1.5">{step.label}</h3>
-                <p className="text-[0.78rem] text-stone-500 leading-[1.6]">{step.desc}</p>
-              </motion.div>
-            ))}
-          </motion.div>
-        </div>
-      </section>
-
-      {/* 구성 */}
-      <section className={sectionClass}>
-        <div className={innerClass}>
-          <motion.div
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true }}
-            variants={fadeUp}
-          >
-            <div className={labelClass}>COMPONENTS</div>
-            <h2 className={titleClass}>1개의 훅, 3개의 스킬, 1개의 에이전트</h2>
-            <p className={descClass}>
-              도구는 플러그인이 준다. 프로젝트에는 데이터 파일 1개만 남는다.
-            </p>
-          </motion.div>
-          <motion.div
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true }}
-            variants={stagger}
-            className="grid grid-cols-3 gap-5 max-[900px]:grid-cols-2 max-[600px]:grid-cols-1"
-          >
-            {COMPONENTS.map((c) => {
-              const Icon = c.icon
-              return (
-                <motion.div
-                  key={c.cmd}
-                  variants={fadeUp}
-                  className="group relative bg-white border border-stone-200 rounded-[4px] p-6 overflow-hidden transition-shadow duration-200 hover:shadow-[0_8px_24px_rgba(28,25,23,0.08)]"
-                >
-                  <span
-                    className="absolute top-0 left-0 right-0 h-[3px] bg-amber-700 scale-x-0 origin-left transition-transform duration-300 group-hover:scale-x-100"
-                    aria-hidden="true"
-                  />
-                  <div className="flex items-center justify-between mb-4">
-                    <Icon className="w-6 h-6 text-amber-800" aria-hidden="true" />
-                    <span className="text-[0.65rem] text-stone-400 font-mono tracking-[0.1em] border border-stone-200 rounded-full py-0.5 px-2">
-                      {c.tag}
-                    </span>
-                  </div>
-                  <div className="text-[0.78rem] text-amber-800 font-mono font-semibold mb-1.5 break-all">
-                    {c.cmd}
-                  </div>
-                  <h3 className="text-[1.02rem] font-bold text-stone-900 mb-2 tracking-[-0.01em]">
-                    {c.title}
-                  </h3>
-                  <p className="text-[0.82rem] text-stone-500 leading-[1.75]">{c.desc}</p>
-                </motion.div>
-              )
-            })}
-          </motion.div>
-        </div>
-      </section>
-
-      {/* 실증 유래 */}
-      <section className={sectionClass}>
-        <div className={innerClass}>
-          <motion.div
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true }}
-            variants={fadeUp}
-          >
-            <div className={labelClass}>FIELD EVIDENCE</div>
-            <h2 className={titleClass}>설계가 아니라 사고에서 나왔다</h2>
-            <p className={descClass}>
-              실전 프로젝트(레거시 전환 + API 연동, 규약 개선 40여 건 기록)에서 값을 치르고 얻은
-              규칙들. 각 행은 실제 사고와 그로부터 나온 규칙입니다.
-            </p>
-          </motion.div>
-          <motion.div
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true }}
-            variants={stagger}
-            className="bg-white border border-stone-200 rounded-[4px] divide-y divide-stone-200"
-          >
-            {INCIDENTS.map((inc) => (
-              <motion.div
-                key={inc.bug}
-                variants={fadeUp}
-                className="grid grid-cols-[auto_1fr] gap-x-5 gap-y-2 p-6 items-start max-[700px]:grid-cols-1"
-              >
-                <span className="text-[0.66rem] font-mono font-bold text-stone-400 tracking-[0.08em] border border-stone-300 rounded-full py-1 px-2.5 whitespace-nowrap self-start mt-0.5">
-                  사고
-                </span>
-                <p className="text-[0.84rem] text-stone-500 leading-[1.75] font-mono">{inc.bug}</p>
-                <span className="text-[0.66rem] font-mono font-bold text-amber-800 tracking-[0.08em] border border-amber-800/30 bg-amber-800/[0.06] rounded-full py-1 px-2.5 whitespace-nowrap self-start mt-0.5">
-                  규칙
-                </span>
-                <p className="text-[0.9rem] text-stone-900 leading-[1.75] font-semibold">
-                  {inc.rule}
-                </p>
-              </motion.div>
-            ))}
-          </motion.div>
-          <p className="text-[0.8rem] text-stone-400 mt-5 font-mono">
-            그 외 사고 기록은{' '}
-            <a
-              href="https://github.com/sh5623/self-improvement#실증-유래"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-amber-800 underline underline-offset-2"
-            >
-              GitHub README
-            </a>
-            에서 전체를 볼 수 있습니다.
-          </p>
-        </div>
-      </section>
-
-      {/* 설치 */}
-      <section id="install" className={sectionClass}>
-        <div className={innerClass}>
-          <motion.div
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true }}
-            variants={fadeUp}
-          >
-            <div className={labelClass}>INSTALL</div>
-            <h2 className={titleClass}>시작하기</h2>
-            <p className={descClass}>
-              Claude Code 터미널에서 세 줄로 설치합니다. 빌드도, 런타임도, 추가 의존성도 없습니다.
-            </p>
-          </motion.div>
-          <motion.div
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true }}
-            variants={stagger}
-            className="grid grid-cols-2 gap-6 max-[900px]:grid-cols-1"
-          >
-            <motion.div
-              variants={fadeUp}
-              className="bg-[#F1EEE4] border border-stone-300 rounded-[4px] p-6"
-            >
-              <div className="text-[0.7rem] text-stone-400 font-mono mb-3 tracking-[0.08em]">
-                설치
-              </div>
-              <pre className="text-[0.8rem] leading-[1.9] font-mono text-stone-700 whitespace-pre-wrap m-0">
-                <div className="text-amber-800 font-semibold">
-                  /plugin marketplace add sh5623/self-improvement
-                </div>
-                <div className="text-amber-800 font-semibold">
-                  /plugin install self-improvement@self-improvement
-                </div>
-                <div className="text-amber-800 font-semibold">/reload-plugins</div>
-              </pre>
-            </motion.div>
-            <motion.div
-              variants={fadeUp}
-              className="bg-[#F1EEE4] border border-stone-300 rounded-[4px] p-6"
-            >
-              <div className="text-[0.7rem] text-stone-400 font-mono mb-3 tracking-[0.08em]">
-                사용
-              </div>
-              <pre className="text-[0.8rem] leading-[1.9] font-mono whitespace-pre-wrap m-0">
-                <div>
-                  <span className="text-amber-800 font-semibold">/self-improvement:si-init</span>
-                  <span className="text-stone-400"> # 최초 1회</span>
-                </div>
-                <div>
-                  <span className="text-amber-800 font-semibold">/self-improvement:si-improve</span>
-                  <span className="text-stone-400"> # 물렸을 때</span>
-                </div>
-                <div>
-                  <span className="text-amber-800 font-semibold">/self-improvement:si-archive</span>
-                  <span className="text-stone-400"> # 문서가 길어졌을 때</span>
-                </div>
-              </pre>
-            </motion.div>
-          </motion.div>
-          <motion.p
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true }}
-            variants={fadeUp}
-            className="text-[0.8rem] text-stone-400 mt-6 font-mono leading-[1.8]"
-          >
-            설치는 기본 user 스코프입니다. 한 번 설치하면 모든 프로젝트의 모든 세션에 적용됩니다.
-            fe-rail·parallel-worktree와 같이 쓴다면 마켓 하나로 세 개 다 설치할 수 있습니다:
-            sh5623/guardrail.
-          </motion.p>
-        </div>
-      </section>
-
-      {/* FAQ */}
-      <section className={sectionClass}>
-        <div className={innerClass}>
-          <motion.div
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true }}
-            variants={fadeUp}
-          >
-            <div className={labelClass}>FAQ</div>
-            <h2 className={titleClass}>자주 묻는 질문</h2>
-          </motion.div>
-          <motion.div
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true }}
-            variants={stagger}
-            className="max-w-[760px]"
-          >
-            {FAQS.map((faq, i) => {
-              const isOpen = openFaq === i
-              return (
-                <motion.div
-                  key={faq.q}
-                  variants={fadeUp}
-                  className="border-b border-stone-200 last:border-b-0"
-                >
-                  <button
-                    type="button"
-                    onClick={() => setOpenFaq(isOpen ? null : i)}
-                    aria-expanded={isOpen}
-                    className="w-full flex items-center justify-between gap-4 py-5 text-left bg-none border-none cursor-pointer"
-                  >
-                    <span className="text-[0.95rem] font-semibold text-stone-900">{faq.q}</span>
-                    <ChevronDown
-                      className={`w-4 h-4 text-stone-400 shrink-0 transition-transform duration-200 ${
-                        isOpen ? 'rotate-180' : ''
-                      }`}
-                      aria-hidden="true"
-                    />
-                  </button>
-                  {isOpen && (
-                    <p className="text-[0.86rem] text-stone-500 leading-[1.85] pb-5 max-w-[620px]">
-                      {faq.a}
-                    </p>
-                  )}
-                </motion.div>
-              )
-            })}
-          </motion.div>
-        </div>
-      </section>
-
-      {/* Footer */}
-      <footer className="px-12 py-10 border-t border-stone-200 flex items-center justify-between flex-wrap gap-4 max-[768px]:px-6">
-        <div className="text-[0.75rem] text-stone-400 font-mono tracking-[0.05em]">
-          self-improvement · Claude Code Plugin · MIT © 2026 Seungho
-        </div>
-        <div className="flex items-center gap-5">
+    <PageMotion>
+      <div
+        className="motion-scope min-h-screen text-stone-900 overflow-x-hidden"
+        style={{
+          backgroundColor: '#FAF9F4',
+          backgroundImage:
+            'linear-gradient(rgba(28,25,23,0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(28,25,23,0.05) 1px, transparent 1px)',
+          backgroundSize: '40px 40px',
+        }}
+      >
+        {/* Nav */}
+        <nav className="fixed top-0 left-0 right-0 z-[100] flex items-center justify-between px-12 py-5 bg-[rgba(250,249,244,0.9)] backdrop-blur-[10px] border-b border-stone-200 max-[768px]:px-6 max-[768px]:py-4">
           <button
             type="button"
-            onClick={() => void navigate('/')}
-            className="text-[0.75rem] text-stone-500 font-mono bg-none border-none cursor-pointer p-0 transition-colors duration-200 hover:text-amber-800"
+            onClick={() => void navigate('/dev')}
+            className="inline-flex items-center gap-2 text-[0.75rem] text-stone-500 tracking-[0.1em] font-mono bg-none border-none cursor-pointer p-0 transition-colors duration-200 hover:text-amber-800"
           >
             ← Home
           </button>
+          <div className="inline-flex items-center gap-2 text-[0.9rem] font-bold tracking-[0.12em] uppercase font-mono text-stone-900">
+            <span className="w-2 h-2 rounded-full bg-amber-700" aria-hidden="true" />
+            self-improvement
+          </div>
           <a
             href="https://github.com/sh5623/self-improvement"
             target="_blank"
             rel="noopener noreferrer"
-            className="text-[0.75rem] text-stone-500 font-mono no-underline transition-colors duration-200 hover:text-amber-800"
+            className="inline-flex items-center gap-1.5 text-[0.75rem] text-stone-500 tracking-[0.1em] font-mono no-underline transition-colors duration-200 hover:text-amber-800"
           >
-            GitHub →
+            <Github className="w-3.5 h-3.5" aria-hidden="true" />
+            GitHub
           </a>
-        </div>
-      </footer>
-    </div>
+        </nav>
+
+        {/* Hero */}
+        <header className="relative pt-[9rem] pb-24 px-12 max-[768px]:pt-32 max-[768px]:pb-16 max-[768px]:px-6">
+          <motion.div
+            initial="hidden"
+            animate="visible"
+            variants={stagger}
+            className={`${innerClass} grid grid-cols-[1.05fr_0.95fr] gap-16 items-start max-[960px]:grid-cols-1`}
+          >
+            <div>
+              <motion.span
+                variants={fadeUp}
+                className="inline-flex items-center gap-2 text-[0.72rem] text-amber-800 tracking-[0.25em] uppercase font-mono font-semibold border border-amber-800/25 bg-amber-800/[0.06] rounded-full py-1.5 px-3.5 mb-7"
+              >
+                Claude Code Plugin
+              </motion.span>
+              <motion.h1
+                variants={fadeUp}
+                className="text-[clamp(2.1rem,5vw,3.8rem)] font-extrabold tracking-[-0.03em] leading-[1.12] mb-6 text-stone-900"
+              >
+                규약은,
+                <br />
+                <span className="relative inline-block">
+                  얼어있지 않다
+                  <span
+                    className="absolute left-0 right-0 -bottom-1 h-[0.4em] bg-amber-300/50 -z-10"
+                    aria-hidden="true"
+                  />
+                </span>
+              </motion.h1>
+              <motion.p
+                variants={fadeUp}
+                className="text-[1rem] text-stone-500 leading-[1.85] max-w-[480px] mb-9"
+              >
+                작업 중 규약·문서·절차에 물리면, 그 자리만 우회하지 않습니다. 증거 게이트를 통과한
+                규약은 같은 세션이 그 자리에서 스스로 고칩니다. FE, BE, 스크립트, 문서 저장소
+                어디에나 설치해 씁니다.
+              </motion.p>
+              <motion.div variants={fadeUp} className="flex items-center gap-4 flex-wrap">
+                <button
+                  type="button"
+                  onClick={() => scrollTo('install')}
+                  className="inline-flex items-center gap-2 text-[0.85rem] font-semibold font-mono bg-stone-900 text-[#FAF9F4] rounded-md py-3 px-6 cursor-pointer transition-transform duration-200 hover:-translate-y-0.5"
+                >
+                  설치 명령 보기 <ArrowRight className="w-4 h-4" aria-hidden="true" />
+                </button>
+                <a
+                  href="https://github.com/sh5623/self-improvement"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 text-[0.85rem] font-semibold font-mono text-stone-600 border border-stone-300 rounded-md py-3 px-6 no-underline transition-colors duration-200 hover:border-stone-500 hover:text-stone-900"
+                >
+                  GitHub에서 보기
+                </a>
+              </motion.div>
+            </div>
+
+            <motion.div
+              variants={fadeUp}
+              className="relative bg-white border border-stone-200 rounded-[4px] p-6 shadow-[0_10px_30px_rgba(28,25,23,0.06)] -rotate-1 max-[960px]:rotate-0"
+            >
+              <div className="text-[0.7rem] text-stone-400 font-mono mb-3 tracking-[0.08em]">
+                SESSION TRANSCRIPT
+              </div>
+              <pre className="text-[0.76rem] leading-[1.7] font-mono whitespace-pre-wrap m-0">
+                <TypeLines
+                  lines={TRANSCRIPT_LINES}
+                  loop
+                  charMs={34}
+                  lineGapMs={240}
+                  holdMs={3200}
+                  className={TRANSCRIPT_CLASS}
+                  caretClassName="bg-amber-700"
+                />
+              </pre>
+            </motion.div>
+          </motion.div>
+        </header>
+
+        {/* 3원칙 */}
+        <section className={sectionClass}>
+          <div className={innerClass}>
+            <motion.div
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true }}
+              variants={fadeUp}
+            >
+              <div className={labelClass}>PRINCIPLES</div>
+              <h2 className={titleClass}>3원칙</h2>
+              <p className={descClass}>이 위에 모든 절차가 서 있습니다.</p>
+            </motion.div>
+            <motion.div
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true }}
+              variants={stagger}
+              className="grid grid-cols-3 gap-6 max-[900px]:grid-cols-1"
+            >
+              {PRINCIPLES.map((p) => (
+                <motion.div
+                  key={p.n}
+                  variants={principleCard}
+                  className="bg-white border border-stone-200 rounded-[4px] p-7"
+                >
+                  <motion.div
+                    variants={numeralPop}
+                    className="text-[1.6rem] font-extrabold text-amber-800/40 font-mono mb-4 origin-left"
+                  >
+                    {p.n}
+                  </motion.div>
+                  <h3 className="text-[1.05rem] font-bold text-stone-900 mb-2.5 tracking-[-0.01em]">
+                    {p.title}
+                  </h3>
+                  <p className="text-[0.86rem] text-stone-500 leading-[1.75]">{p.desc}</p>
+                </motion.div>
+              ))}
+            </motion.div>
+          </div>
+        </section>
+
+        {/* 층 모델 */}
+        <section className={sectionClass}>
+          <div className={innerClass}>
+            <motion.div
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true }}
+              variants={fadeUp}
+            >
+              <div className={labelClass}>DOCUMENT MODEL</div>
+              <h2 className={titleClass}>규약은 다섯 개의 층에 산다</h2>
+              <p className={descClass}>
+                새 규약은 위에서부터 처음 맞는 층에 쓴다. 넘치거나 사문화되면 아래로만 이동한다.
+                위로 되돌아가는 경로는 없다.
+              </p>
+            </motion.div>
+            {/* 레일은 테두리 대신 별도 요소로 그려 scaleY 로 내려오게 한다. 컨테이너의 투명 테두리가
+              원래 2px 자리를 지켜 레이아웃은 그대로다. 점·카드는 custom 인덱스로 레일과 동기화. */}
+            <motion.div
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true, amount: 0.3 }}
+              variants={trigger}
+              className="relative border-l-2 border-transparent ml-3 max-[600px]:ml-1.5"
+            >
+              <motion.span
+                variants={ladderRail}
+                className="absolute -left-[2px] top-0 bottom-0 border-l-2 border-dashed border-amber-800/30 origin-top"
+                aria-hidden="true"
+              />
+              {LAYERS.map((layer, i) => {
+                const Icon = layer.icon
+                return (
+                  <div key={layer.name} className="relative pl-9 pb-6 last:pb-0 max-[600px]:pl-6">
+                    <motion.span
+                      variants={ladderDot}
+                      custom={i}
+                      className="absolute left-[-9px] top-1 w-4 h-4 rounded-full bg-[#FAF9F4] border-2 border-amber-800/50"
+                      aria-hidden="true"
+                    />
+                    <motion.div
+                      variants={ladderCard}
+                      custom={i}
+                      className="flex items-center gap-4 bg-white border border-stone-200 rounded-[4px] py-4 px-5 flex-wrap"
+                    >
+                      <Icon className="w-5 h-5 text-amber-800 shrink-0" aria-hidden="true" />
+                      <div className="font-bold text-stone-900 text-[0.95rem] w-[190px] shrink-0 max-[600px]:w-full">
+                        {layer.name}
+                      </div>
+                      <div className="text-[0.8rem] text-stone-500 font-mono flex-1 min-w-[180px]">
+                        {layer.trigger}
+                      </div>
+                      <div className="text-[0.72rem] text-amber-800 font-mono font-semibold bg-amber-800/[0.07] border border-amber-800/20 rounded-full py-1 px-3 whitespace-nowrap">
+                        {layer.budget}
+                      </div>
+                    </motion.div>
+                  </div>
+                )
+              })}
+            </motion.div>
+          </div>
+        </section>
+
+        {/* 루프 */}
+        <section className={sectionClass}>
+          <div className={innerClass}>
+            <motion.div
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true }}
+              variants={fadeUp}
+            >
+              <div className={labelClass}>THE LOOP</div>
+              <h2 className={titleClass}>감지 → 분류 → 검증 → 규약화 → 전파 → 기록</h2>
+              <p className={descClass}>
+                하나의 갭이 규약이 되기까지 거치는 6단계. 게이트를 통과하지 못하면 로컬 문서에 남고
+                끝난다.
+              </p>
+            </motion.div>
+            {/* 바깥 층은 등장(stagger), 안쪽 카드는 순환 강조(링 + 들림 + 상단 진행 바). 진행 바는
+              한 단계 시간 동안 차고, 다음 칸 사이 화살표가 함께 켜져 흐름이 이어지는 것을 보여 준다. */}
+            <motion.div
+              ref={loopRef}
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true }}
+              variants={stagger}
+              className="grid grid-cols-6 gap-4 max-[900px]:grid-cols-2 max-[500px]:grid-cols-1"
+            >
+              {LOOP.map((step, i) => {
+                const isActive = activeStep === i
+                return (
+                  <motion.div key={step.n} variants={fadeUp} className="relative">
+                    <motion.div
+                      initial={false}
+                      animate={{ y: isActive ? -6 : 0 }}
+                      transition={{ duration: 0.35, ease: EASE_OUT }}
+                      className={`relative h-full overflow-hidden bg-white border rounded-[4px] p-5 transition-[border-color,box-shadow] duration-300 ${
+                        isActive
+                          ? 'border-amber-700/60 shadow-[0_0_0_3px_rgba(180,83,9,0.12),0_12px_24px_rgba(28,25,23,0.08)]'
+                          : 'border-stone-200 shadow-[0_0_0_0_rgba(180,83,9,0),0_0_0_0_rgba(28,25,23,0)]'
+                      }`}
+                    >
+                      <motion.span
+                        className="absolute top-0 left-0 right-0 h-[3px] bg-amber-700 origin-left"
+                        aria-hidden="true"
+                        initial={false}
+                        animate={{ scaleX: isActive ? 1 : 0 }}
+                        transition={
+                          isActive
+                            ? { duration: LOOP_STEP_MS / 1000, ease: 'linear' }
+                            : { duration: 0.25, ease: EASE_OUT }
+                        }
+                      />
+                      <div
+                        className={`text-[0.72rem] font-mono mb-3 transition-colors duration-300 ${
+                          isActive ? 'text-amber-800' : 'text-stone-400'
+                        }`}
+                      >
+                        {step.n}/{LOOP.length}
+                      </div>
+                      <h3 className="text-[0.98rem] font-bold text-stone-900 mb-1.5">
+                        {step.label}
+                      </h3>
+                      <p className="text-[0.78rem] text-stone-500 leading-[1.6]">{step.desc}</p>
+                    </motion.div>
+                    {i < LOOP.length - 1 && (
+                      <ChevronRight
+                        className={`absolute top-1/2 -right-[14px] -translate-y-1/2 w-3 h-3 transition-colors duration-300 max-[900px]:hidden ${
+                          isActive ? 'text-amber-700' : 'text-stone-300'
+                        }`}
+                        aria-hidden="true"
+                      />
+                    )}
+                  </motion.div>
+                )
+              })}
+            </motion.div>
+          </div>
+        </section>
+
+        {/* 구성 */}
+        <section className={sectionClass}>
+          <div className={innerClass}>
+            <motion.div
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true }}
+              variants={fadeUp}
+            >
+              <div className={labelClass}>COMPONENTS</div>
+              <h2 className={titleClass}>1개의 훅, 3개의 스킬, 1개의 에이전트</h2>
+              <p className={descClass}>
+                도구는 플러그인이 준다. 프로젝트에는 데이터 파일 1개만 남는다.
+              </p>
+            </motion.div>
+            <motion.div
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true }}
+              variants={stagger}
+              className="grid grid-cols-3 gap-5 max-[900px]:grid-cols-2 max-[600px]:grid-cols-1"
+            >
+              {COMPONENTS.map((c) => {
+                const Icon = c.icon
+                return (
+                  <motion.div
+                    key={c.cmd}
+                    variants={fadeUp}
+                    className="group relative bg-white border border-stone-200 rounded-[4px] p-6 overflow-hidden transition-shadow duration-200 hover:shadow-[0_8px_24px_rgba(28,25,23,0.08)]"
+                  >
+                    <span
+                      className="absolute top-0 left-0 right-0 h-[3px] bg-amber-700 scale-x-0 origin-left transition-transform duration-300 group-hover:scale-x-100"
+                      aria-hidden="true"
+                    />
+                    <div className="flex items-center justify-between mb-4">
+                      <Icon className="w-6 h-6 text-amber-800" aria-hidden="true" />
+                      <span className="text-[0.65rem] text-stone-400 font-mono tracking-[0.1em] border border-stone-200 rounded-full py-0.5 px-2">
+                        {c.tag}
+                      </span>
+                    </div>
+                    <div className="text-[0.78rem] text-amber-800 font-mono font-semibold mb-1.5 break-all">
+                      {c.cmd}
+                    </div>
+                    <h3 className="text-[1.02rem] font-bold text-stone-900 mb-2 tracking-[-0.01em]">
+                      {c.title}
+                    </h3>
+                    <p className="text-[0.82rem] text-stone-500 leading-[1.75]">{c.desc}</p>
+                  </motion.div>
+                )
+              })}
+            </motion.div>
+          </div>
+        </section>
+
+        {/* 실증 유래 */}
+        <section className={sectionClass}>
+          <div className={innerClass}>
+            <motion.div
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true }}
+              variants={fadeUp}
+            >
+              <div className={labelClass}>FIELD EVIDENCE</div>
+              <h2 className={titleClass}>설계가 아니라 사고에서 나왔다</h2>
+              <p className={descClass}>
+                실전 프로젝트(레거시 전환 + API 연동, 규약 개선 40여 건 기록)에서 값을 치르고 얻은
+                규칙들. 각 행은 실제 사고와 그로부터 나온 규칙입니다.
+              </p>
+            </motion.div>
+            {/* 8행이 길어서 컨테이너 한 번이 아니라 행마다 스크롤 진입 시 재생한다.
+              행 안에서는 사고(badge+본문)가 먼저, 규칙(badge+본문)이 ruleIn delay 뒤 옆에서 들어온다. */}
+            <div className="bg-white border border-stone-200 rounded-[4px] divide-y divide-stone-200">
+              {INCIDENTS.map((inc) => (
+                <motion.div
+                  key={inc.bug}
+                  initial="hidden"
+                  whileInView="visible"
+                  viewport={{ once: true, margin: '-60px' }}
+                  variants={trigger}
+                  className="grid grid-cols-[auto_1fr] gap-x-5 gap-y-2 p-6 items-start max-[700px]:grid-cols-1"
+                >
+                  <motion.span
+                    variants={incidentIn}
+                    className="text-[0.66rem] font-mono font-bold text-stone-400 tracking-[0.08em] border border-stone-300 rounded-full py-1 px-2.5 whitespace-nowrap self-start mt-0.5"
+                  >
+                    사고
+                  </motion.span>
+                  <motion.p
+                    variants={incidentIn}
+                    className="text-[0.84rem] text-stone-500 leading-[1.75] font-mono"
+                  >
+                    {inc.bug}
+                  </motion.p>
+                  <motion.span
+                    variants={ruleIn}
+                    className="text-[0.66rem] font-mono font-bold text-amber-800 tracking-[0.08em] border border-amber-800/30 bg-amber-800/[0.06] rounded-full py-1 px-2.5 whitespace-nowrap self-start mt-0.5"
+                  >
+                    규칙
+                  </motion.span>
+                  <motion.p
+                    variants={ruleIn}
+                    className="text-[0.9rem] text-stone-900 leading-[1.75] font-semibold"
+                  >
+                    {inc.rule}
+                  </motion.p>
+                </motion.div>
+              ))}
+            </div>
+            <p className="text-[0.8rem] text-stone-400 mt-5 font-mono">
+              그 외 사고 기록은{' '}
+              <a
+                href="https://github.com/sh5623/self-improvement#실증-유래"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-amber-800 underline underline-offset-2"
+              >
+                GitHub README
+              </a>
+              에서 전체를 볼 수 있습니다.
+            </p>
+          </div>
+        </section>
+
+        {/* 설치 */}
+        <section id="install" className={sectionClass}>
+          <div className={innerClass}>
+            <motion.div
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true }}
+              variants={fadeUp}
+            >
+              <div className={labelClass}>INSTALL</div>
+              <h2 className={titleClass}>시작하기</h2>
+              <p className={descClass}>
+                Claude Code 터미널에서 세 줄로 설치합니다. 빌드도, 런타임도, 추가 의존성도 없습니다.
+              </p>
+            </motion.div>
+            <motion.div
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true }}
+              variants={stagger}
+              className="grid grid-cols-2 gap-6 max-[900px]:grid-cols-1"
+            >
+              <motion.div
+                variants={fadeUp}
+                className="bg-[#F1EEE4] border border-stone-300 rounded-[4px] p-6"
+              >
+                <div className="text-[0.7rem] text-stone-400 font-mono mb-3 tracking-[0.08em]">
+                  설치
+                </div>
+                <pre className="text-[0.8rem] leading-[1.9] font-mono text-stone-700 whitespace-pre-wrap m-0">
+                  <TypeLines
+                    lines={INSTALL_LINES}
+                    className="text-amber-800 font-semibold"
+                    caretClassName="bg-amber-700"
+                  />
+                </pre>
+              </motion.div>
+              <motion.div
+                variants={fadeUp}
+                className="bg-[#F1EEE4] border border-stone-300 rounded-[4px] p-6"
+              >
+                <div className="text-[0.7rem] text-stone-400 font-mono mb-3 tracking-[0.08em]">
+                  사용
+                </div>
+                {/* 색이 둘로 갈린 줄이라 JSX 로 넘긴다 — 타이핑 대신 설치 블록보다 느린 간격으로 한 줄씩 뜬다. */}
+                <pre className="text-[0.8rem] leading-[1.9] font-mono whitespace-pre-wrap m-0">
+                  <TypeLines lines={USAGE_LINES} lineGapMs={520} />
+                </pre>
+              </motion.div>
+            </motion.div>
+            <motion.p
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true }}
+              variants={fadeUp}
+              className="text-[0.8rem] text-stone-400 mt-6 font-mono leading-[1.8]"
+            >
+              설치는 기본 user 스코프입니다. 한 번 설치하면 모든 프로젝트의 모든 세션에 적용됩니다.
+              fe-rail·parallel-worktree와 같이 쓴다면 마켓 하나로 세 개 다 설치할 수 있습니다:
+              sh5623/guardrail.
+            </motion.p>
+          </div>
+        </section>
+
+        {/* FAQ */}
+        <section className={sectionClass}>
+          <div className={innerClass}>
+            <motion.div
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true }}
+              variants={fadeUp}
+            >
+              <div className={labelClass}>FAQ</div>
+              <h2 className={titleClass}>자주 묻는 질문</h2>
+            </motion.div>
+            <motion.div
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true }}
+              variants={stagger}
+              className="max-w-[760px]"
+            >
+              {FAQS.map((faq, i) => {
+                const isOpen = openFaq === i
+                return (
+                  <motion.div
+                    key={faq.q}
+                    variants={fadeUp}
+                    className="border-b border-stone-200 last:border-b-0"
+                  >
+                    <button
+                      type="button"
+                      onClick={() => setOpenFaq(isOpen ? null : i)}
+                      aria-expanded={isOpen}
+                      className="w-full flex items-center justify-between gap-4 py-5 text-left bg-none border-none cursor-pointer"
+                    >
+                      <span className="text-[0.95rem] font-semibold text-stone-900">{faq.q}</span>
+                      <ChevronDown
+                        className={`w-4 h-4 text-stone-400 shrink-0 transition-transform duration-200 ${
+                          isOpen ? 'rotate-180' : ''
+                        }`}
+                        aria-hidden="true"
+                      />
+                    </button>
+                    <Collapse open={isOpen}>
+                      <p className="text-[0.86rem] text-stone-500 leading-[1.85] pb-5 max-w-[620px]">
+                        {faq.a}
+                      </p>
+                    </Collapse>
+                  </motion.div>
+                )
+              })}
+            </motion.div>
+          </div>
+        </section>
+
+        {/* Footer */}
+        <footer className="px-12 py-10 border-t border-stone-200 flex items-center justify-between flex-wrap gap-4 max-[768px]:px-6">
+          <div className="text-[0.75rem] text-stone-400 font-mono tracking-[0.05em]">
+            self-improvement · Claude Code Plugin · MIT © 2026 Seungho
+          </div>
+          <div className="flex items-center gap-5">
+            <button
+              type="button"
+              onClick={() => void navigate('/dev')}
+              className="text-[0.75rem] text-stone-500 font-mono bg-none border-none cursor-pointer p-0 transition-colors duration-200 hover:text-amber-800"
+            >
+              ← Home
+            </button>
+            <a
+              href="https://github.com/sh5623/self-improvement"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-[0.75rem] text-stone-500 font-mono no-underline transition-colors duration-200 hover:text-amber-800"
+            >
+              GitHub →
+            </a>
+          </div>
+        </footer>
+      </div>
+    </PageMotion>
   )
 }

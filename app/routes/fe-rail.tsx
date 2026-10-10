@@ -1,6 +1,7 @@
-import { AnimatePresence, motion, type Variants } from 'framer-motion'
+import { AnimatePresence, motion, useReducedMotion, type Variants } from 'framer-motion'
 import { useState } from 'react'
 import { useNavigate } from 'react-router'
+import { EASE_OUT, PageMotion, TypeLines } from '@/components/Motion'
 import type { Route } from './+types/fe-rail'
 import { SkillCard } from './fe-rail/SkillCard'
 
@@ -438,7 +439,7 @@ const FAQS: Record<Lang, Array<{ q: string; a: string }>> = {
 
 const fadeUp: Variants = {
   hidden: { opacity: 0, y: 32 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: 'easeOut' } },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: EASE_OUT } },
 }
 
 const stagger: Variants = {
@@ -452,9 +453,77 @@ const langSwitch: Variants = {
   exit: { opacity: 0, y: -12, transition: { duration: 0.2, ease: 'easeIn' } },
 }
 
+// ── #agents: 단계 그룹마다 카드가 차례로 들어온다 ─────────────────────────
+// 자식 variants 에 delay 를 두지 않는다 — 두면 부모의 staggerChildren 을 덮어쓴다.
+const phaseGroup: Variants = {
+  hidden: {},
+  visible: { transition: { staggerChildren: 0.06, delayChildren: 0.05 } },
+}
+
+const phaseLabel: Variants = {
+  hidden: { opacity: 0, x: -12 },
+  visible: { opacity: 1, x: 0, transition: { duration: 0.45, ease: EASE_OUT } },
+}
+
+const agentCard: Variants = {
+  hidden: { opacity: 0, y: 18, scale: 0.97 },
+  visible: { opacity: 1, y: 0, scale: 1, transition: { duration: 0.45, ease: EASE_OUT } },
+}
+
+// ── #workflow 타임라인: 선이 아래로 그려지고, 선이 닿는 순간 번호 점이 튀어나온다 ──
+// stagger 대신 custom(단계 index)으로 delay 를 직접 계산한다 — 점·선·본문 세 갈래의 박자를 맞추려면
+// 각자 시작 시각이 정확해야 하기 때문이다. 선 i 는 점 i 직후에 출발해 정확히 점 i+1 의 시작 시각에 닿는다.
+const STEP_S = 0.42
+const LINE_LEAD_S = 0.12
+
+const timelineDot: Variants = {
+  hidden: { opacity: 0, scale: 0.4, boxShadow: '0 0 0 0px rgba(99,102,241,0)' },
+  visible: (i: number) => ({
+    opacity: 1,
+    scale: 1,
+    boxShadow: [
+      '0 0 0 0px rgba(99,102,241,0)',
+      '0 0 0 7px rgba(99,102,241,0.22)',
+      '0 0 0 0px rgba(99,102,241,0)',
+    ],
+    transition: {
+      scale: { delay: i * STEP_S, type: 'spring', stiffness: 460, damping: 18 },
+      opacity: { delay: i * STEP_S, duration: 0.18 },
+      boxShadow: { delay: i * STEP_S, duration: 0.8, ease: 'easeOut' },
+    },
+  }),
+}
+
+const timelineLine: Variants = {
+  hidden: { scaleY: 0 },
+  visible: (i: number) => ({
+    scaleY: 1,
+    transition: {
+      delay: i * STEP_S + LINE_LEAD_S,
+      duration: STEP_S - LINE_LEAD_S,
+      ease: 'easeInOut',
+    },
+  }),
+}
+
+const timelineText: Variants = {
+  hidden: { opacity: 0, x: -10 },
+  visible: (i: number) => ({
+    opacity: 1,
+    x: 0,
+    transition: { delay: i * STEP_S + 0.08, duration: 0.45, ease: EASE_OUT },
+  }),
+}
+
+// ── 히어로 강조어: indigo → emerald → cyan 사이를 천천히 오가는 그라데이션 ──
+// 정지 상태(0% 50%)는 원래의 indigo → emerald 그대로라 모션 최소화 화면이 이전과 같다.
+const ACCENT_GRADIENT = 'linear-gradient(135deg, #818cf8 0%, #34d399 50%, #67e8f9 100%)'
+
 export default function FeRailPage() {
   const navigate = useNavigate()
   const [lang, setLang] = useState<Lang>('ko')
+  // backgroundPosition 반복은 transform 이 아니라 MotionConfig 가 멈추지 않는다 → 직접 끈다
+  const reduceMotion = useReducedMotion()
 
   const t = TEXT[lang]
   const skills = SKILLS[lang]
@@ -477,432 +546,476 @@ export default function FeRailPage() {
     'text-[0.95rem] text-[#64748b] leading-[1.8] max-w-[560px] mb-16 max-[768px]:mb-10'
 
   return (
-    <div
-      className="min-h-screen text-[#f1f5f9] overflow-x-hidden"
-      style={{
-        backgroundColor: '#070b1a',
-        backgroundImage: 'radial-gradient(rgba(99,102,241,0.06) 1px, transparent 1px)',
-        backgroundSize: '32px 32px',
-        fontFamily: 'var(--font-syne), sans-serif',
-      }}
-    >
-      {/* Nav */}
-      <nav className="fixed top-0 left-0 right-0 z-[100] flex items-center justify-between px-12 py-5 bg-[rgba(7,11,26,0.88)] backdrop-blur-[20px] border-b border-[rgba(99,102,241,0.12)] max-[768px]:px-6 max-[768px]:py-4">
-        <button
-          type="button"
-          onClick={() => void navigate('/')}
-          className="inline-flex items-center gap-2 text-[0.75rem] text-[#64748b] tracking-[0.1em] bg-none border-none cursor-pointer p-0 transition-colors duration-200 hover:text-[#818cf8]"
-          style={{ fontFamily: 'var(--font-mono), monospace' }}
-        >
-          {t.nav.back}
-        </button>
-        <div
-          className="text-[0.9rem] font-bold tracking-[0.2em] uppercase"
-          style={{
-            fontFamily: 'var(--font-mono), monospace',
-            background: 'linear-gradient(135deg, #818cf8, #67e8f9)',
-            WebkitBackgroundClip: 'text',
-            WebkitTextFillColor: 'transparent',
-            backgroundClip: 'text',
-          }}
-        >
-          fe-rail
-        </div>
-        <div className="flex items-center gap-5">
+    <PageMotion>
+      <div
+        className="motion-scope min-h-screen text-[#f1f5f9] overflow-x-hidden"
+        style={{
+          backgroundColor: '#070b1a',
+          backgroundImage: 'radial-gradient(rgba(99,102,241,0.06) 1px, transparent 1px)',
+          backgroundSize: '32px 32px',
+          fontFamily: 'var(--font-syne), sans-serif',
+        }}
+      >
+        {/* Nav */}
+        <nav className="fixed top-0 left-0 right-0 z-[100] flex items-center justify-between px-12 py-5 bg-[rgba(7,11,26,0.88)] backdrop-blur-[20px] border-b border-[rgba(99,102,241,0.12)] max-[768px]:px-6 max-[768px]:py-4">
           <button
             type="button"
-            onClick={() => setLang((l) => (l === 'ko' ? 'en' : 'ko'))}
-            aria-label="언어 전환 / Toggle language"
-            className="relative flex items-center text-[0.72rem] font-semibold tracking-[0.08em] bg-white/5 border-[1.5px] border-[rgba(99,102,241,0.22)] rounded-[100px] cursor-pointer p-0 overflow-hidden transition-[border-color,box-shadow] duration-200 shadow-[0_1px_4px_rgba(99,102,241,0.08)] hover:border-[rgba(99,102,241,0.45)] hover:shadow-[0_2px_10px_rgba(99,102,241,0.18)]"
+            onClick={() => void navigate('/dev')}
+            className="inline-flex items-center gap-2 text-[0.75rem] text-[#64748b] tracking-[0.1em] bg-none border-none cursor-pointer p-0 transition-colors duration-200 hover:text-[#818cf8]"
             style={{ fontFamily: 'var(--font-mono), monospace' }}
           >
-            <span
-              className="absolute top-[2px] bottom-[2px] w-[calc(50%-2px)] bg-linear-to-br from-[#6366f1] to-[#4f46e5] rounded-[100px] transition-[left] duration-[250ms] shadow-[0_2px_8px_rgba(99,102,241,0.4)]"
-              style={{ left: lang === 'ko' ? '2px' : 'calc(50%)' }}
-            />
-            <span
-              className="relative z-[1] py-[0.38rem] px-[0.9rem] transition-colors duration-[250ms]"
-              style={{ color: lang === 'ko' ? '#ffffff' : '#475569' }}
-            >
-              한
-            </span>
-            <span
-              className="relative z-[1] py-[0.38rem] px-[0.9rem] transition-colors duration-[250ms]"
-              style={{ color: lang !== 'ko' ? '#ffffff' : '#475569' }}
-            >
-              EN
-            </span>
+            {t.nav.back}
           </button>
-          <a
-            href="https://github.com/sh5623/fe-rail"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 text-[0.75rem] text-[#64748b] tracking-[0.1em] no-underline transition-colors duration-200 hover:text-[#818cf8]"
-            style={{ fontFamily: 'var(--font-mono), monospace' }}
+          <div
+            className="text-[0.9rem] font-bold tracking-[0.2em] uppercase"
+            style={{
+              fontFamily: 'var(--font-mono), monospace',
+              background: 'linear-gradient(135deg, #818cf8, #67e8f9)',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              backgroundClip: 'text',
+            }}
           >
-            {t.nav.github}
-          </a>
-        </div>
-      </nav>
-
-      {/* Hero */}
-      <section className="min-h-screen flex flex-col justify-center items-center px-12 pt-32 pb-24 relative overflow-hidden text-center max-[768px]:px-6 max-[768px]:pt-28 max-[768px]:pb-20">
-        <div
-          className="absolute w-[700px] h-[700px] rounded-full pointer-events-none top-[-180px] right-[-120px] max-[768px]:w-[385px] max-[768px]:h-[385px]"
-          style={{
-            background: 'radial-gradient(circle, rgba(99,102,241,0.22) 0%, transparent 65%)',
-            animation: 'orbFloat 9s ease-in-out infinite',
-          }}
-        />
-        <div
-          className="absolute w-[500px] h-[500px] rounded-full pointer-events-none bottom-[-80px] left-[-80px] max-[768px]:w-[275px] max-[768px]:h-[275px]"
-          style={{
-            background: 'radial-gradient(circle, rgba(52,211,153,0.12) 0%, transparent 65%)',
-            animation: 'orbFloat 13s ease-in-out infinite reverse',
-          }}
-        />
-
-        <motion.div
-          variants={stagger}
-          initial="hidden"
-          animate="visible"
-          className="flex flex-col items-center z-[1]"
-        >
-          <motion.div variants={fadeUp}>
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={`badge-${lang}`}
-                variants={langSwitch}
-                initial="enter"
-                animate="center"
-                exit="exit"
-              >
-                <div
-                  className="inline-flex items-center gap-[0.6rem] text-[0.72rem] text-[#818cf8] tracking-[0.18em] uppercase bg-[rgba(99,102,241,0.1)] border border-[rgba(99,102,241,0.22)] rounded-[100px] py-[0.45rem] pl-3 pr-[1.1rem] mb-8 backdrop-blur-[8px]"
-                  style={{ fontFamily: 'var(--font-mono), monospace' }}
-                >
-                  <span className="w-[7px] h-[7px] rounded-full bg-[#818cf8] shrink-0 animate-[pulse_2.2s_ease-in-out_infinite]" />
-                  {t.hero.badge}
-                </div>
-              </motion.div>
-            </AnimatePresence>
-          </motion.div>
-
-          <motion.div variants={fadeUp}>
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={`title-${lang}`}
-                variants={langSwitch}
-                initial="enter"
-                animate="center"
-                exit="exit"
-              >
-                <h1 className="text-[clamp(2.4rem,7vw,6rem)] font-extrabold leading-[1.1] tracking-[-0.03em] mb-6 max-w-[900px] text-[#f1f5f9] relative z-[1] max-[768px]:text-[clamp(2rem,8vw,3rem)]">
-                  {t.hero.titlePre}{' '}
-                  <span
-                    style={{
-                      background: 'linear-gradient(135deg, #818cf8 0%, #34d399 100%)',
-                      WebkitBackgroundClip: 'text',
-                      WebkitTextFillColor: 'transparent',
-                      backgroundClip: 'text',
-                    }}
-                  >
-                    {t.hero.titleAccent}
-                  </span>
-                  {t.hero.titlePost}
-                  <br />
-                  {t.hero.titleLine2}
-                </h1>
-              </motion.div>
-            </AnimatePresence>
-          </motion.div>
-
-          <motion.div variants={fadeUp}>
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={`sub-${lang}`}
-                variants={langSwitch}
-                initial="enter"
-                animate="center"
-                exit="exit"
-              >
-                <p
-                  className="text-[clamp(0.88rem,1.4vw,1.05rem)] text-[#64748b] leading-[1.85] max-w-[620px] mb-10 relative z-[1]"
-                  style={{ fontFamily: 'var(--font-mono), monospace' }}
-                >
-                  {t.hero.subtitle.split('\n').map((line, i) => {
-                    return (
-                      <span
-                        // biome-ignore lint/suspicious/noArrayIndexKey: text split by newline, no stable ID
-                        key={i}
-                      >
-                        {line}
-                        {i === 0 && <br />}
-                      </span>
-                    )
-                  })}
-                </p>
-              </motion.div>
-            </AnimatePresence>
-          </motion.div>
-
-          <motion.div variants={fadeUp}>
-            <div className="flex gap-4 justify-center flex-wrap relative z-[1]">
-              <button
-                type="button"
-                onClick={() => scrollTo('install')}
-                className="inline-flex items-center gap-2 py-[0.9rem] px-[2.25rem] bg-linear-to-br from-[#6366f1] to-[#4f46e5] text-white no-underline border-none rounded-[10px] transition-all duration-[250ms] shadow-[0_4px_20px_rgba(99,102,241,0.4)] cursor-pointer hover:-translate-y-[3px] hover:shadow-[0_12px_32px_rgba(99,102,241,0.55)] max-[480px]:flex-1 max-[480px]:justify-center"
-                style={{
-                  fontFamily: 'var(--font-mono), monospace',
-                  fontSize: '0.8rem',
-                  fontWeight: 600,
-                  letterSpacing: '0.12em',
-                  textTransform: 'uppercase',
-                }}
-              >
-                {t.hero.cta1}
-              </button>
-              <a
-                href="https://github.com/sh5623/fe-rail"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 py-[0.9rem] px-[2.25rem] text-[#818cf8] border-[1.5px] border-[rgba(99,102,241,0.28)] no-underline rounded-[10px] transition-all duration-[250ms] cursor-pointer bg-[rgba(99,102,241,0.06)] backdrop-blur-[8px] hover:border-[rgba(99,102,241,0.55)] hover:bg-[rgba(99,102,241,0.12)] hover:-translate-y-[3px] hover:shadow-[0_8px_24px_rgba(99,102,241,0.2)] max-[480px]:flex-1 max-[480px]:justify-center"
-                style={{
-                  fontFamily: 'var(--font-mono), monospace',
-                  fontSize: '0.8rem',
-                  fontWeight: 600,
-                  letterSpacing: '0.12em',
-                  textTransform: 'uppercase',
-                }}
-              >
-                {t.hero.cta2}
-              </a>
-            </div>
-          </motion.div>
-        </motion.div>
-      </section>
-
-      {/* Skills */}
-      <section id="skills" className={sectionClass}>
-        <div className={innerClass}>
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={`skills-header-${lang}`}
-              variants={langSwitch}
-              initial="enter"
-              animate="center"
-              exit="exit"
+            fe-rail
+          </div>
+          <div className="flex items-center gap-5">
+            <button
+              type="button"
+              onClick={() => setLang((l) => (l === 'ko' ? 'en' : 'ko'))}
+              aria-label="언어 전환 / Toggle language"
+              className="relative flex items-center text-[0.72rem] font-semibold tracking-[0.08em] bg-white/5 border-[1.5px] border-[rgba(99,102,241,0.22)] rounded-[100px] cursor-pointer p-0 overflow-hidden transition-[border-color,box-shadow] duration-200 shadow-[0_1px_4px_rgba(99,102,241,0.08)] hover:border-[rgba(99,102,241,0.45)] hover:shadow-[0_2px_10px_rgba(99,102,241,0.18)]"
+              style={{ fontFamily: 'var(--font-mono), monospace' }}
             >
-              <motion.div
-                initial="hidden"
-                whileInView="visible"
-                viewport={{ once: true }}
-                variants={fadeUp}
+              {/* 인디케이터 폭이 50%-2px 이므로 x 100% = 왼쪽 50% 위치(기존 'en' 자리)와 정확히 같다 */}
+              <motion.span
+                aria-hidden="true"
+                className="absolute top-[2px] bottom-[2px] left-[2px] w-[calc(50%-2px)] bg-linear-to-br from-[#6366f1] to-[#4f46e5] rounded-[100px] shadow-[0_2px_8px_rgba(99,102,241,0.4)]"
+                initial={false}
+                animate={{ x: lang === 'ko' ? '0%' : '100%' }}
+                transition={{ type: 'spring', stiffness: 520, damping: 34, mass: 0.8 }}
+              />
+              <span
+                className="relative z-[1] py-[0.38rem] px-[0.9rem] transition-colors duration-[250ms]"
+                style={{ color: lang === 'ko' ? '#ffffff' : '#475569' }}
               >
-                <div className={labelClass} style={{ fontFamily: 'var(--font-mono), monospace' }}>
-                  {t.skills.label}
-                </div>
-                <h2 className={titleClass}>{t.skills.title}</h2>
-                <p className={descClass} style={{ fontFamily: 'var(--font-mono), monospace' }}>
-                  {t.skills.desc}
-                </p>
-              </motion.div>
-            </motion.div>
-          </AnimatePresence>
+                한
+              </span>
+              <span
+                className="relative z-[1] py-[0.38rem] px-[0.9rem] transition-colors duration-[250ms]"
+                style={{ color: lang !== 'ko' ? '#ffffff' : '#475569' }}
+              >
+                EN
+              </span>
+            </button>
+            <a
+              href="https://github.com/sh5623/fe-rail"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 text-[0.75rem] text-[#64748b] tracking-[0.1em] no-underline transition-colors duration-200 hover:text-[#818cf8]"
+              style={{ fontFamily: 'var(--font-mono), monospace' }}
+            >
+              {t.nav.github}
+            </a>
+          </div>
+        </nav>
+
+        {/* Hero */}
+        <section className="min-h-screen flex flex-col justify-center items-center px-12 pt-32 pb-24 relative overflow-hidden text-center max-[768px]:px-6 max-[768px]:pt-28 max-[768px]:pb-20">
+          <div
+            className="absolute w-[700px] h-[700px] rounded-full pointer-events-none top-[-180px] right-[-120px] max-[768px]:w-[385px] max-[768px]:h-[385px]"
+            style={{
+              background: 'radial-gradient(circle, rgba(99,102,241,0.22) 0%, transparent 65%)',
+              animation: 'orbFloat 9s ease-in-out infinite',
+            }}
+          />
+          <div
+            className="absolute w-[500px] h-[500px] rounded-full pointer-events-none bottom-[-80px] left-[-80px] max-[768px]:w-[275px] max-[768px]:h-[275px]"
+            style={{
+              background: 'radial-gradient(circle, rgba(52,211,153,0.12) 0%, transparent 65%)',
+              animation: 'orbFloat 13s ease-in-out infinite reverse',
+            }}
+          />
+
           <motion.div
             variants={stagger}
             initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true }}
+            animate="visible"
+            className="flex flex-col items-center z-[1]"
           >
-            <div className="grid grid-cols-3 gap-5 max-[1024px]:grid-cols-2 max-[580px]:grid-cols-1">
-              {skills.map((skill) => (
-                <motion.div key={`${skill.id}-${lang}`} variants={fadeUp}>
-                  <SkillCard {...skill} onClick={() => scrollTo(skill.id)} />
-                </motion.div>
-              ))}
-            </div>
-          </motion.div>
-        </div>
-      </section>
-
-      {/* Skill Details */}
-      <section className={sectionClass}>
-        <div className={innerClass}>
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={`detail-header-${lang}`}
-              variants={langSwitch}
-              initial="enter"
-              animate="center"
-              exit="exit"
-            >
-              <motion.div
-                initial="hidden"
-                whileInView="visible"
-                viewport={{ once: true }}
-                variants={fadeUp}
-              >
-                <div className={labelClass} style={{ fontFamily: 'var(--font-mono), monospace' }}>
-                  {t.skills.detailLabel}
-                </div>
-                <h2 className={titleClass}>{t.skills.detailTitle}</h2>
-              </motion.div>
-            </motion.div>
-          </AnimatePresence>
-          <motion.div
-            variants={stagger}
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true }}
-          >
-            <div className="grid grid-cols-2 gap-5 max-[768px]:grid-cols-1">
-              {skills.map((skill) => (
-                <motion.div key={`detail-${skill.id}-${lang}`} variants={fadeUp}>
-                  <div id={skill.id} style={{ scrollMarginTop: '100px' }}>
-                    <div className="relative bg-white/[0.03] border border-[rgba(99,102,241,0.12)] rounded-[16px] p-8 overflow-hidden transition-all duration-[250ms] before:content-[''] before:absolute before:top-0 before:left-0 before:right-0 before:h-[2px] before:bg-linear-to-r before:from-[#6366f1] before:to-[#34d399] before:scale-x-0 before:origin-left before:transition-transform before:duration-[350ms] before:rounded-tl-[16px] before:rounded-tr-[16px] hover:border-[rgba(99,102,241,0.28)] hover:shadow-[0_8px_32px_rgba(99,102,241,0.12)] hover:bg-white/5 hover:before:scale-x-100">
-                      <span className="text-[2rem] block mb-4">{skill.icon}</span>
-                      <h3 className="text-[1.05rem] font-bold mb-[0.6rem] tracking-[-0.01em] text-[#f1f5f9]">
-                        {skill.name}
-                      </h3>
-                      <p className="text-[0.85rem] text-[#64748b] leading-[1.75]">{skill.desc}</p>
-                      <span
-                        className="inline-block text-[0.72rem] text-[#34d399] bg-[rgba(52,211,153,0.08)] border border-[rgba(52,211,153,0.18)] py-[0.3rem] px-[0.85rem] rounded-[6px] mt-4 tracking-[0.04em]"
-                        style={{ fontFamily: 'var(--font-mono), monospace' }}
-                      >
-                        {skill.cmd}
-                      </span>
-                    </div>
-                  </div>
-                </motion.div>
-              ))}
-            </div>
-          </motion.div>
-        </div>
-      </section>
-
-      {/* Agents */}
-      <section id="agents" className={sectionClass}>
-        <div className={innerClass}>
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={`agents-header-${lang}`}
-              variants={langSwitch}
-              initial="enter"
-              animate="center"
-              exit="exit"
-            >
-              <motion.div
-                initial="hidden"
-                whileInView="visible"
-                viewport={{ once: true }}
-                variants={fadeUp}
-              >
-                <div className={labelClass} style={{ fontFamily: 'var(--font-mono), monospace' }}>
-                  {t.agents.label}
-                </div>
-                <h2 className={titleClass}>{t.agents.title}</h2>
-                <p className={descClass} style={{ fontFamily: 'var(--font-mono), monospace' }}>
-                  {t.agents.desc}
-                </p>
-              </motion.div>
-            </motion.div>
-          </AnimatePresence>
-          {(Object.keys(agents) as Array<keyof typeof agents>).map((phase) => (
-            <motion.div
-              key={`${phase}-${lang}`}
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.5, ease: 'easeOut' }}
-            >
-              <div
-                className="text-[0.7rem] text-[#818cf8] tracking-[0.22em] uppercase mb-[0.9rem] flex items-center gap-3 after:content-[''] after:flex-1 after:h-px after:bg-[rgba(99,102,241,0.15)]"
-                style={{ fontFamily: 'var(--font-mono), monospace' }}
-              >
-                {t.agents.phases[phase]}
-              </div>
-              <div className="grid grid-cols-[repeat(auto-fill,minmax(210px,1fr))] gap-3 mb-10">
-                {agents[phase].map((agent) => (
+            <motion.div variants={fadeUp}>
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={`badge-${lang}`}
+                  variants={langSwitch}
+                  initial="enter"
+                  animate="center"
+                  exit="exit"
+                >
                   <div
-                    key={agent.name}
-                    className="bg-white/[0.03] border border-[rgba(99,102,241,0.12)] rounded-[12px] px-6 py-5 transition-all duration-200 hover:border-[rgba(99,102,241,0.3)] hover:shadow-[0_6px_20px_rgba(99,102,241,0.12)] hover:-translate-y-0.5 hover:bg-white/5"
+                    className="inline-flex items-center gap-[0.6rem] text-[0.72rem] text-[#818cf8] tracking-[0.18em] uppercase bg-[rgba(99,102,241,0.1)] border border-[rgba(99,102,241,0.22)] rounded-[100px] py-[0.45rem] pl-3 pr-[1.1rem] mb-8 backdrop-blur-[8px]"
+                    style={{ fontFamily: 'var(--font-mono), monospace' }}
                   >
-                    <div
-                      className="text-[0.8rem] text-[#818cf8] mb-[0.45rem] font-semibold"
-                      style={{ fontFamily: 'var(--font-mono), monospace' }}
-                    >
-                      {agent.name}
-                    </div>
-                    <div className="text-[0.8rem] text-[#64748b] leading-[1.55]">{agent.role}</div>
-                    <div
-                      className="text-[0.62rem] text-[rgba(52,211,153,0.8)] mt-3 tracking-[0.05em]"
-                      style={{ fontFamily: 'var(--font-mono), monospace' }}
-                    >
-                      model: {agent.model}
-                    </div>
+                    <span className="w-[7px] h-[7px] rounded-full bg-[#818cf8] shrink-0 animate-[pulse_2.2s_ease-in-out_infinite]" />
+                    {t.hero.badge}
                   </div>
+                </motion.div>
+              </AnimatePresence>
+            </motion.div>
+
+            <motion.div variants={fadeUp}>
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={`title-${lang}`}
+                  variants={langSwitch}
+                  initial="enter"
+                  animate="center"
+                  exit="exit"
+                >
+                  <h1 className="text-[clamp(2.4rem,7vw,6rem)] font-extrabold leading-[1.1] tracking-[-0.03em] mb-6 max-w-[900px] text-[#f1f5f9] relative z-[1] max-[768px]:text-[clamp(2rem,8vw,3rem)]">
+                    {t.hero.titlePre}{' '}
+                    <motion.span
+                      style={{
+                        backgroundImage: ACCENT_GRADIENT,
+                        backgroundSize: '200% 100%',
+                        WebkitBackgroundClip: 'text',
+                        WebkitTextFillColor: 'transparent',
+                        backgroundClip: 'text',
+                      }}
+                      initial={{ backgroundPosition: '0% 50%' }}
+                      animate={
+                        reduceMotion
+                          ? { backgroundPosition: '0% 50%' }
+                          : { backgroundPosition: ['0% 50%', '100% 50%'] }
+                      }
+                      transition={
+                        reduceMotion
+                          ? { duration: 0 }
+                          : {
+                              duration: 6,
+                              ease: 'easeInOut',
+                              repeat: Number.POSITIVE_INFINITY,
+                              repeatType: 'mirror',
+                            }
+                      }
+                    >
+                      {t.hero.titleAccent}
+                    </motion.span>
+                    {t.hero.titlePost}
+                    <br />
+                    {t.hero.titleLine2}
+                  </h1>
+                </motion.div>
+              </AnimatePresence>
+            </motion.div>
+
+            <motion.div variants={fadeUp}>
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={`sub-${lang}`}
+                  variants={langSwitch}
+                  initial="enter"
+                  animate="center"
+                  exit="exit"
+                >
+                  <p
+                    className="text-[clamp(0.88rem,1.4vw,1.05rem)] text-[#64748b] leading-[1.85] max-w-[620px] mb-10 relative z-[1]"
+                    style={{ fontFamily: 'var(--font-mono), monospace' }}
+                  >
+                    {t.hero.subtitle.split('\n').map((line, i) => {
+                      return (
+                        <span
+                          // biome-ignore lint/suspicious/noArrayIndexKey: text split by newline, no stable ID
+                          key={i}
+                        >
+                          {line}
+                          {i === 0 && <br />}
+                        </span>
+                      )
+                    })}
+                  </p>
+                </motion.div>
+              </AnimatePresence>
+            </motion.div>
+
+            <motion.div variants={fadeUp}>
+              <div className="flex gap-4 justify-center flex-wrap relative z-[1]">
+                <button
+                  type="button"
+                  onClick={() => scrollTo('install')}
+                  className="inline-flex items-center gap-2 py-[0.9rem] px-[2.25rem] bg-linear-to-br from-[#6366f1] to-[#4f46e5] text-white no-underline border-none rounded-[10px] transition-all duration-[250ms] shadow-[0_4px_20px_rgba(99,102,241,0.4)] cursor-pointer hover:-translate-y-[3px] hover:shadow-[0_12px_32px_rgba(99,102,241,0.55)] max-[480px]:flex-1 max-[480px]:justify-center"
+                  style={{
+                    fontFamily: 'var(--font-mono), monospace',
+                    fontSize: '0.8rem',
+                    fontWeight: 600,
+                    letterSpacing: '0.12em',
+                    textTransform: 'uppercase',
+                  }}
+                >
+                  {t.hero.cta1}
+                </button>
+                <a
+                  href="https://github.com/sh5623/fe-rail"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 py-[0.9rem] px-[2.25rem] text-[#818cf8] border-[1.5px] border-[rgba(99,102,241,0.28)] no-underline rounded-[10px] transition-all duration-[250ms] cursor-pointer bg-[rgba(99,102,241,0.06)] backdrop-blur-[8px] hover:border-[rgba(99,102,241,0.55)] hover:bg-[rgba(99,102,241,0.12)] hover:-translate-y-[3px] hover:shadow-[0_8px_24px_rgba(99,102,241,0.2)] max-[480px]:flex-1 max-[480px]:justify-center"
+                  style={{
+                    fontFamily: 'var(--font-mono), monospace',
+                    fontSize: '0.8rem',
+                    fontWeight: 600,
+                    letterSpacing: '0.12em',
+                    textTransform: 'uppercase',
+                  }}
+                >
+                  {t.hero.cta2}
+                </a>
+              </div>
+            </motion.div>
+          </motion.div>
+        </section>
+
+        {/* Skills */}
+        <section id="skills" className={sectionClass}>
+          <div className={innerClass}>
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={`skills-header-${lang}`}
+                variants={langSwitch}
+                initial="enter"
+                animate="center"
+                exit="exit"
+              >
+                <motion.div
+                  initial="hidden"
+                  whileInView="visible"
+                  viewport={{ once: true }}
+                  variants={fadeUp}
+                >
+                  <div className={labelClass} style={{ fontFamily: 'var(--font-mono), monospace' }}>
+                    {t.skills.label}
+                  </div>
+                  <h2 className={titleClass}>{t.skills.title}</h2>
+                  <p className={descClass} style={{ fontFamily: 'var(--font-mono), monospace' }}>
+                    {t.skills.desc}
+                  </p>
+                </motion.div>
+              </motion.div>
+            </AnimatePresence>
+            <motion.div
+              variants={stagger}
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true }}
+            >
+              <div className="grid grid-cols-3 gap-5 max-[1024px]:grid-cols-2 max-[580px]:grid-cols-1">
+                {skills.map((skill) => (
+                  <motion.div key={`${skill.id}-${lang}`} variants={fadeUp}>
+                    <SkillCard {...skill} onClick={() => scrollTo(skill.id)} />
+                  </motion.div>
                 ))}
               </div>
             </motion.div>
-          ))}
-        </div>
-      </section>
+          </div>
+        </section>
 
-      {/* Workflow */}
-      <section id="workflow" className={sectionClass}>
-        <div className={innerClass}>
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={`workflow-header-${lang}`}
-              variants={langSwitch}
-              initial="enter"
-              animate="center"
-              exit="exit"
-            >
+        {/* Skill Details */}
+        <section className={sectionClass}>
+          <div className={innerClass}>
+            <AnimatePresence mode="wait">
               <motion.div
-                initial="hidden"
-                whileInView="visible"
-                viewport={{ once: true }}
-                variants={fadeUp}
+                key={`detail-header-${lang}`}
+                variants={langSwitch}
+                initial="enter"
+                animate="center"
+                exit="exit"
               >
-                <div className={labelClass} style={{ fontFamily: 'var(--font-mono), monospace' }}>
-                  {t.workflow.label}
-                </div>
-                <h2 className={titleClass}>{t.workflow.title}</h2>
-                <p className={descClass} style={{ fontFamily: 'var(--font-mono), monospace' }}>
-                  {t.workflow.desc}
-                </p>
+                <motion.div
+                  initial="hidden"
+                  whileInView="visible"
+                  viewport={{ once: true }}
+                  variants={fadeUp}
+                >
+                  <div className={labelClass} style={{ fontFamily: 'var(--font-mono), monospace' }}>
+                    {t.skills.detailLabel}
+                  </div>
+                  <h2 className={titleClass}>{t.skills.detailTitle}</h2>
+                </motion.div>
               </motion.div>
-            </motion.div>
-          </AnimatePresence>
-          <AnimatePresence mode="wait">
+            </AnimatePresence>
             <motion.div
-              key={`workflow-steps-${lang}`}
-              variants={langSwitch}
-              initial="enter"
-              animate="center"
-              exit="exit"
+              variants={stagger}
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true }}
             >
-              <motion.div
-                variants={stagger}
-                initial="hidden"
-                whileInView="visible"
-                viewport={{ once: true }}
-              >
-                <div className="flex flex-col max-w-[520px]">
-                  {workflow.map((step, i) => (
-                    <motion.div key={step.label} variants={fadeUp}>
-                      <div
-                        className={`flex gap-6 items-start relative ${i < workflow.length - 1 ? "pb-9 before:content-[''] before:absolute before:left-[19px] before:top-[42px] before:w-px before:h-[calc(100%-42px)] before:bg-linear-to-b before:from-[rgba(99,102,241,0.3)] before:to-transparent" : ''}`}
-                      >
-                        <div
-                          className="w-10 h-10 rounded-full bg-[rgba(99,102,241,0.1)] border-[1.5px] border-[rgba(99,102,241,0.25)] flex items-center justify-center text-[0.78rem] text-[#818cf8] font-bold shrink-0"
+              <div className="grid grid-cols-2 gap-5 max-[768px]:grid-cols-1">
+                {skills.map((skill) => (
+                  <motion.div key={`detail-${skill.id}-${lang}`} variants={fadeUp}>
+                    <div id={skill.id} style={{ scrollMarginTop: '100px' }}>
+                      <div className="relative bg-white/[0.03] border border-[rgba(99,102,241,0.12)] rounded-[16px] p-8 overflow-hidden transition-all duration-[250ms] before:content-[''] before:absolute before:top-0 before:left-0 before:right-0 before:h-[2px] before:bg-linear-to-r before:from-[#6366f1] before:to-[#34d399] before:scale-x-0 before:origin-left before:transition-transform before:duration-[350ms] before:rounded-tl-[16px] before:rounded-tr-[16px] hover:border-[rgba(99,102,241,0.28)] hover:shadow-[0_8px_32px_rgba(99,102,241,0.12)] hover:bg-white/5 hover:before:scale-x-100">
+                        <span className="text-[2rem] block mb-4">{skill.icon}</span>
+                        <h3 className="text-[1.05rem] font-bold mb-[0.6rem] tracking-[-0.01em] text-[#f1f5f9]">
+                          {skill.name}
+                        </h3>
+                        <p className="text-[0.85rem] text-[#64748b] leading-[1.75]">{skill.desc}</p>
+                        <span
+                          className="inline-block text-[0.72rem] text-[#34d399] bg-[rgba(52,211,153,0.08)] border border-[rgba(52,211,153,0.18)] py-[0.3rem] px-[0.85rem] rounded-[6px] mt-4 tracking-[0.04em]"
                           style={{ fontFamily: 'var(--font-mono), monospace' }}
                         >
-                          {String(i + 1).padStart(2, '0')}
-                        </div>
-                        <div className="pt-[0.45rem]">
+                          {skill.cmd}
+                        </span>
+                      </div>
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
+            </motion.div>
+          </div>
+        </section>
+
+        {/* Agents */}
+        <section id="agents" className={sectionClass}>
+          <div className={innerClass}>
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={`agents-header-${lang}`}
+                variants={langSwitch}
+                initial="enter"
+                animate="center"
+                exit="exit"
+              >
+                <motion.div
+                  initial="hidden"
+                  whileInView="visible"
+                  viewport={{ once: true }}
+                  variants={fadeUp}
+                >
+                  <div className={labelClass} style={{ fontFamily: 'var(--font-mono), monospace' }}>
+                    {t.agents.label}
+                  </div>
+                  <h2 className={titleClass}>{t.agents.title}</h2>
+                  <p className={descClass} style={{ fontFamily: 'var(--font-mono), monospace' }}>
+                    {t.agents.desc}
+                  </p>
+                </motion.div>
+              </motion.div>
+            </AnimatePresence>
+            {(Object.keys(agents) as Array<keyof typeof agents>).map((phase) => (
+              // key 에 lang 을 넣어 두었으므로 언어를 바꾸면 그룹이 새로 마운트되어 stagger 가 다시 돈다(교차 페이드 역할)
+              <motion.div
+                key={`${phase}-${lang}`}
+                variants={phaseGroup}
+                initial="hidden"
+                whileInView="visible"
+                viewport={{ once: true, amount: 0.2 }}
+              >
+                <motion.div
+                  variants={phaseLabel}
+                  className="text-[0.7rem] text-[#818cf8] tracking-[0.22em] uppercase mb-[0.9rem] flex items-center gap-3 after:content-[''] after:flex-1 after:h-px after:bg-[rgba(99,102,241,0.15)]"
+                  style={{ fontFamily: 'var(--font-mono), monospace' }}
+                >
+                  {t.agents.phases[phase]}
+                </motion.div>
+                <div className="grid grid-cols-[repeat(auto-fill,minmax(210px,1fr))] gap-3 mb-10">
+                  {agents[phase].map((agent) => (
+                    // framer 가 transform·opacity 를 맡으므로 CSS transition 은 hover 속성으로만 좁힌다
+                    // (hover:-translate-y 는 CSS translate 속성이라 framer 의 transform 과 겹치지 않는다)
+                    <motion.div
+                      key={agent.name}
+                      variants={agentCard}
+                      className="bg-white/[0.03] border border-[rgba(99,102,241,0.12)] rounded-[12px] px-6 py-5 transition-[translate,border-color,box-shadow,background-color] duration-200 hover:border-[rgba(99,102,241,0.3)] hover:shadow-[0_6px_20px_rgba(99,102,241,0.12)] hover:-translate-y-0.5 hover:bg-white/5"
+                    >
+                      <div
+                        className="text-[0.8rem] text-[#818cf8] mb-[0.45rem] font-semibold"
+                        style={{ fontFamily: 'var(--font-mono), monospace' }}
+                      >
+                        {agent.name}
+                      </div>
+                      <div className="text-[0.8rem] text-[#64748b] leading-[1.55]">
+                        {agent.role}
+                      </div>
+                      <div
+                        className="text-[0.62rem] text-[rgba(52,211,153,0.8)] mt-3 tracking-[0.05em]"
+                        style={{ fontFamily: 'var(--font-mono), monospace' }}
+                      >
+                        model: {agent.model}
+                      </div>
+                    </motion.div>
+                  ))}
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </section>
+
+        {/* Workflow */}
+        <section id="workflow" className={sectionClass}>
+          <div className={innerClass}>
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={`workflow-header-${lang}`}
+                variants={langSwitch}
+                initial="enter"
+                animate="center"
+                exit="exit"
+              >
+                <motion.div
+                  initial="hidden"
+                  whileInView="visible"
+                  viewport={{ once: true }}
+                  variants={fadeUp}
+                >
+                  <div className={labelClass} style={{ fontFamily: 'var(--font-mono), monospace' }}>
+                    {t.workflow.label}
+                  </div>
+                  <h2 className={titleClass}>{t.workflow.title}</h2>
+                  <p className={descClass} style={{ fontFamily: 'var(--font-mono), monospace' }}>
+                    {t.workflow.desc}
+                  </p>
+                </motion.div>
+              </motion.div>
+            </AnimatePresence>
+            {/* 선·번호 점은 언어와 무관하게 한 번만 그려지고, 언어 전환 때는 단계 본문만 교차 페이드한다.
+              (단계 수는 ko·en 이 같고, key 는 ko 라벨로 고정해 전환 때 재마운트되지 않게 한다) */}
+            <motion.div
+              className="flex flex-col max-w-[520px]"
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true, amount: 0.25 }}
+            >
+              {WORKFLOW.ko.map((koStep, i) => {
+                const step = workflow[i]
+                if (!step) return null
+                const isLast = i === WORKFLOW.ko.length - 1
+                return (
+                  <div
+                    key={koStep.label}
+                    className={`flex gap-6 items-start relative ${isLast ? '' : 'pb-9'}`}
+                  >
+                    {!isLast && (
+                      <motion.span
+                        aria-hidden="true"
+                        custom={i}
+                        variants={timelineLine}
+                        className="absolute left-[19px] top-[42px] w-px h-[calc(100%-42px)] origin-top bg-linear-to-b from-[rgba(99,102,241,0.3)] to-transparent"
+                      />
+                    )}
+                    <motion.div
+                      custom={i}
+                      variants={timelineDot}
+                      className="w-10 h-10 rounded-full bg-[rgba(99,102,241,0.1)] border-[1.5px] border-[rgba(99,102,241,0.25)] flex items-center justify-center text-[0.78rem] text-[#818cf8] font-bold shrink-0"
+                      style={{ fontFamily: 'var(--font-mono), monospace' }}
+                    >
+                      {String(i + 1).padStart(2, '0')}
+                    </motion.div>
+                    <motion.div custom={i} variants={timelineText} className="pt-[0.45rem]">
+                      <AnimatePresence mode="wait" initial={false}>
+                        <motion.div
+                          key={`workflow-step-${lang}`}
+                          variants={langSwitch}
+                          initial="enter"
+                          animate="center"
+                          exit="exit"
+                        >
                           <div
                             className="text-[0.88rem] font-semibold text-[#f1f5f9] mb-[0.35rem]"
                             style={{ fontFamily: 'var(--font-mono), monospace' }}
@@ -912,198 +1025,210 @@ export default function FeRailPage() {
                           <div className="text-[0.82rem] text-[#64748b] leading-[1.65]">
                             {step.desc}
                           </div>
-                        </div>
-                      </div>
+                        </motion.div>
+                      </AnimatePresence>
                     </motion.div>
-                  ))}
-                </div>
-              </motion.div>
+                  </div>
+                )
+              })}
             </motion.div>
-          </AnimatePresence>
-        </div>
-      </section>
+          </div>
+        </section>
 
-      {/* Changelog */}
-      <section id="changes" className={sectionClass}>
-        <div className={innerClass}>
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={`changes-header-${lang}`}
-              variants={langSwitch}
-              initial="enter"
-              animate="center"
-              exit="exit"
-            >
+        {/* Changelog */}
+        <section id="changes" className={sectionClass}>
+          <div className={innerClass}>
+            <AnimatePresence mode="wait">
               <motion.div
-                initial="hidden"
-                whileInView="visible"
-                viewport={{ once: true }}
-                variants={fadeUp}
+                key={`changes-header-${lang}`}
+                variants={langSwitch}
+                initial="enter"
+                animate="center"
+                exit="exit"
               >
-                <div className={labelClass} style={{ fontFamily: 'var(--font-mono), monospace' }}>
-                  {t.changes.label}
-                </div>
-                <h2 className={titleClass}>{t.changes.title}</h2>
-                <p className={descClass} style={{ fontFamily: 'var(--font-mono), monospace' }}>
-                  {t.changes.desc}
-                </p>
+                <motion.div
+                  initial="hidden"
+                  whileInView="visible"
+                  viewport={{ once: true }}
+                  variants={fadeUp}
+                >
+                  <div className={labelClass} style={{ fontFamily: 'var(--font-mono), monospace' }}>
+                    {t.changes.label}
+                  </div>
+                  <h2 className={titleClass}>{t.changes.title}</h2>
+                  <p className={descClass} style={{ fontFamily: 'var(--font-mono), monospace' }}>
+                    {t.changes.desc}
+                  </p>
+                </motion.div>
               </motion.div>
-            </motion.div>
-          </AnimatePresence>
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={`changes-list-${lang}`}
-              variants={langSwitch}
-              initial="enter"
-              animate="center"
-              exit="exit"
-            >
+            </AnimatePresence>
+            <AnimatePresence mode="wait">
               <motion.div
-                variants={stagger}
-                initial="hidden"
-                whileInView="visible"
-                viewport={{ once: true }}
+                key={`changes-list-${lang}`}
+                variants={langSwitch}
+                initial="enter"
+                animate="center"
+                exit="exit"
               >
-                <div className="grid grid-cols-1 gap-4 max-w-[760px]">
-                  {changes.map((item) => (
-                    <motion.div key={item.label} variants={fadeUp}>
-                      <div className="rounded-[14px] border border-[rgba(99,102,241,0.18)] bg-[rgba(99,102,241,0.05)] px-6 py-5">
-                        <div
-                          className="text-[0.85rem] font-semibold text-[#f1f5f9] mb-2"
-                          style={{ fontFamily: 'var(--font-mono), monospace' }}
-                        >
-                          {item.label}
+                <motion.div
+                  variants={stagger}
+                  initial="hidden"
+                  whileInView="visible"
+                  viewport={{ once: true }}
+                >
+                  <div className="grid grid-cols-1 gap-4 max-w-[760px]">
+                    {changes.map((item) => (
+                      <motion.div key={item.label} variants={fadeUp}>
+                        <div className="rounded-[14px] border border-[rgba(99,102,241,0.18)] bg-[rgba(99,102,241,0.05)] px-6 py-5">
+                          <div
+                            className="text-[0.85rem] font-semibold text-[#f1f5f9] mb-2"
+                            style={{ fontFamily: 'var(--font-mono), monospace' }}
+                          >
+                            {item.label}
+                          </div>
+                          <div className="text-[0.82rem] text-[#94a3b8] leading-[1.7]">
+                            {item.desc}
+                          </div>
                         </div>
-                        <div className="text-[0.82rem] text-[#94a3b8] leading-[1.7]">
-                          {item.desc}
-                        </div>
-                      </div>
-                    </motion.div>
-                  ))}
-                </div>
+                      </motion.div>
+                    ))}
+                  </div>
+                </motion.div>
               </motion.div>
-            </motion.div>
-          </AnimatePresence>
-        </div>
-      </section>
+            </AnimatePresence>
+          </div>
+        </section>
 
-      {/* Install */}
-      <section id="install" className={sectionClass}>
-        <div className={innerClass}>
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={`install-header-${lang}`}
-              variants={langSwitch}
-              initial="enter"
-              animate="center"
-              exit="exit"
-            >
+        {/* Install */}
+        <section id="install" className={sectionClass}>
+          <div className={innerClass}>
+            <AnimatePresence mode="wait">
               <motion.div
-                initial="hidden"
-                whileInView="visible"
-                viewport={{ once: true }}
-                variants={fadeUp}
+                key={`install-header-${lang}`}
+                variants={langSwitch}
+                initial="enter"
+                animate="center"
+                exit="exit"
               >
-                <div className={labelClass} style={{ fontFamily: 'var(--font-mono), monospace' }}>
-                  {t.install.label}
-                </div>
-                <h2 className={titleClass}>{t.install.title}</h2>
-                <p className={descClass} style={{ fontFamily: 'var(--font-mono), monospace' }}>
-                  {t.install.desc}
-                </p>
+                <motion.div
+                  initial="hidden"
+                  whileInView="visible"
+                  viewport={{ once: true }}
+                  variants={fadeUp}
+                >
+                  <div className={labelClass} style={{ fontFamily: 'var(--font-mono), monospace' }}>
+                    {t.install.label}
+                  </div>
+                  <h2 className={titleClass}>{t.install.title}</h2>
+                  <p className={descClass} style={{ fontFamily: 'var(--font-mono), monospace' }}>
+                    {t.install.desc}
+                  </p>
+                </motion.div>
               </motion.div>
-            </motion.div>
-          </AnimatePresence>
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.5, delay: 0.15, ease: 'easeOut' }}
-          >
-            <pre
-              className="bg-[#020617] border border-[rgba(99,102,241,0.15)] rounded-[14px] py-7 px-8 text-[0.82rem] leading-[1.9] text-[#e2e8f0] overflow-x-auto shadow-[0_4px_24px_rgba(0,0,0,0.4),inset_0_1px_0_rgba(99,102,241,0.08)] max-[768px]:py-5 max-[768px]:px-5 max-[768px]:text-[0.75rem]"
-              style={{ fontFamily: 'var(--font-mono), monospace' }}
+            </AnimatePresence>
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.5, delay: 0.15, ease: 'easeOut' }}
             >
-              <span className="text-[#475569]">{t.install.comment1}</span>
-              {'\n\n'}
-              <span className="text-[#475569]">{t.install.comment2}</span>
-              {'\n'}
-              <span className="text-[#34d399]">/plugin marketplace add sh5623/fe-rail</span>
-              {'\n'}
-              <span className="text-[#34d399]">/plugin install fe-rail@fe-rail-market</span>
-            </pre>
-          </motion.div>
-        </div>
-      </section>
+              <pre
+                className="bg-[#020617] border border-[rgba(99,102,241,0.15)] rounded-[14px] py-7 px-8 text-[0.82rem] leading-[1.9] text-[#e2e8f0] overflow-x-auto shadow-[0_4px_24px_rgba(0,0,0,0.4),inset_0_1px_0_rgba(99,102,241,0.08)] max-[768px]:py-5 max-[768px]:px-5 max-[768px]:text-[0.75rem]"
+                style={{ fontFamily: 'var(--font-mono), monospace' }}
+              >
+                {/* 주석 줄(JSX)은 한 번에, 명령 줄(문자열)은 한 글자씩 타이핑된다.
+                  빈 줄은 내용이 없으면 block span 높이가 0 이 되므로 nbsp 한 칸으로 자리를 잡는다. */}
+                <TypeLines
+                  className="text-[#34d399]"
+                  caretClassName="bg-[#34d399]"
+                  lines={[
+                    <span key="comment1" className="text-[#475569]">
+                      {t.install.comment1}
+                    </span>,
+                    <span key="blank" aria-hidden="true">
+                      {' '}
+                    </span>,
+                    <span key="comment2" className="text-[#475569]">
+                      {t.install.comment2}
+                    </span>,
+                    '/plugin marketplace add sh5623/fe-rail',
+                    '/plugin install fe-rail@fe-rail-market',
+                  ]}
+                />
+              </pre>
+            </motion.div>
+          </div>
+        </section>
 
-      {/* FAQ */}
-      <section id="faq" className={sectionClass}>
-        <div className={innerClass}>
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={`faq-header-${lang}`}
-              variants={langSwitch}
-              initial="enter"
-              animate="center"
-              exit="exit"
-            >
+        {/* FAQ */}
+        <section id="faq" className={sectionClass}>
+          <div className={innerClass}>
+            <AnimatePresence mode="wait">
               <motion.div
-                initial="hidden"
-                whileInView="visible"
-                viewport={{ once: true }}
-                variants={fadeUp}
+                key={`faq-header-${lang}`}
+                variants={langSwitch}
+                initial="enter"
+                animate="center"
+                exit="exit"
               >
-                <div className={labelClass} style={{ fontFamily: 'var(--font-mono), monospace' }}>
-                  {t.faq.label}
-                </div>
-                <h2 className={titleClass}>{t.faq.title}</h2>
+                <motion.div
+                  initial="hidden"
+                  whileInView="visible"
+                  viewport={{ once: true }}
+                  variants={fadeUp}
+                >
+                  <div className={labelClass} style={{ fontFamily: 'var(--font-mono), monospace' }}>
+                    {t.faq.label}
+                  </div>
+                  <h2 className={titleClass}>{t.faq.title}</h2>
+                </motion.div>
               </motion.div>
-            </motion.div>
-          </AnimatePresence>
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={`faq-list-${lang}`}
-              variants={langSwitch}
-              initial="enter"
-              animate="center"
-              exit="exit"
-            >
+            </AnimatePresence>
+            <AnimatePresence mode="wait">
               <motion.div
-                variants={stagger}
-                initial="hidden"
-                whileInView="visible"
-                viewport={{ once: true }}
+                key={`faq-list-${lang}`}
+                variants={langSwitch}
+                initial="enter"
+                animate="center"
+                exit="exit"
               >
-                <div className="max-w-[800px]">
-                  {faqs.map((faq) => (
-                    <motion.div key={faq.q} variants={fadeUp}>
-                      <div className="bg-white/[0.03] border border-[rgba(99,102,241,0.1)] rounded-[14px] py-7 px-8 mb-3 transition-all duration-200 hover:border-[rgba(99,102,241,0.22)] hover:shadow-[0_4px_16px_rgba(99,102,241,0.08)] hover:bg-white/5">
-                        <div className="text-[0.98rem] font-bold text-[#f1f5f9] mb-[0.65rem] tracking-[-0.01em]">
-                          {faq.q}
+                <motion.div
+                  variants={stagger}
+                  initial="hidden"
+                  whileInView="visible"
+                  viewport={{ once: true }}
+                >
+                  <div className="max-w-[800px]">
+                    {faqs.map((faq) => (
+                      <motion.div key={faq.q} variants={fadeUp}>
+                        <div className="bg-white/[0.03] border border-[rgba(99,102,241,0.1)] rounded-[14px] py-7 px-8 mb-3 transition-all duration-200 hover:border-[rgba(99,102,241,0.22)] hover:shadow-[0_4px_16px_rgba(99,102,241,0.08)] hover:bg-white/5">
+                          <div className="text-[0.98rem] font-bold text-[#f1f5f9] mb-[0.65rem] tracking-[-0.01em]">
+                            {faq.q}
+                          </div>
+                          <div
+                            className="text-[0.88rem] text-[#64748b] leading-[1.8]"
+                            style={{ fontFamily: 'var(--font-mono), monospace' }}
+                          >
+                            {faq.a}
+                          </div>
                         </div>
-                        <div
-                          className="text-[0.88rem] text-[#64748b] leading-[1.8]"
-                          style={{ fontFamily: 'var(--font-mono), monospace' }}
-                        >
-                          {faq.a}
-                        </div>
-                      </div>
-                    </motion.div>
-                  ))}
-                </div>
+                      </motion.div>
+                    ))}
+                  </div>
+                </motion.div>
               </motion.div>
-            </motion.div>
-          </AnimatePresence>
-        </div>
-      </section>
+            </AnimatePresence>
+          </div>
+        </section>
 
-      <footer
-        className="px-12 py-8 flex justify-between items-center border-t border-[rgba(99,102,241,0.08)] text-[0.68rem] text-[#334155] tracking-[0.1em] bg-black/20 max-[768px]:px-6 max-[768px]:py-6 max-[768px]:flex-col max-[768px]:gap-1 max-[768px]:text-center"
-        style={{ fontFamily: 'var(--font-mono), monospace' }}
-      >
-        <span>{t.footer}</span>
-        <span>by 이승호</span>
-      </footer>
-    </div>
+        <footer
+          className="px-12 py-8 flex justify-between items-center border-t border-[rgba(99,102,241,0.08)] text-[0.68rem] text-[#334155] tracking-[0.1em] bg-black/20 max-[768px]:px-6 max-[768px]:py-6 max-[768px]:flex-col max-[768px]:gap-1 max-[768px]:text-center"
+          style={{ fontFamily: 'var(--font-mono), monospace' }}
+        >
+          <span>{t.footer}</span>
+          <span>by 이승호</span>
+        </footer>
+      </div>
+    </PageMotion>
   )
 }
