@@ -44,6 +44,7 @@ Vibe App — 개인 포트폴리오 + 인터랙티브 경험. RR7 프레임워�
 | `/fe-rail` | fe-rail 플러그인 소개 |
 | `/self-improvement` | self-improvement 플러그인 소개 |
 | `/parallel-worktree` | parallel-worktree 스킬 소개 |
+| `/e2e-rail` | e2e-rail 플러그인 소개 |
 | `/dev` | 개발자 포트폴리오 |
 | `/portfolio` | Bambi 포트폴리오 |
 | `/invitation` | 초대장 |
@@ -65,6 +66,7 @@ app/                         # RR7 appDirectory (source root)
 │   ├── fe-rail.tsx          # /fe-rail
 │   ├── self-improvement.tsx # /self-improvement
 │   ├── parallel-worktree.tsx # /parallel-worktree
+│   ├── e2e-rail.tsx         # /e2e-rail
 │   ├── dev.tsx              # /dev
 │   ├── portfolio.tsx        # /portfolio
 │   ├── invitation.tsx       # /invitation

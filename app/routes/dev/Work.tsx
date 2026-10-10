@@ -33,13 +33,20 @@ const projects: Project[] = [
   },
   {
     num: '04',
+    name: 'e2e-rail',
+    desc: '변경이 닿을 수 있는 Playwright spec만 근거와 함께 고르는 Claude Code · Codex 플러그인. 모든 실행을 검증한 코드의 지문에 묶어 원장에 남기고, 측정값으로 워커와 샤드를 정하며, 판정할 수 없으면 좁히지 않고 전수로 넓힙니다. 섀도 모드에서 선택의 hit을 쌓은 뒤에만 사람이 승격(v0.2.2).',
+    tags: ['Claude Code', 'Codex', 'Playwright', 'Node CLI', 'CI Sharding'],
+    href: '/e2e-rail',
+  },
+  {
+    num: '05',
     name: 'Stock Dashboard',
     desc: '야후 파이낸스 API 연동 실시간 주식 차트 대시보드. 한글 종목명 검색, 코스피 지수 시각화, 폴백 데이터 처리 구현.',
     tags: ['React Router 7', 'yahoo-finance2', 'Recharts', 'TanStack Query', 'Resource Route'],
     href: '/stock',
   },
   {
-    num: '05',
+    num: '06',
     name: 'Bambi Portfolio',
     desc: '반려견 파피용 밤비의 포트폴리오. 무한 자동 스크롤 갤러리, 드래그 & 터치 인터랙션, 모델링 작업 쇼케이스.',
     tags: ['Next.js', 'Emotion', 'Image Optimization', 'Canvas Animation'],

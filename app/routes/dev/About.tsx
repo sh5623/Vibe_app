@@ -42,13 +42,14 @@ export default function About() {
             </>,
             <>
               <strong>fe-rail</strong>, <strong>self-improvement</strong>,{' '}
-              <strong>parallel-worktree</strong>를 직접 설계하고 구현해 오픈소스로 공개했습니다.
-              fe-rail은 spec → build → review → PR 사이클을 자동화하는 Claude Code 플러그인이고,
-              self-improvement는 규약이나 문서에 물린 지점을 증거를 근거로 스스로 고치는 자가개선
-              루프입니다. parallel-worktree는 격리된 워크트리에서 서브에이전트를 병렬로 돌리고
-              작업을 잃지 않는 순서로 수확하는 오케스트레이션 스킬입니다. 셋 다 외부 교차 리뷰에서
-              재현된 지적을 회귀 테스트로 고정한 뒤에 릴리스합니다. AI를 개발 프로세스 안에
-              내재화하는 일에 관심이 있습니다.
+              <strong>parallel-worktree</strong>, <strong>e2e-rail</strong>을 직접 설계하고 구현해
+              오픈소스로 공개했습니다. fe-rail은 spec → build → review → PR 사이클을 자동화하는
+              Claude Code 플러그인이고, self-improvement는 규약이나 문서에 물린 지점을 증거를 근거로
+              스스로 고치는 자가개선 루프입니다. parallel-worktree는 격리된 워크트리에서
+              서브에이전트를 병렬로 돌리고 작업을 잃지 않는 순서로 수확하는 오케스트레이션 스킬이고,
+              e2e-rail은 변경이 닿을 수 있는 Playwright spec만 근거와 함께 고르고 검증 기록을 코드
+              지문에 묶는 플러그인입니다. 넷 다 외부 교차 리뷰에서 재현된 지적을 회귀 테스트로
+              고정한 뒤에 릴리스합니다. AI를 개발 프로세스 안에 내재화하는 일에 관심이 있습니다.
             </>,
           ].map((text, i) => {
             return (
