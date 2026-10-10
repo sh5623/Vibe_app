@@ -1,6 +1,6 @@
 # Vibe App
 
-> React Router 7 (SSR) 기반 개인 포트폴리오 & 인터랙티브 경험 플랫폼
+> React Router 7 (SPA) 기반 개인 포트폴리오 & 인터랙티브 경험 플랫폼
 
 ## 페이지 구성
 
@@ -20,7 +20,7 @@
 
 ## 기술 스택
 
-- **Framework:** React Router 7.18 (프레임워크 모드, SSR) + Vite 8
+- **Framework:** React Router 7.18 (프레임워크 모드, SPA `ssr: false`) + Vite 8 · API 는 루트 `api/*.ts` Vercel Functions
 - **Language:** TypeScript 6 (`strict` + `noUncheckedIndexedAccess`)
 - **Styling:** Tailwind CSS 4.3 (CSS-first, `@theme` 변수)
 - **UI Components:** shadcn/ui (`app/components/ui/` — 수동 수정 금지)
@@ -29,7 +29,7 @@
 - **Validation:** Zod 4 (`z.email()` / `z.url()` 최상위 함수)
 - **Charts:** Recharts 3
 - **Icons:** Lucide React
-- **Stock Data:** yahoo-finance2 (resource route, server-only)
+- **Stock Data:** yahoo-finance2 (Vercel Function `api/stock.ts`)
 - **Linter/Formatter:** Biome 2.5 (`biome.json`)
 
 ## 시작하기
@@ -48,7 +48,7 @@ pnpm dev
 ## 명령어
 
 ```bash
-pnpm dev          # 개발 서버 (SSR, localhost:5173)
+pnpm dev          # 개발 서버 (SPA, localhost:5173)
 pnpm build        # 프로덕션 빌드
 pnpm start        # 프로덕션 서버
 pnpm check        # biome check --write + Tailwind v3 문법 감지
@@ -73,9 +73,7 @@ app/
 │   ├── invitation.tsx       # /invitation
 │   ├── letter.tsx           # /letter
 │   ├── stock.tsx            # /stock
-│   ├── otp.tsx              # /otp
-│   ├── api.stock.ts         # GET /api/stock (server-only)
-│   └── api.otp.ts           # POST /api/otp (server-only)
+│   └── otp.tsx              # /otp
 ├── components/
 │   ├── ui/                  # shadcn/ui — 수동 수정 금지
 │   └── [Feature]/           # index.tsx 단일 파일 원칙
