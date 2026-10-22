@@ -1,3 +1,5 @@
+import { createHash, timingSafeEqual } from 'node:crypto'
+import type { IncomingMessage, ServerResponse } from 'node:http'
 import { z } from 'zod'
 
 export const THEMES = ['ai', 'world', 'gh'] as const
@@ -329,4 +331,232 @@ export function buildDaySummary(
     highlight: summary?.highlight ?? null,
     updatedAt: stamps.reduce((a, b) => (b > a ? b : a), ''),
   }
+}
+
+// ---------- 핸들러 ----------
+
+const MAX_BODY_BYTES = 262144
+
+interface VercelRequest extends IncomingMessage {
+  query: Record<string, string | string[]>
+}
+
+class PayloadTooLargeError extends Error {}
+
+function readBody(req: IncomingMessage): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const chunks: Buffer[] = []
+    let bytesRead = 0
+    let failed = false
+    req.on('data', (chunk: Buffer) => {
+      if (failed) return
+      bytesRead += chunk.length
+      if (bytesRead > MAX_BODY_BYTES) {
+        failed = true
+        req.pause()
+        reject(new PayloadTooLargeError('Request body too large'))
+        return
+      }
+      chunks.push(chunk)
+    })
+    req.on('end', () => resolve(Buffer.concat(chunks).toString('utf8')))
+    req.on('error', reject)
+  })
+}
+
+function json(res: ServerResponse, status: number, body: unknown) {
+  res.statusCode = status
+  res.end(JSON.stringify(body))
+}
+
+function supabaseHeaders(): Record<string, string> {
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY ?? ''
+  return {
+    apikey: key,
+    Authorization: `Bearer ${key}`,
+    'Content-Type': 'application/json',
+  }
+}
+
+function getQueryParam(req: VercelRequest, key: string): string | undefined {
+  const val = req.query[key]
+  return Array.isArray(val) ? val[0] : val
+}
+
+function sha256(v: string): Buffer {
+  return createHash('sha256').update(v).digest()
+}
+
+function isAuthorized(req: IncomingMessage, token: string): boolean {
+  const header = req.headers.authorization
+  if (typeof header !== 'string' || !header.startsWith('Bearer ')) return false
+  return timingSafeEqual(sha256(header.slice('Bearer '.length)), sha256(token))
+}
+
+async function sbGet<T>(url: string): Promise<T[]> {
+  const res = await fetch(url, { headers: supabaseHeaders() })
+  if (!res.ok) throw new Error(`Supabase GET failed: ${res.status}`)
+  return (await res.json()) as T[]
+}
+
+async function sbUpsert(url: string, row: unknown): Promise<void> {
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { ...supabaseHeaders(), Prefer: 'resolution=merge-duplicates,return=minimal' },
+    body: JSON.stringify(row),
+  })
+  if (!res.ok) throw new Error(`Supabase upsert failed: ${res.status}`)
+}
+
+/** Supabase는 `+00:00`, 서버는 `Z`로 쓴다. 비교·응답을 일관되게 ISO Z로 맞춘다. */
+function normalizeStamp(v: string): string {
+  const t = new Date(v)
+  return Number.isNaN(t.getTime()) ? v : t.toISOString()
+}
+
+interface FeedFullRow extends FeedRow {
+  items: unknown[]
+  note: string | null
+  generated_at: string
+  model: string
+}
+
+function groupByDate<T extends { date: string }>(rows: T[]): Map<string, T[]> {
+  const map = new Map<string, T[]>()
+  for (const r of rows) map.set(r.date, [...(map.get(r.date) ?? []), r])
+  return map
+}
+
+async function handleGet(req: VercelRequest, res: ServerResponse, base: string) {
+  res.setHeader('Cache-Control', 'no-store')
+  const date = getQueryParam(req, 'date')
+
+  if (date === undefined) {
+    const [feedRows, summaryRows] = await Promise.all([
+      sbGet<FeedRow>(
+        `${base}/rest/v1/ms_feeds?select=date,theme,item_count,fe_high,fe_picks,top_text,updated_at&order=date.asc`
+      ),
+      sbGet<SummaryRow>(`${base}/rest/v1/ms_summaries?select=date,headline,highlight,updated_at`),
+    ])
+    const feedsByDate = groupByDate(
+      feedRows.map((r) => ({ ...r, updated_at: normalizeStamp(r.updated_at) }))
+    )
+    const summaryByDate = new Map(
+      summaryRows.map((r) => [r.date, { ...r, updated_at: normalizeStamp(r.updated_at) }])
+    )
+    const dates = [...new Set([...feedsByDate.keys(), ...summaryByDate.keys()])].sort()
+    const days = dates.map((d) =>
+      buildDaySummary(d, feedsByDate.get(d) ?? [], summaryByDate.get(d) ?? null)
+    )
+    return json(res, 200, { days })
+  }
+
+  if (!isDateString(date)) return json(res, 400, { error: 'INVALID_DATE' })
+  const [feedRows, summaryRows] = await Promise.all([
+    sbGet<FeedFullRow>(`${base}/rest/v1/ms_feeds?date=eq.${date}&select=*`),
+    sbGet<SummaryRow>(`${base}/rest/v1/ms_summaries?date=eq.${date}&select=*`),
+  ])
+  if (feedRows.length === 0 && summaryRows.length === 0) {
+    return json(res, 404, { error: 'NOT_FOUND' })
+  }
+  const normFeeds = feedRows.map((r) => ({ ...r, updated_at: normalizeStamp(r.updated_at) }))
+  const summary = summaryRows[0]
+  const day = buildDaySummary(
+    date,
+    normFeeds,
+    summary ? { ...summary, updated_at: normalizeStamp(summary.updated_at) } : null
+  )
+  const feeds: Record<string, unknown> = {}
+  for (const r of normFeeds) {
+    feeds[r.theme] = {
+      date: r.date,
+      theme: r.theme,
+      generatedAt: r.generated_at,
+      model: r.model,
+      status: r.items.length ? 'ok' : 'empty',
+      note: r.note ?? undefined,
+      items: r.items,
+    }
+  }
+  return json(res, 200, { day, feeds })
+}
+
+async function handlePost(req: VercelRequest, res: ServerResponse, base: string) {
+  let rawBody: string
+  try {
+    rawBody = await readBody(req)
+  } catch (error) {
+    if (error instanceof PayloadTooLargeError) return json(res, 413, { error: 'PAYLOAD_TOO_LARGE' })
+    return json(res, 400, { error: 'INVALID_JSON' })
+  }
+
+  let body: unknown
+  try {
+    body = JSON.parse(rawBody)
+  } catch {
+    return json(res, 400, { error: 'INVALID_JSON' })
+  }
+
+  const parsed = parseIngest(body)
+  if (!parsed.ok) return json(res, 400, { error: 'INVALID_PAYLOAD', issues: parsed.issues })
+  const payload = parsed.value
+
+  const expectedDate = kstToday(new Date())
+  if (payload.date !== expectedDate || !isWeekday(payload.date)) {
+    return json(res, 400, { error: 'DATE_NOT_ACCEPTED', expectedDate })
+  }
+
+  const now = new Date().toISOString()
+  if (payload.kind === 'summary') {
+    await sbUpsert(`${base}/rest/v1/ms_summaries?on_conflict=date`, {
+      date: payload.date,
+      headline: payload.headline,
+      highlight: payload.highlight ?? null,
+      updated_at: now,
+    })
+    return json(res, 200, { ok: true, date: payload.date })
+  }
+
+  const agg = feedAggregates(payload.theme, payload.items)
+  await sbUpsert(`${base}/rest/v1/ms_feeds?on_conflict=date,theme`, {
+    date: payload.date,
+    theme: payload.theme,
+    items: payload.items,
+    note: payload.note ?? null,
+    generated_at: payload.generatedAt,
+    model: payload.model,
+    item_count: agg.itemCount,
+    fe_high: agg.feHigh,
+    fe_picks: agg.fePicks,
+    top_text: agg.topText,
+    updated_at: now,
+  })
+  return json(res, 200, {
+    ok: true,
+    date: payload.date,
+    theme: payload.theme,
+    itemCount: agg.itemCount,
+  })
+}
+
+export default async function handler(req: VercelRequest, res: ServerResponse) {
+  res.setHeader('Content-Type', 'application/json')
+
+  const base = process.env.SUPABASE_URL
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+  if (!base || !serviceKey) return json(res, 503, { error: 'SUPABASE_UNAVAILABLE' })
+
+  try {
+    if (req.method === 'GET') return await handleGet(req, res, base)
+    if (req.method === 'POST') {
+      const token = process.env.MS_INGEST_TOKEN
+      if (!token) return json(res, 503, { error: 'SUPABASE_UNAVAILABLE' })
+      if (!isAuthorized(req, token)) return json(res, 401, { error: 'UNAUTHORIZED' })
+      return await handlePost(req, res, base)
+    }
+  } catch (error) {
+    console.error('[api/morning-signal] failed', error)
+    return json(res, 503, { error: 'SUPABASE_UNAVAILABLE' })
+  }
+  return json(res, 405, { error: 'Method Not Allowed' })
 }
