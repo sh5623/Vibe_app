@@ -29,3 +29,518 @@
   font: 700 13px / 1.4 var(--f);
   letter-spacing: -0.01em;
 }
+
+/* ── PIN 잠금(시안 D) ─────────────────────────────────────────────── */
+.ms .pin {
+  --td-soft: color-mix(in srgb, var(--td-b1) 12%, transparent);
+  --td-slot: color-mix(in srgb, var(--td-b1) 38%, var(--border));
+  --td-ok2: #16a34a;
+  --td-ok-soft: color-mix(in srgb, var(--td-done) 16%, transparent);
+  --td-err-soft: color-mix(in srgb, var(--td-red) 14%, transparent);
+  position: relative;
+  width: 100%;
+  max-width: 360px;
+  margin: 28px auto 0;
+  padding: 30px 22px 24px;
+  border-radius: 26px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  transition:
+    transform 0.6s var(--ease),
+    opacity 0.45s,
+    filter 0.45s;
+}
+.ms .pin.out {
+  transform: translateY(-14px) scale(0.96);
+  opacity: 0;
+  filter: blur(8px);
+  pointer-events: none;
+}
+.ms .pin .eye {
+  all: unset;
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  width: 30px;
+  height: 30px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  color: var(--muted-fg);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+}
+.ms .pin .eye:focus-visible {
+  outline: 2px solid var(--td-b1);
+  outline-offset: 2px;
+}
+
+/* 자물쇠 + 진행 링 */
+.ms .pin .lock {
+  position: relative;
+  width: 76px;
+  height: 76px;
+  flex: none;
+}
+.ms .pin .pin-ring {
+  position: absolute;
+  inset: 0;
+  transform: rotate(-90deg);
+}
+.ms .pin .trk {
+  fill: none;
+  stroke: var(--td-soft);
+  stroke-width: 3;
+}
+.ms .pin .arc {
+  fill: none;
+  stroke: url(#td-arc);
+  stroke-width: 3;
+  stroke-linecap: round;
+  transition:
+    stroke-dashoffset 0.45s var(--ease),
+    stroke 0.3s;
+}
+.ms .pin .lock.spin .pin-ring {
+  animation: td-spin 0.9s linear infinite;
+}
+.ms .pin .lock.ok .arc {
+  stroke: var(--td-done);
+}
+.ms .pin .lock.ok .trk {
+  stroke: var(--td-ok-soft);
+}
+.ms .pin .lock.err .arc {
+  stroke: var(--td-red);
+}
+.ms .pin .lock.err .trk {
+  stroke: var(--td-err-soft);
+}
+@keyframes td-spin {
+  to {
+    transform: rotate(270deg);
+  }
+}
+.ms .pin .core {
+  position: absolute;
+  inset: 11px;
+  border-radius: 50%;
+  background: var(--td-soft);
+  color: var(--td-b1);
+  display: grid;
+  place-items: center;
+  transition:
+    background 0.35s,
+    color 0.3s,
+    transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1),
+    box-shadow 0.4s;
+}
+.ms .pin .core svg {
+  position: absolute;
+  transition:
+    opacity 0.25s,
+    transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.ms .pin .ic-check {
+  opacity: 0;
+  transform: scale(0.4);
+}
+.ms .pin .ic-check path {
+  stroke-dasharray: 22;
+  stroke-dashoffset: 22;
+  transition: stroke-dashoffset 0.4s 0.15s var(--ease);
+}
+.ms .pin .lock.err .core {
+  background: var(--td-err-soft);
+  color: var(--td-red);
+}
+.ms .pin .lock.ok .core {
+  background: linear-gradient(145deg, #4ade80, var(--td-ok2));
+  color: #fff;
+  transform: scale(1.06);
+  box-shadow: 0 10px 24px -8px rgba(34, 197, 94, 0.7);
+}
+.ms .pin .lock.ok .ic-lock {
+  opacity: 0;
+  transform: scale(0.4) rotate(-20deg);
+}
+.ms .pin .lock.ok .ic-check {
+  opacity: 1;
+  transform: none;
+}
+.ms .pin .lock.ok .ic-check path {
+  stroke-dashoffset: 0;
+}
+.ms .pin .halo {
+  position: absolute;
+  inset: 11px;
+  border-radius: 50%;
+  border: 2px solid var(--td-done);
+  opacity: 0;
+  pointer-events: none;
+  animation: td-halo 0.8s var(--ease) 0.26s forwards;
+}
+@keyframes td-halo {
+  0% {
+    opacity: 0.7;
+    transform: scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.9);
+  }
+}
+
+/* 제목·설명 — 글자마다 흐림이 걷힌다 */
+.ms .pin-title {
+  margin: 16px 0 0;
+  font: 700 21px / 30px var(--f);
+  letter-spacing: -0.025em;
+  color: var(--ink);
+  height: 30px;
+  white-space: nowrap;
+}
+.ms .pin-desc {
+  margin: 4px 0 0;
+  font-size: 12.5px;
+  color: var(--muted-fg);
+  min-height: 20px;
+  text-align: center;
+}
+.ms .pin-desc b {
+  font: 600 12px var(--fm);
+  color: var(--td-red);
+}
+.ms .pin.off .pin-desc {
+  color: var(--td-red);
+}
+.ms .pin-title span,
+.ms .pin-desc span {
+  display: inline-block;
+  animation: td-blur-in 0.5s var(--ease) both;
+}
+@keyframes td-blur-in {
+  from {
+    opacity: 0;
+    filter: blur(6px);
+    transform: translateY(5px);
+  }
+}
+
+/* 칸 4개 + 칸 위에 겹친 투명 입력칸(input-otp 방식 — 칸을 누르면 바로 숫자 키패드) */
+.ms .pin .slots {
+  position: relative;
+  display: flex;
+  gap: 12px;
+  margin-top: 24px;
+}
+.ms .pin-input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  border: 0;
+  padding: 0;
+  font-size: 16px;
+  color: transparent;
+  caret-color: transparent;
+  background: transparent;
+  cursor: text;
+}
+.ms .pin-input:disabled {
+  cursor: not-allowed;
+}
+.ms .pin .slot {
+  position: relative;
+  width: 56px;
+  height: 64px;
+  border-radius: 16px;
+  border: 1.6px solid var(--border);
+  background: var(--card);
+  display: grid;
+  place-items: center;
+  transition:
+    border-color 0.2s,
+    box-shadow 0.25s,
+    background 0.3s,
+    opacity 0.3s;
+}
+.ms .pin.off .slot {
+  opacity: 0.45;
+}
+.ms .pin .win {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  border-radius: inherit;
+}
+.ms .pin .col {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  animation: td-roll 0.42s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+.ms .pin .col.still {
+  animation: none;
+}
+.ms .pin .col span {
+  height: 61px;
+  display: grid;
+  place-items: center;
+  font: 600 26px var(--f);
+  color: var(--ink);
+}
+@keyframes td-roll {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(-75%);
+  }
+}
+.ms .pin .m {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 12px;
+  height: 12px;
+  margin: -6px 0 0 -6px;
+  border-radius: 50%;
+  background: var(--ink);
+  animation: td-pop 0.32s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+@keyframes td-pop {
+  0% {
+    transform: scale(0.2);
+  }
+  60% {
+    transform: scale(1.35);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+.ms .pin .ul {
+  position: absolute;
+  left: 22px;
+  right: 22px;
+  bottom: 11px;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--td-slot);
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+.ms .pin .slot.filled .ul {
+  opacity: 0.9;
+}
+.ms .pin .ph {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--td-slot);
+  transition:
+    opacity 0.2s,
+    transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.ms .pin .slot.filled .ph,
+.ms .pin .slot.active .ph {
+  opacity: 0;
+  transform: scale(0);
+}
+.ms .pin .caret {
+  position: absolute;
+  width: 2px;
+  height: 26px;
+  border-radius: 2px;
+  background: var(--td-b1);
+  opacity: 0;
+}
+.ms .pin .slot.active {
+  border-color: var(--td-b1);
+  box-shadow: 0 0 0 4px var(--td-soft);
+}
+.ms .pin .slot.active .caret {
+  animation: td-caret 1.05s steps(1) infinite;
+}
+@keyframes td-caret {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0;
+  }
+}
+.ms .pin .slot.filled {
+  border-color: var(--td-slot);
+}
+.ms .pin .burst i {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 4px;
+  height: 4px;
+  margin: -2px;
+  border-radius: 50%;
+  background: var(--td-b2);
+  opacity: 0;
+  pointer-events: none;
+  animation: td-burst 0.52s var(--ease) 0.33s;
+}
+@keyframes td-burst {
+  from {
+    opacity: 0.9;
+    transform: translate(0, 0) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translate(var(--dx), var(--dy)) scale(0.3);
+  }
+}
+.ms .pin .slots.err .slot {
+  border-color: var(--td-red);
+  background: var(--td-err-soft);
+}
+.ms .pin .slots.err .col span {
+  color: var(--td-red);
+}
+.ms .pin .slots.err .m,
+.ms .pin .slots.err .ul {
+  background: var(--td-red);
+}
+.ms .pin .slots.clearing .win > * {
+  animation: td-drop 0.26s cubic-bezier(0.7, 0, 0.84, 0) forwards;
+  animation-delay: calc(var(--i) * 70ms);
+}
+.ms .pin .slots.clearing .win > .col {
+  animation-name: td-drop-col;
+}
+@keyframes td-drop {
+  to {
+    transform: translateY(22px);
+    opacity: 0;
+  }
+}
+@keyframes td-drop-col {
+  from {
+    transform: translateY(-75%);
+  }
+  to {
+    transform: translateY(-50%);
+    opacity: 0;
+  }
+}
+.ms .pin .slot.ok {
+  border-color: transparent;
+  background: linear-gradient(150deg, #4ade80, var(--td-ok2));
+  box-shadow: 0 10px 20px -10px rgba(22, 163, 74, 0.8);
+  transition-delay: calc(var(--i) * 90ms);
+  animation: td-lift 0.42s cubic-bezier(0.34, 1.56, 0.64, 1) calc(var(--i) * 90ms);
+}
+.ms .pin .slot.ok .col span {
+  color: #fff;
+}
+.ms .pin .slot.ok .m {
+  background: #fff;
+}
+.ms .pin .slot.ok .ul {
+  background: rgba(255, 255, 255, 0.7);
+}
+@keyframes td-lift {
+  50% {
+    transform: translateY(-7px) scale(1.06);
+  }
+}
+
+.ms .pin .err-msg {
+  margin-top: 12px;
+  min-height: 18px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--td-red);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  opacity: 0;
+  transform: translateY(-4px);
+  transition:
+    opacity 0.25s,
+    transform 0.3s var(--ease);
+}
+.ms .pin .err-msg.show {
+  opacity: 1;
+  transform: none;
+}
+.ms .pin .err-msg i {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--td-red);
+  color: #fff;
+  font: 700 10px / 14px var(--f);
+  font-style: normal;
+  text-align: center;
+}
+
+/* 진행 막대 겸 버튼(장식 — 입력은 자동 확인) */
+.ms .pin .cta {
+  position: relative;
+  margin-top: 12px;
+  width: 100%;
+  height: 48px;
+  border-radius: 14px;
+  background: var(--muted);
+  overflow: hidden;
+  font: 600 14px var(--f);
+}
+.ms .pin .cta .fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  background: linear-gradient(90deg, var(--td-b1), var(--td-b2));
+  transition:
+    width 0.45s var(--ease),
+    background 0.4s;
+}
+.ms .pin .cta .lbl {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: clip-path 0.45s var(--ease);
+}
+.ms .pin .cta .lbl.base {
+  color: var(--muted-fg);
+}
+.ms .pin .cta .lbl.over {
+  color: #fff;
+}
+.ms .pin .cta .sp {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.4);
+  border-top-color: #fff;
+  animation: td-rot 0.7s linear infinite;
+}
+.ms .pin .cta .lbl.base .sp {
+  border-color: var(--border);
+  border-top-color: var(--muted-fg);
+}
+@keyframes td-rot {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.ms .pin .cta.ok .fill {
+  background: linear-gradient(90deg, #22c55e, #16a34a);
+}
+/* 모션 줄이기는 morning-signal.css 의 `.ms *` 규칙이 TO-DO 까지 덮는다 */

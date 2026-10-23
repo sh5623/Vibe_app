@@ -2,6 +2,7 @@ import { useLock, useTodoSession } from '@/hooks/use-morning-signal-todo'
 import type { Route } from './+types/morning-signal-todo'
 import { TodoHeader } from './morning-signal/Header'
 import Shell from './morning-signal/Shell'
+import PinGate from './morning-signal/todo/PinGate'
 import './morning-signal/todo/todo.css'
 
 export function meta(_: Route.MetaArgs) {
@@ -21,9 +22,10 @@ export default function MorningSignalTodo() {
           <h2 className="todo-sh">남은 일</h2>
         </section>
       ) : (
-        <section className="card state">
-          <b>본인 확인</b>
-        </section>
+        <PinGate
+          lockedUntil={session.data?.lockedUntil ?? null}
+          configError={session.error?.code === 'TODO_NOT_CONFIGURED'}
+        />
       )}
     </Shell>
   )

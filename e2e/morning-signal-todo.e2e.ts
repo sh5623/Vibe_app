@@ -74,3 +74,90 @@ test('unlocked session shows lock button that relocks', async ({ page }) => {
   await expect(page.getByText('본인 확인')).toBeVisible()
   expect(state.unlocked).toBe(false)
 })
+
+// ── PIN 화면(시안 D) ───────────────────────────────────────────────────
+
+const pinInput = (page: Page) => page.getByLabel('PIN 4자리')
+
+test('wrong PIN shows error then clears', async ({ page }) => {
+  await mockTodoApi(page)
+  await page.goto('/morning-signal/todo')
+  await pinInput(page).pressSequentially('0000')
+  await expect(page.getByText('PIN이 맞지 않아요. 다시 입력해 주세요.')).toBeVisible()
+  await expect(page.locator('.pin .slot.filled')).toHaveCount(0, { timeout: 2500 })
+  await expect(page.locator('.pin .slot.active')).toHaveCount(1)
+  await expect(page.locator('.pin .slot').first()).toHaveClass(/active/)
+})
+
+test('right PIN unlocks to list', async ({ page }) => {
+  await mockTodoApi(page)
+  await page.goto('/morning-signal/todo')
+  await expect(page.getByText('본인 확인')).toBeVisible()
+  await pinInput(page).pressSequentially('1234')
+  await expect(page.getByText('확인됐어요')).toBeVisible()
+  await expect(page.getByText('남은 일')).toBeVisible({ timeout: 4000 })
+  await expect(page.getByRole('button', { name: '다시 잠그기' })).toBeVisible()
+})
+
+test('backspace removes the last digit', async ({ page }) => {
+  await mockTodoApi(page)
+  await page.goto('/morning-signal/todo')
+  await pinInput(page).pressSequentially('12')
+  await expect(page.locator('.pin .slot.filled')).toHaveCount(2)
+  await pinInput(page).press('Backspace')
+  await expect(page.locator('.pin .slot.filled')).toHaveCount(1)
+  await pinInput(page).pressSequentially('234')
+  await expect(page.getByText('남은 일')).toBeVisible({ timeout: 4000 })
+})
+
+test('paste uses first four digits', async ({ page }) => {
+  await mockTodoApi(page)
+  await page.goto('/morning-signal/todo')
+  await pinInput(page).fill('123456')
+  await expect(page.getByText('남은 일')).toBeVisible({ timeout: 4000 })
+})
+
+test('locked shows countdown', async ({ page }) => {
+  await mockTodoApi(page, { locked: true })
+  await page.goto('/morning-signal/todo')
+  await expect(page.getByText('10분 뒤에 다시 시도해 주세요')).toBeVisible()
+  await expect(page.getByText(/\d+:\d{2} 남음/)).toBeVisible()
+  await expect(pinInput(page)).toBeDisabled()
+})
+
+test('fifth wrong PIN locks', async ({ page }) => {
+  await mockTodoApi(page)
+  await page.goto('/morning-signal/todo')
+  for (let i = 0; i < 5; i++) {
+    await expect(pinInput(page)).toBeEnabled()
+    await expect(page.locator('.pin .slot.filled')).toHaveCount(0, { timeout: 2500 })
+    await pinInput(page).pressSequentially('0000')
+    if (i < 4) await expect(page.getByText('PIN이 맞지 않아요. 다시 입력해 주세요.')).toBeVisible()
+  }
+  await expect(page.getByText('10분 뒤에 다시 시도해 주세요')).toBeVisible({ timeout: 4000 })
+  await expect(pinInput(page)).toBeDisabled()
+})
+
+test('not configured message', async ({ page }) => {
+  await mockTodoApi(page, { notConfigured: true })
+  await page.goto('/morning-signal/todo')
+  await expect(page.getByText('PIN이 아직 설정되지 않았어요')).toBeVisible()
+  await expect(pinInput(page)).toBeDisabled()
+})
+
+test('reduced motion still unlocks', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' })
+  await mockTodoApi(page)
+  await page.goto('/morning-signal/todo')
+  await pinInput(page).pressSequentially('1234')
+  await expect(page.getByText('남은 일')).toBeVisible({ timeout: 4000 })
+})
+
+test('digits are masked after a moment and eye reveals them', async ({ page }) => {
+  await mockTodoApi(page)
+  await page.goto('/morning-signal/todo')
+  await pinInput(page).pressSequentially('12')
+  await expect(page.locator('.pin .slot .m')).toHaveCount(2, { timeout: 2000 })
+  await page.getByRole('button', { name: '숫자 보기' }).click()
+  await expect(page.locator('.pin .slot').nth(1)).toContainText('2')
+})
