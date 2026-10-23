@@ -492,3 +492,22 @@ test('next page failure stops and offers retry', async ({ page }) => {
   await expect(page.locator('.todo-day .trow')).toHaveCount(25)
   expect(cursorCalls).toBe(2)
 })
+
+test('reduced motion skips scripted motion on wrong PIN', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' })
+  await page.addInitScript(() => {
+    const w = window as unknown as { __animate: number }
+    w.__animate = 0
+    const orig = Element.prototype.animate
+    Element.prototype.animate = function (...args: Parameters<Element['animate']>) {
+      w.__animate += 1
+      return orig.apply(this, args)
+    }
+  })
+  await mockTodoApi(page)
+  await page.goto('/morning-signal/todo')
+  await page.getByLabel('PIN 4자리').pressSequentially('0000')
+  await expect(page.getByText('PIN이 맞지 않아요. 다시 입력해 주세요.')).toBeVisible()
+  await expect(page.locator('.pin .slot.filled')).toHaveCount(0, { timeout: 2500 })
+  expect(await page.evaluate(() => (window as unknown as { __animate: number }).__animate)).toBe(0)
+})

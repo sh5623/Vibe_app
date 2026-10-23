@@ -40,6 +40,19 @@ interface Digit {
 
 const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms))
 
+/**
+ * 스크립트 모션(Web Animations). CSS 쪽은 morning-signal.css 의 `.ms *` 규칙이 감속 모션 설정을 따르지만
+ * element.animate() 는 그 규칙에 안 걸리므로 여기서 직접 건너뛴다(흔들림·회전이 감속 설정이 막으려는 대표 모션이다).
+ */
+function play(
+  el: Element | null | undefined,
+  keyframes: Keyframe[],
+  options: KeyframeAnimationOptions
+) {
+  if (!el || matchMedia('(prefers-reduced-motion: reduce)').matches) return
+  el.animate(keyframes, options)
+}
+
 function rollSeq(d: string): string[] {
   const n = Number(d)
   return [0, 1, 2].map(() => String((n + 3 + Math.floor(Math.random() * 6)) % 10)).concat(d)
@@ -136,7 +149,8 @@ export default function PinGate({ lockedUntil: initialLock, configError }: PinGa
 
   const land = (i: number) => {
     later(() => {
-      slotRefs.current[i]?.animate(
+      play(
+        slotRefs.current[i],
         [{ transform: 'scale(1)' }, { transform: 'scale(1.08)' }, { transform: 'scale(1)' }],
         { duration: 300, easing: 'cubic-bezier(.34,1.56,.64,1)' }
       )
@@ -227,7 +241,8 @@ export default function PinGate({ lockedUntil: initialLock, configError }: PinGa
     setPhase('fail')
     setDesc('PIN 4자리를 입력하세요')
     slotRefs.current.forEach((s, i) => {
-      s?.querySelector('.win')?.animate(
+      play(
+        s?.querySelector('.win'),
         [
           { transform: 'scaleY(1)' },
           { transform: 'translateY(5px) scaleY(.55)' },
@@ -237,11 +252,13 @@ export default function PinGate({ lockedUntil: initialLock, configError }: PinGa
       )
     })
     await sleep(240)
-    slotsRef.current?.animate(
+    play(
+      slotsRef.current,
       [0, -12, 10, -8, 6, -3, 0].map((x) => ({ transform: `translateX(${x}px)` })),
       { duration: 480, easing: 'cubic-bezier(.36,.07,.19,.97)' }
     )
-    lockRef.current?.animate(
+    play(
+      lockRef.current,
       [0, -8, 7, -4, 0].map((d) => ({ transform: `rotate(${d}deg)` })),
       { duration: 420 }
     )
