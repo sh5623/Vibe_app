@@ -1,0 +1,31 @@
+/* /morning-signal/todo 전용 스타일 — 시안 docs/morning-signal/todo-mockups/{pin-gate,todo-list}.html 이식.
+   토큰은 morning-signal.css 의 html[data-ms-theme] 값을 쓰고, TO-DO 전용 값만 여기서 더한다. 선택자는 .ms 아래. */
+:root[data-ms-theme] {
+  --td-todo: #3b82f6;
+  --td-prog: #f59e0b;
+  --td-done: #22c55e;
+  --td-red: #ef4444;
+  --td-b1: #6366f1;
+  --td-b2: #8b5cf6;
+  --td-tint: #eef2fb;
+  --td-line: #e3e8f2;
+}
+:root[data-ms-theme="dark"] {
+  --td-todo: #60a5fa;
+  --td-prog: #fbbf24;
+  --td-tint: rgba(148, 163, 184, 0.07);
+  --td-line: rgba(148, 163, 184, 0.12);
+}
+
+.ms .todo-view {
+  display: grid;
+  gap: 18px;
+  max-width: 640px;
+  width: 100%;
+  margin: 0 auto;
+}
+.ms .todo-sh {
+  margin: 0;
+  font: 700 13px / 1.4 var(--f);
+  letter-spacing: -0.01em;
+}

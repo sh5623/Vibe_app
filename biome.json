@@ -47,7 +47,8 @@
       "!**/build",
       "!**/.react-router",
       "!**/coverage",
-      "!**/playwright-report"
+      "!**/playwright-report",
+      "!docs/morning-signal/todo-mockups"
     ]
   }
 }

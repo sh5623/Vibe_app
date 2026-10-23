@@ -14,4 +14,5 @@ export default [
   route('otp', 'routes/otp.tsx'),
   route('ahram', 'routes/ahram.tsx'),
   route('morning-signal', 'routes/morning-signal.tsx'),
+  route('morning-signal/todo', 'routes/morning-signal-todo.tsx'),
 ] satisfies RouteConfig

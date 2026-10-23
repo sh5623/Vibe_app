@@ -658,7 +658,7 @@ describe('helpers — Task 3', () => {
     expect(safeFileName('영수증 사진.jpg')).toBe('file.jpg')
     expect(safeFileName('Receipt 영수증 (1).JPG')).toBe('Receipt-1.jpg')
     expect(safeFileName('../../etc/passwd')).toBe('etc-passwd')
-    expect(safeFileName('a'.repeat(200) + '.pdf')).toBe(`${'a'.repeat(60)}.pdf`)
+    expect(safeFileName(`${'a'.repeat(200)}.pdf`)).toBe(`${'a'.repeat(60)}.pdf`)
     expect(safeFileName('')).toBe('file')
   })
 

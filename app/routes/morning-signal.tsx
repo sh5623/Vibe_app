@@ -7,11 +7,7 @@ import Feed from './morning-signal/Feed'
 import Header from './morning-signal/Header'
 import Kpis from './morning-signal/Kpis'
 import { pickInitialDate, stampText } from './morning-signal/model'
-import './morning-signal/morning-signal.css'
-
-// 레퍼런스 4행 — React 19 가 <head> 로 끌어올린다
-const FONTS_URL =
-  'https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800&family=Geist+Mono:wght@400;500;600&family=IBM+Plex+Sans+KR:wght@400;500;600;700&display=swap'
+import Shell from './morning-signal/Shell'
 
 const EMPTY = { title: '아직 저장된 뉴스가 없어요', text: '평일 아침 8시에 첫 브리핑이 들어와요.' }
 const ERROR = { title: '데이터를 불러오지 못했어요', text: '잠시 뒤 새로고침해 주세요.' }
@@ -70,30 +66,21 @@ export default function MorningSignal() {
   const stamp = view ? stampText(view.day, view.feeds) : '불러오는 중'
 
   return (
-    <div className="ms">
-      <link rel="stylesheet" href={FONTS_URL} precedence="default" />
-      <div className="aurora" aria-hidden="true">
-        <i />
-        <i />
-        <i />
-      </div>
-      <div className="grid-bg" aria-hidden="true" />
-      <div className="wrap">
-        <Header days={days ?? []} cur={cur} dir={sel?.dir ?? 0} stamp={stamp} onGo={go} />
-        {state && (
-          <section className="card state">
-            <b>{state.title}</b>
-            <span>{state.text}</span>
-          </section>
-        )}
-        {!state && days && view && (
-          <div className="content">
-            <Kpis days={days} day={view.day} feeds={view.feeds} />
-            <Bento day={view.day} feeds={view.feeds} />
-            <Feed feeds={view.feeds} date={view.day.date} dir={sel?.dir ?? 0} />
-          </div>
-        )}
-      </div>
-    </div>
+    <Shell>
+      <Header days={days ?? []} cur={cur} dir={sel?.dir ?? 0} stamp={stamp} onGo={go} />
+      {state && (
+        <section className="card state">
+          <b>{state.title}</b>
+          <span>{state.text}</span>
+        </section>
+      )}
+      {!state && days && view && (
+        <div className="content">
+          <Kpis days={days} day={view.day} feeds={view.feeds} />
+          <Bento day={view.day} feeds={view.feeds} />
+          <Feed feeds={view.feeds} date={view.day.date} dir={sel?.dir ?? 0} />
+        </div>
+      )}
+    </Shell>
   )
 }
