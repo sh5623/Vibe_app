@@ -41,7 +41,14 @@ const aiItem = {
 }
 
 function aiFeed(items: unknown[]) {
-  return { kind: 'feed', date: '2026-10-23', theme: 'ai', generatedAt: 'x', model: 'm', items }
+  return {
+    kind: 'feed',
+    date: '2026-10-23',
+    theme: 'ai',
+    generatedAt: '2026-10-23T07:50:00Z',
+    model: 'm',
+    items,
+  }
 }
 
 describe('core', () => {
@@ -50,7 +57,7 @@ describe('core', () => {
       kind: 'feed',
       date: '2026-10-23',
       theme: 'gh',
-      generatedAt: 'x',
+      generatedAt: '2026-10-23T08:00:00+09:00',
       model: 'm',
       status: 'ok',
       items: [
@@ -102,6 +109,40 @@ describe('core', () => {
     expect(r.ok).toBe(false)
     if (r.ok) throw new Error('unexpected')
     expect(r.issues[0]?.path).toBe('date')
+  })
+
+  it('rejects impossible calendar dates', () => {
+    for (const date of ['2026-02-30', '2026-02-29', '2026-13-01', '2026-04-31', '2026-00-10']) {
+      const r = parseIngest({ ...aiFeed([]), date })
+      expect(r.ok, date).toBe(false)
+      if (r.ok) throw new Error('unexpected')
+      expect(r.issues[0]?.path).toBe('date')
+    }
+    expect(parseIngest({ ...aiFeed([]), date: '2028-02-29' }).ok).toBe(true)
+  })
+
+  it('rejects generatedAt that is not an ISO datetime with offset', () => {
+    for (const generatedAt of ['x', '2026-10-23', '2026-10-23T08:00:00']) {
+      const r = parseIngest({ ...aiFeed([]), generatedAt })
+      expect(r.ok, generatedAt).toBe(false)
+      if (r.ok) throw new Error('unexpected')
+      expect(r.issues[0]?.path).toBe('generatedAt')
+    }
+    for (const generatedAt of ['2026-10-23T07:50:00Z', '2026-10-23T08:00:00.123+09:00']) {
+      expect(parseIngest({ ...aiFeed([]), generatedAt }).ok, generatedAt).toBe(true)
+    }
+  })
+
+  it('treats null in optional fields as absent', () => {
+    const r = parseIngest({ ...aiFeed([{ ...aiItem, tags: null }]), note: null })
+    expect(r.ok).toBe(true)
+    if (!r.ok || r.value.kind !== 'feed' || r.value.theme !== 'ai') throw new Error('unexpected')
+    expect(r.value.note).toBeUndefined()
+    expect(r.value.items[0]?.tags).toBeUndefined()
+    const s = parseIngest({ kind: 'summary', date: '2026-10-23', headline: 'h', highlight: null })
+    expect(s.ok).toBe(true)
+    if (!s.ok || s.value.kind !== 'summary') throw new Error('unexpected')
+    expect(s.value.highlight).toBeUndefined()
   })
 
   it('parses summary and drops empty highlight', () => {
@@ -285,7 +326,11 @@ const BASE = 'https://example.supabase.co/rest/v1'
 const ORIGINAL_ENV = { ...process.env }
 
 function okJson(data: unknown) {
-  return { ok: true, status: 200, json: async () => data }
+  return { ok: true, status: 200, json: async () => data, text: async () => JSON.stringify(data) }
+}
+
+function failJson(status: number, text: string) {
+  return { ok: false, status, json: async () => ({}), text: async () => text }
 }
 
 const ghBody = {
@@ -317,6 +362,7 @@ describe('handler', () => {
     process.env = { ...ORIGINAL_ENV }
     vi.useRealTimers()
     vi.unstubAllGlobals()
+    vi.restoreAllMocks()
   })
 
   it('GET 503 when SUPABASE_URL is empty', async () => {
@@ -328,11 +374,12 @@ describe('handler', () => {
     expect(res.headers['Content-Type']).toBe('application/json')
   })
 
-  it('POST 503 when MS_INGEST_TOKEN is empty', async () => {
+  it('POST 503 INGEST_NOT_CONFIGURED when MS_INGEST_TOKEN is empty', async () => {
     process.env.MS_INGEST_TOKEN = ''
     const res = makeRes()
     await handler(makeReq('POST', { body: ghBody }), res)
     expect(res.statusCode).toBe(503)
+    expect(JSON.parse(res.body)).toEqual({ error: 'INGEST_NOT_CONFIGURED' })
     expect(fetchMock).not.toHaveBeenCalled()
   })
 
@@ -380,6 +427,51 @@ describe('handler', () => {
     const body = JSON.parse(res.body)
     expect(body.error).toBe('DATE_NOT_ACCEPTED')
     expect(body.expectedDate).toBe('2026-10-24')
+  })
+
+  it('POST 400 INVALID_PAYLOAD for an impossible calendar date', async () => {
+    const res = makeRes()
+    await handler(makeReq('POST', { body: { ...ghBody, date: '2026-02-30' } }), res)
+    expect(res.statusCode).toBe(400)
+    const body = JSON.parse(res.body)
+    expect(body.error).toBe('INVALID_PAYLOAD')
+    expect(body.issues[0].path).toBe('date')
+    expect(fetchMock).not.toHaveBeenCalled()
+  })
+
+  it('POST 400 INVALID_PAYLOAD when generatedAt is not a datetime', async () => {
+    const res = makeRes()
+    await handler(makeReq('POST', { body: { ...ghBody, generatedAt: 'x' } }), res)
+    expect(res.statusCode).toBe(400)
+    const body = JSON.parse(res.body)
+    expect(body.error).toBe('INVALID_PAYLOAD')
+    expect(body.issues[0].path).toBe('generatedAt')
+    expect(fetchMock).not.toHaveBeenCalled()
+  })
+
+  it('POST accepts null in optional fields (note, tags, highlight)', async () => {
+    const feed = makeRes()
+    await handler(
+      makeReq('POST', { body: { ...aiFeed([{ ...aiItem, tags: null }]), note: null } }),
+      feed
+    )
+    expect(feed.statusCode).toBe(200)
+    const sent = JSON.parse(String((fetchMock.mock.calls[0] as [string, RequestInit])[1].body))
+    expect(sent.note).toBeNull()
+    expect(sent.items[0]).not.toHaveProperty('tags')
+
+    const summary = makeRes()
+    await handler(
+      makeReq('POST', {
+        body: { kind: 'summary', date: '2026-10-23', headline: 'H', highlight: null },
+      }),
+      summary
+    )
+    expect(summary.statusCode).toBe(200)
+    const sentSummary = JSON.parse(
+      String((fetchMock.mock.calls[1] as [string, RequestInit])[1].body)
+    )
+    expect(sentSummary.highlight).toBeNull()
   })
 
   it('POST 413 when body exceeds 262144 bytes', async () => {
@@ -484,10 +576,13 @@ describe('handler', () => {
     expect(res.statusCode).toBe(200)
     expect(res.headers['Cache-Control']).toBe('no-store')
     const urls = fetchMock.mock.calls.map((c) => c[0])
-    expect(urls).toContain(
-      `${BASE}/ms_feeds?select=date,theme,item_count,fe_high,fe_picks,top_text,updated_at&order=date.asc`
+    expect(urls).toEqual(
+      expect.arrayContaining([
+        `${BASE}/ms_feeds?select=date,theme,item_count,fe_high,fe_picks,top_text,updated_at&order=date.asc,theme.asc&limit=1000&offset=0`,
+        `${BASE}/ms_summaries?select=date,headline,highlight,updated_at&order=date.asc&limit=1000&offset=0`,
+      ])
     )
-    expect(urls).toContain(`${BASE}/ms_summaries?select=date,headline,highlight,updated_at`)
+    expect(urls).toHaveLength(2)
     const { days } = JSON.parse(res.body)
     expect(days.map((d: { date: string }) => d.date)).toEqual(['2026-10-21', '2026-10-22'])
     expect(days[1].status.gh).toBe('missing')
@@ -495,6 +590,82 @@ describe('handler', () => {
     expect(days[1].updatedAt).toBe('2026-10-22T00:00:00.123Z')
     expect(days[0].headline).toBe('H')
     expect(days[0].updatedAt).toBe('2026-10-21T01:00:00.000Z')
+  })
+
+  describe('GET index paging past the PostgREST row cap', () => {
+    const dayAt = (i: number) =>
+      new Date(Date.UTC(2023, 0, 2) + i * 86_400_000).toISOString().slice(0, 10)
+    const feedRow = (date: string) => ({
+      date,
+      theme: 'ai',
+      item_count: 1,
+      fe_high: 0,
+      fe_picks: [],
+      top_text: 't',
+      updated_at: `${date}T00:00:00+00:00`,
+    })
+    const fullPage = Array.from({ length: 1000 }, (_, i) => feedRow(dayAt(i)))
+
+    function pagedFetch(feedPages: Record<string, unknown[]>) {
+      fetchMock.mockImplementation(async (url: string) => {
+        const offset = new URL(url).searchParams.get('offset') ?? 'none'
+        if (url.includes('/ms_feeds')) return okJson(feedPages[offset] ?? [])
+        if (offset === '0') {
+          return okJson([
+            {
+              date: '2026-10-22',
+              headline: 'H',
+              highlight: null,
+              updated_at: '2026-10-22T01:00:00Z',
+            },
+          ])
+        }
+        return okJson([])
+      })
+    }
+
+    const feedOffsets = () =>
+      fetchMock.mock.calls
+        .map((c) => String(c[0]))
+        .filter((u) => u.includes('/ms_feeds'))
+        .map((u) => new URL(u).searchParams.get('offset'))
+
+    it('merges a full page with the next partial page (newest dates kept)', async () => {
+      pagedFetch({ '0': fullPage, '1000': [feedRow('2026-10-22')] })
+      const res = makeRes()
+      await handler(makeReq('GET'), res)
+      expect(res.statusCode).toBe(200)
+      expect(feedOffsets()).toEqual(['0', '1000'])
+      const { days } = JSON.parse(res.body)
+      expect(days).toHaveLength(1001)
+      const last = days.at(-1)
+      expect(last.date).toBe('2026-10-22')
+      expect(last.counts.ai).toBe(1)
+      expect(last.status.ai).toBe('ok')
+      expect(last.headline).toBe('H')
+    })
+
+    it('stops after an exact-size page followed by an empty page', async () => {
+      pagedFetch({ '0': fullPage })
+      const res = makeRes()
+      await handler(makeReq('GET'), res)
+      expect(res.statusCode).toBe(200)
+      expect(feedOffsets()).toEqual(['0', '1000'])
+      const { days } = JSON.parse(res.body)
+      // 피드 1000일 + 요약만 있는 1일
+      expect(days).toHaveLength(1001)
+      expect(days.filter((d: { status: { ai: string } }) => d.status.ai === 'ok')).toHaveLength(
+        1000
+      )
+    })
+  })
+
+  it('GET ?date=2026-02-30 -> 400 INVALID_DATE without querying Supabase', async () => {
+    const res = makeRes()
+    await handler(makeReq('GET', { query: { date: '2026-02-30' } }), res)
+    expect(res.statusCode).toBe(400)
+    expect(JSON.parse(res.body)).toEqual({ error: 'INVALID_DATE' })
+    expect(fetchMock).not.toHaveBeenCalled()
   })
 
   it('GET ?date=bad -> 400 INVALID_DATE; ?date with no rows -> 404', async () => {
@@ -552,7 +723,8 @@ describe('handler', () => {
   })
 
   it('503 SUPABASE_UNAVAILABLE when supabase responds !ok', async () => {
-    fetchMock.mockResolvedValue({ ok: false, status: 500, json: async () => ({}) })
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    fetchMock.mockResolvedValue(failJson(500, ''))
     const get = makeRes()
     await handler(makeReq('GET'), get)
     expect(get.statusCode).toBe(503)
@@ -561,6 +733,28 @@ describe('handler', () => {
     await handler(makeReq('POST', { body: ghBody }), post)
     expect(post.statusCode).toBe(503)
     expect(JSON.parse(post.body)).toEqual({ error: 'SUPABASE_UNAVAILABLE' })
+  })
+
+  it('logs the PostgREST error body (truncated) server-side only', async () => {
+    const spy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const detail = '{"code":"22007","message":"invalid input syntax for type timestamp"}'
+    fetchMock.mockResolvedValue(failJson(400, detail))
+    const post = makeRes()
+    await handler(makeReq('POST', { body: ghBody }), post)
+    expect(post.statusCode).toBe(503)
+    expect(JSON.parse(post.body)).toEqual({ error: 'SUPABASE_UNAVAILABLE' })
+    expect(post.body).not.toContain('22007')
+    const logged = () => spy.mock.calls.map((c) => c.map(String).join(' ')).join('\n')
+    expect(logged()).toContain(detail)
+
+    spy.mockClear()
+    fetchMock.mockResolvedValue(failJson(500, 'a'.repeat(600)))
+    const get = makeRes()
+    await handler(makeReq('GET'), get)
+    expect(get.statusCode).toBe(503)
+    expect(get.body).not.toContain('aaaa')
+    expect(logged()).toContain('a'.repeat(500))
+    expect(logged()).not.toContain('a'.repeat(501))
   })
 
   it('405 for PUT', async () => {

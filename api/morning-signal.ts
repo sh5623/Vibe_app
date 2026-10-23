@@ -115,10 +115,18 @@ export interface Issue {
 
 // ---------- 스키마 ----------
 
-const DATE_RE = /^\d{4}-\d{2}-\d{2}$/
+const DATE_RE = /^(\d{4})-(\d{2})-(\d{2})$/
 
+/** YYYY-MM-DD 형식이면서 실제 달력 날짜인가(2026-02-30·2026-13-01은 거부). */
 export function isDateString(s: unknown): s is string {
-  return typeof s === 'string' && DATE_RE.test(s)
+  if (typeof s !== 'string') return false
+  const m = DATE_RE.exec(s)
+  if (!m) return false
+  const y = Number(m[1])
+  const mo = Number(m[2])
+  const d = Number(m[3])
+  const t = new Date(Date.UTC(y, mo - 1, d))
+  return t.getUTCFullYear() === y && t.getUTCMonth() === mo - 1 && t.getUTCDate() === d
 }
 
 /** 숫자 자리: '+2,213' → 2213. 변환 불가 값은 그대로 두어 검증에서 실패시킨다. */
@@ -133,6 +141,11 @@ function toNumberLike(v: unknown): unknown {
 /** 문자열 자리: 숫자는 String으로. */
 function toStringLike(v: unknown): unknown {
   return typeof v === 'number' ? String(v) : v
+}
+
+/** 선택(nullable 아님) 자리: null → undefined. LLM이 키를 빼는 대신 null을 보내도 받는다. */
+function nullToUndefined(v: unknown): unknown {
+  return v === null ? undefined : v
 }
 
 /** null 허용 문자열 자리: ''·undefined → null, 숫자 → String. */
@@ -151,7 +164,8 @@ const nullableInt = z.preprocess(
 )
 const impact = z.enum(['high', 'mid', 'low'])
 const grade = z.enum(['A', 'B'])
-const dateStr = z.string().regex(DATE_RE)
+const dateStr = z.string().refine(isDateString, 'must be a real YYYY-MM-DD date')
+const isoStamp = z.iso.datetime({ offset: true })
 
 const aiItemSchema = z.object({
   title: reqStr,
@@ -161,7 +175,7 @@ const aiItemSchema = z.object({
   impactNote: str,
   url: reqStr,
   grade,
-  tags: z.array(z.string()).optional(),
+  tags: z.preprocess(nullToUndefined, z.array(z.string()).optional()),
 })
 const worldItemSchema = z.object({
   title: reqStr,
@@ -191,10 +205,10 @@ function feedSchema<T extends z.ZodType>(theme: Theme, item: T) {
     kind: z.literal('feed'),
     date: dateStr,
     theme: z.literal(theme),
-    generatedAt: reqStr,
+    generatedAt: isoStamp, // timestamptz 열에 들어간다 — 시각이 아니면 Postgres 대신 여기서 400
     model: reqStr,
     status: z.enum(['ok', 'empty']).optional(), // 받되 반환하지 않는다
-    note: z.string().optional(),
+    note: z.preprocess(nullToUndefined, z.string().optional()),
     items: z.array(item),
   })
 }
@@ -209,7 +223,7 @@ const summarySchema = z.object({
   kind: z.literal('summary'),
   date: dateStr,
   headline: z.string().min(1),
-  highlight: z.preprocess((v) => (v === '' ? undefined : v), z.string().optional()),
+  highlight: z.preprocess((v) => (v === '' || v === null ? undefined : v), z.string().optional()),
 })
 
 function toIssues(error: z.ZodError): Issue[] {
@@ -393,10 +407,35 @@ function isAuthorized(req: IncomingMessage, token: string): boolean {
   return timingSafeEqual(sha256(header.slice('Bearer '.length)), sha256(token))
 }
 
+/** PostgREST 오류 본문(앞 500자). 서버 로그에만 쓰고 HTTP 응답에는 넣지 않는다. */
+async function errorDetail(res: Response): Promise<string> {
+  try {
+    return (await res.text()).slice(0, 500)
+  } catch {
+    return ''
+  }
+}
+
 async function sbGet<T>(url: string): Promise<T[]> {
   const res = await fetch(url, { headers: supabaseHeaders() })
-  if (!res.ok) throw new Error(`Supabase GET failed: ${res.status}`)
+  if (!res.ok) throw new Error(`Supabase GET failed: ${res.status} ${await errorDetail(res)}`)
   return (await res.json()) as T[]
+}
+
+/** PostgREST 기본 max_rows(Supabase 1000)와 같은 크기. 이보다 적게 오면 마지막 페이지다. */
+const PAGE_SIZE = 1000
+
+/**
+ * 목록 질의는 max_rows에서 조용히 잘린다(오름차순이면 최신 날짜가 빠진다).
+ * limit·offset으로 끝까지 읽는다. url은 전순서가 되는 order를 담아야 페이지가 겹치지 않는다.
+ */
+async function sbGetAll<T>(url: string): Promise<T[]> {
+  const rows: T[] = []
+  for (let offset = 0; ; offset += PAGE_SIZE) {
+    const page = await sbGet<T>(`${url}&limit=${PAGE_SIZE}&offset=${offset}`)
+    rows.push(...page)
+    if (page.length < PAGE_SIZE) return rows
+  }
 }
 
 async function sbUpsert(url: string, row: unknown): Promise<void> {
@@ -405,7 +444,7 @@ async function sbUpsert(url: string, row: unknown): Promise<void> {
     headers: { ...supabaseHeaders(), Prefer: 'resolution=merge-duplicates,return=minimal' },
     body: JSON.stringify(row),
   })
-  if (!res.ok) throw new Error(`Supabase upsert failed: ${res.status}`)
+  if (!res.ok) throw new Error(`Supabase upsert failed: ${res.status} ${await errorDetail(res)}`)
 }
 
 /** Supabase는 `+00:00`, 서버는 `Z`로 쓴다. 비교·응답을 일관되게 ISO Z로 맞춘다. */
@@ -433,10 +472,12 @@ async function handleGet(req: VercelRequest, res: ServerResponse, base: string) 
 
   if (date === undefined) {
     const [feedRows, summaryRows] = await Promise.all([
-      sbGet<FeedRow>(
-        `${base}/rest/v1/ms_feeds?select=date,theme,item_count,fe_high,fe_picks,top_text,updated_at&order=date.asc`
+      sbGetAll<FeedRow>(
+        `${base}/rest/v1/ms_feeds?select=date,theme,item_count,fe_high,fe_picks,top_text,updated_at&order=date.asc,theme.asc`
       ),
-      sbGet<SummaryRow>(`${base}/rest/v1/ms_summaries?select=date,headline,highlight,updated_at`),
+      sbGetAll<SummaryRow>(
+        `${base}/rest/v1/ms_summaries?select=date,headline,highlight,updated_at&order=date.asc`
+      ),
     ])
     const feedsByDate = groupByDate(
       feedRows.map((r) => ({ ...r, updated_at: normalizeStamp(r.updated_at) }))
@@ -550,7 +591,7 @@ export default async function handler(req: VercelRequest, res: ServerResponse) {
     if (req.method === 'GET') return await handleGet(req, res, base)
     if (req.method === 'POST') {
       const token = process.env.MS_INGEST_TOKEN
-      if (!token) return json(res, 503, { error: 'SUPABASE_UNAVAILABLE' })
+      if (!token) return json(res, 503, { error: 'INGEST_NOT_CONFIGURED' })
       if (!isAuthorized(req, token)) return json(res, 401, { error: 'UNAUTHORIZED' })
       return await handlePost(req, res, base)
     }
