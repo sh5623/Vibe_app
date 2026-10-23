@@ -645,25 +645,38 @@ interface InstallBlock {
 
 const INSTALL: InstallBlock[] = [
   {
-    id: 'cli',
-    label: '1 · CLI (모든 런타임과 CI)',
-    lines: [
-      { key: 'c1', text: 'pnpm add -D github:sh5623/e2e-rail#v0.2.2', tone: 'cmd' },
-      { key: 'c2', text: '# npm · yarn이면 npx e2e-rail …', tone: 'muted' },
-    ],
-  },
-  {
     id: 'claude',
-    label: '2 · Claude Code',
+    label: '1 · Claude Code 플러그인 (CLI가 PATH에 올라감)',
     lines: [
       { key: 'p1', text: '/plugin marketplace add sh5623/guardrail', tone: 'cmd' },
       { key: 'p2', text: '/plugin install e2e-rail@guardrail', tone: 'cmd' },
       { key: 'p3', text: '/reload-plugins', tone: 'cmd' },
+      { key: 'p4', text: '# 업데이트는 /plugin marketplace update guardrail', tone: 'muted' },
+    ],
+  },
+  {
+    id: 'personal',
+    label: '2 · 혼자 쓰면 개인 모드 (레포 변경 없음)',
+    lines: [
+      { key: 'm1', text: 'e2e-rail init --personal', tone: 'cmd' },
+      { key: 'm2', text: '# 설정·원장은 ~/.e2e-rail/<repo>/ 에 둔다', tone: 'muted' },
+    ],
+  },
+  {
+    id: 'team',
+    label: '팀·CI에 고정할 때 (선택)',
+    lines: [
+      { key: 't1', text: 'pnpm add -D github:sh5623/e2e-rail#<태그>', tone: 'cmd' },
+      {
+        key: 't2',
+        text: '# 태그는 github.com/sh5623/e2e-rail/tags · 플러그인이 이 사본을 먼저 부른다',
+        tone: 'muted',
+      },
     ],
   },
   {
     id: 'codex',
-    label: '2 · Codex',
+    label: 'Codex',
     lines: [
       {
         key: 'x1',
@@ -671,18 +684,30 @@ const INSTALL: InstallBlock[] = [
         tone: 'cmd',
       },
       { key: 'x2', text: 'codex plugin add e2e-rail@e2e-rail-codex', tone: 'cmd' },
-      { key: 'x3', text: '# /hooks 에서 SessionStart 훅을 검토해 신뢰', tone: 'muted' },
+      {
+        key: 'x3',
+        text: '# /hooks 에서 SessionStart 훅을 검토해 신뢰 · CLI는 레포에 고정',
+        tone: 'muted',
+      },
     ],
   },
 ]
 
 const SETUP_STEPS: Step[] = [
-  { n: '1', title: 'CLI 설치', desc: 'pnpm add -D github:sh5623/e2e-rail#v0.2.2' },
-  { n: '2', title: '플러그인 설치', desc: 'Claude Code 또는 Codex' },
+  {
+    n: '1',
+    title: '플러그인 설치',
+    desc: 'Claude Code 플러그인이 CLI를 PATH에 올리고, 업데이트는 마켓이 맡는다',
+  },
+  {
+    n: '2',
+    title: '팀·CI 고정 (선택)',
+    desc: '팀과 CI가 같은 코어를 돌려야 하면 레포에 고정한다. 플러그인이 그 사본을 먼저 부른다',
+  },
   {
     n: '3',
     title: 'init',
-    desc: 'e2e-rail.config.mjs를 쓰고 .gitignore를 고치고, 검토할 스크립트 3개를 출력',
+    desc: '혼자면 init --personal(레포 변경 없음). 팀이면 e2e-rail.config.mjs를 쓰고 .gitignore를 고친다',
   },
   {
     n: '4',
@@ -712,7 +737,7 @@ const FAQS: Faq[] = [
   },
   {
     q: 'Claude Code가 없어도 쓸 수 있나요?',
-    a: '코어는 의존성 0의 Node CLI라서 스크립트와 CI에서 그대로 부를 수 있습니다. 스킬 층은 Claude Code와 Codex 두 곳에 같은 다섯 개가 있습니다. 세션과 CI가 같은 코어를 돌려야 원장이 서로 비교되므로, 스킬도 레포에 설치된 사본을 부릅니다.',
+    a: '코어는 의존성 0의 Node CLI라서 스크립트와 CI에서 그대로 부를 수 있습니다. Claude Code 플러그인은 그 CLI를 PATH에 올리고, 레포에 고정한 사본이 있으면 그것을 먼저 부릅니다. Codex 플러그인은 CLI를 싣지 않으므로 레포에 고정해 씁니다.',
   },
   {
     q: 'unmapped spec이 많으면요?',
@@ -1747,7 +1772,7 @@ export default function E2eRailPage() {
                 icon={<Terminal className="w-4 h-4" aria-hidden="true" />}
                 label="Install"
                 title="레포 하나에 약 30분"
-                desc="스킬과 CI는 항상 레포에 설치된 CLI 사본을 부릅니다. 세션과 CI가 같은 코어를 돌려야 원장이 서로 비교되기 때문입니다."
+                desc="플러그인을 설치하면 CLI가 PATH에 올라가 혼자서는 레포를 건드리지 않고 시작합니다. 팀과 CI는 레포에 고정해 같은 코어를 돌립니다. 그래야 원장이 서로 비교되기 때문입니다."
               />
               <div className="grid grid-cols-1 gap-8 min-[1000px]:grid-cols-12">
                 <div className="grid grid-cols-1 gap-5 min-[1000px]:col-span-7">
@@ -1836,7 +1861,7 @@ export default function E2eRailPage() {
         <footer className="px-12 py-10 border-t border-(--hairline) max-[768px]:px-5">
           <div className={`${innerClass} flex items-center justify-between flex-wrap gap-4`}>
             <div className={`text-[0.75rem] text-(--muted) tracking-[0.05em] ${mono}`}>
-              e2e-rail · Claude Code · Codex Plugin · v0.2.2 · MIT © 2026 Seungho
+              e2e-rail · Claude Code · Codex Plugin · MIT © 2026 Seungho
             </div>
             <div className="flex items-center gap-2">
               <button
