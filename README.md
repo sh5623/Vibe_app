@@ -17,6 +17,8 @@
 | `/letter` | 편지 | 생일 인증 후 열람하는 편지 시스템 |
 | `/stock` | 주식 대시보드 | 야후 파이낸스 API 연동 실시간 주식 차트 |
 | `/otp` | OTP 뷰어 | OTP 코드 조회 |
+| `/ahram` | 면접 준비 | 면접 Q&A 열람 (noindex) |
+| `/morning-signal` | Morning Signal | 뉴스 대시보드(보기 전용) — KPI·벤토·피드, Supabase 조회 |
 
 ## 기술 스택
 
@@ -73,7 +75,10 @@ app/
 │   ├── invitation.tsx       # /invitation
 │   ├── letter.tsx           # /letter
 │   ├── stock.tsx            # /stock
-│   └── otp.tsx              # /otp
+│   ├── otp.tsx              # /otp
+│   ├── ahram.tsx            # /ahram
+│   ├── morning-signal.tsx   # /morning-signal
+│   └── morning-signal/      # 전용 컴포넌트·model·CSS
 ├── components/
 │   ├── ui/                  # shadcn/ui — 수동 수정 금지
 │   └── [Feature]/           # index.tsx 단일 파일 원칙

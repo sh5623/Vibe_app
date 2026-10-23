@@ -164,7 +164,9 @@ test('bento empty texts when feeds missing', async ({ page }) => {
   await page.goto('/morning-signal')
   await expect(page.getByText('AI 뉴스를 가져오지 못했어요.', { exact: true })).toBeVisible()
   await expect(page.getByText('GitHub 트렌딩을 가져오지 못했어요.', { exact: true })).toBeVisible()
-  await expect(page.getByText('검증된 시사·경제 뉴스가 없는 날이에요.', { exact: true })).toBeVisible()
+  await expect(
+    page.getByText('검증된 시사·경제 뉴스가 없는 날이에요.', { exact: true })
+  ).toBeVisible()
 })
 
 test('tabs switch lists and rows expand', async ({ page }) => {
@@ -210,4 +212,12 @@ test('reduced motion still renders everything', async ({ page }) => {
   await page.goto('/morning-signal')
   await expect(page.locator('[data-kpi="total"] .odo')).toHaveAttribute('data-value', '24')
   await expect(page.locator('.list .item')).toHaveCount(6)
+})
+
+test('home links to morning signal', async ({ page }) => {
+  await mockApi(page, 'normal')
+  await page.goto('/')
+  const card = page.locator('div', { hasText: /^Morning Signal\s*뉴스 대시보드/ }).last()
+  await card.getByRole('button', { name: '보러가기' }).click()
+  await expect(page).toHaveURL(/\/morning-signal$/)
 })
