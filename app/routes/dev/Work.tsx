@@ -22,7 +22,7 @@ const projects: Project[] = [
   {
     num: '01',
     name: 'fe-rail',
-    desc: 'spec → build → review → PR 사이클을 자동화하는 Claude Code 프론트엔드 개발 하네스. 15개 에이전트와 5개 스킬, 차단/경고 훅으로 구성되고, 검증 결과를 exit code·리비전과 함께 PR 본문까지 전달. 118건 회귀 eval과 plugin validate --strict를 릴리스마다 통과.',
+    desc: 'spec → build → review → PR 사이클을 자동화하는 Claude Code 프론트엔드 개발 하네스. 전용 에이전트·스킬과 차단/경고 훅으로 구성되고, 검증 결과를 exit code·리비전과 함께 PR 본문까지 전달. 회귀 eval과 plugin validate --strict를 릴리스마다 통과.',
     tags: ['Claude Code', 'Next.js', 'Vite', 'TypeScript', 'Hooks', 'Eval'],
     href: '/fe-rail',
   },
@@ -36,7 +36,7 @@ const projects: Project[] = [
   {
     num: '03',
     name: 'parallel-worktree',
-    desc: '격리된 git 워크트리에서 코딩 서브에이전트를 병렬로 돌리고 끝난 것부터 수확해 상류에 올리는 Claude Code 스킬. 오케스트레이터 컨텍스트 비용을 모델링해 잡일을 트랙으로 밀어내고(n=30에서 모델 97% 절감), 수확 순서·통합 워크트리 고정·배포 전 검증을 런북으로 고정.',
+    desc: '격리된 git 워크트리에서 코딩 서브에이전트를 병렬로 돌리고 끝난 것부터 수확해 상류에 올리는 Claude Code 스킬. 오케스트레이터 컨텍스트 비용을 모델링해 잡일을 트랙으로 밀어내고, 수확 순서·통합 워크트리 고정·배포 전 검증을 런북으로 고정.',
     tags: ['Claude Code', 'git worktree', 'Orchestration', 'Runbook'],
     href: '/parallel-worktree',
   },
