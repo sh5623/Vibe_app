@@ -31,7 +31,7 @@ pnpm start        # ⚠️ 동작 안 함 — SPA 빌드라 build/server 가 없
 pnpm check        # biome check --write + Tailwind v3 grep
 pnpm typecheck    # react-router typegen && tsc --noEmit
 pnpm test         # vitest run
-pnpm test:e2e     # playwright test (playwright.config.ts · e2e/*.e2e.ts, 자체 dev 서버 기동)
+pnpm test:e2e     # playwright (e2e/*.e2e.ts)
 ```
 
 ## Project Overview
@@ -79,7 +79,7 @@ app/                         # RR7 appDirectory (source root)
 │   ├── otp.tsx              # /otp
 │   ├── ahram.tsx            # /ahram
 │   ├── morning-signal.tsx   # /morning-signal
-│   └── morning-signal/      # 이 라우트 전용 컴포넌트·model·CSS
+│   └── morning-signal/      # 라우트 전용 컴포넌트
 ├── components/
 │   ├── ui/                  # shadcn/ui — 손대지 말 것
 │   └── [Feature]/           # index.tsx 단일 파일 원칙
@@ -92,8 +92,8 @@ app/                         # RR7 appDirectory (source root)
 ├── styles/
 │   └── globals.css          # @import "tailwindcss"
 └── assets/                  # 정적 이미지
-e2e/                         # Playwright (*.e2e.ts, fixtures/)
-docs/morning-signal/         # schema.sql (Supabase 테이블)
+e2e/                         # Playwright
+docs/morning-signal/         # schema.sql
 ```
 
 ## 🔴 React Router 7 — 프레임워크 모드 · SPA (`ssr: false`)
@@ -220,10 +220,7 @@ const [state, action, isPending] = useActionState(formAction, null)
 
 `.env.local` (Vite: `import.meta.env.*`):
 - `VITE_BIRTHDAY` — `/letter` 생일 인증
-
-서버(Vercel 환경 변수, 값은 문서에 적지 않는다):
-- `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` — `/api/ahram`·`/api/morning-signal` 공용
-- `MS_INGEST_TOKEN` — Morning Signal 적재(POST) 인증
+- 서버 전용(값은 문서에 쓰지 않는다): `SUPABASE_URL`·`SUPABASE_SERVICE_ROLE_KEY`(ahram 공용)·`MS_INGEST_TOKEN`(Morning Signal 적재)
 
 ## 복잡도 예산 (feature spec 명시 시 오버라이드)
 
