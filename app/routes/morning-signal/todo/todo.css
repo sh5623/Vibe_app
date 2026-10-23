@@ -912,7 +912,8 @@
   box-sizing: border-box;
   width: 100%;
   min-height: 44px;
-  font: 400 14px / 1.5 var(--f);
+  /* iOS Safari 는 16px 미만 입력칸에 포커스하면 화면을 확대한다 — 입력칸은 전부 16px 이상 */
+  font: 400 16px / 1.5 var(--f);
   color: var(--muted-fg);
   white-space: pre-wrap;
 }
@@ -967,7 +968,7 @@
   padding: 9px 11px;
   border-radius: 10px;
   background: var(--td-tint);
-  font: 500 14px var(--f);
+  font: 500 16px var(--f);
   color: var(--ink);
 }
 .ms .todo-xf input:disabled {

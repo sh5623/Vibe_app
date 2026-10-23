@@ -511,3 +511,24 @@ test('reduced motion skips scripted motion on wrong PIN', async ({ page }) => {
   await expect(page.locator('.pin .slot.filled')).toHaveCount(0, { timeout: 2500 })
   expect(await page.evaluate(() => (window as unknown as { __animate: number }).__animate)).toBe(0)
 })
+
+test('sheet inputs are at least 16px so iOS Safari does not zoom', async ({ page }) => {
+  await mockTodoApi(page, { unlocked: true, seed: seedDay() })
+  await page.goto('/morning-signal/todo')
+  const sheet = await openCreate(page)
+  await sheet.getByRole('button', { name: '📅 날짜' }).click()
+  await sheet.getByRole('button', { name: '🔗 링크' }).click()
+  const sizes = await sheet
+    .locator('input:not([type=file]), textarea')
+    .evaluateAll((els) => els.map((e) => Number.parseFloat(getComputedStyle(e).fontSize)))
+  expect(sizes.length).toBeGreaterThanOrEqual(5)
+  for (const s of sizes) expect(s).toBeGreaterThanOrEqual(16)
+  await page.keyboard.press('Escape')
+  await page.locator('.todo-day .trow-tx').first().click()
+  const detail = page.getByRole('dialog', { name: '할 일 상세' })
+  await detail.getByRole('button', { name: '수정' }).click()
+  const editSizes = await detail
+    .locator('input:not([type=file]), textarea')
+    .evaluateAll((els) => els.map((e) => Number.parseFloat(getComputedStyle(e).fontSize)))
+  for (const s of editSizes) expect(s).toBeGreaterThanOrEqual(16)
+})
