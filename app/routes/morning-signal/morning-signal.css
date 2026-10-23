@@ -1248,12 +1248,78 @@
   text-decoration: underline;
 }
 
-/* 헤더 가운데 묶음(날짜 이동) — 레퍼런스는 보기 전환(.vsw)도 여기 있었다 */
+/* 헤더 가운데 묶음 — 보기 전환(.vsw) + 날짜 이동(뉴스) 또는 자물쇠(TO-DO) */
 .ms .mid {
   display: flex;
   align-items: center;
   gap: 8px;
   min-width: 0;
+}
+
+/* 보기 전환 — 레퍼런스 .vsw(dashboard/morning-signal.html 230–235행). 링크라서 a 에 건다 */
+.ms .vsw {
+  display: flex;
+  gap: 2px;
+  padding: 4px;
+  border-radius: 12px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+  flex: none;
+}
+.ms .vsw a {
+  all: unset;
+  cursor: pointer;
+  height: 32px;
+  padding: 0 14px;
+  border-radius: 8px;
+  display: grid;
+  place-items: center;
+  font: 600 13px / 1 var(--f);
+  color: var(--muted-fg);
+  transition:
+    background 0.2s,
+    color 0.2s,
+    transform 0.2s var(--ease);
+}
+.ms .vsw a:hover:not(.on) {
+  background: var(--muted);
+  color: var(--ink);
+}
+.ms .vsw a:active {
+  transform: scale(0.94);
+}
+.ms .vsw a.on {
+  background: var(--primary);
+  color: var(--on-primary);
+}
+.ms .vsw a:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+/* TO-DO 헤더의 다시 잠그기 */
+.ms .lockbtn {
+  all: unset;
+  cursor: pointer;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  display: grid;
+  place-items: center;
+  flex: none;
+  color: var(--muted-fg);
+  background: var(--card);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+  transition: transform 0.2s var(--ease);
+}
+.ms .lockbtn:active {
+  transform: scale(0.92);
+}
+.ms .lockbtn:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
 }
 
 @media (max-width: 1000px) {
@@ -1268,6 +1334,7 @@
   .ms .top {
     flex-wrap: wrap;
   }
+  /* 가운데 묶음(보기 전환 + 날짜 이동 또는 자물쇠)은 둘째 줄 전체 폭 — 뉴스·TO-DO 같은 자리 */
   .ms .mid {
     order: 3;
     width: 100%;
@@ -1275,6 +1342,12 @@
   .ms .mid .datenav {
     flex: 1;
     justify-content: space-between;
+  }
+  .ms .mid .lockbtn {
+    margin-left: auto;
+  }
+  .ms .vsw a {
+    padding: 0 12px;
   }
   .ms .cal {
     left: auto;

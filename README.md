@@ -19,6 +19,7 @@
 | `/otp` | OTP 뷰어 | OTP 코드 조회 |
 | `/ahram` | 면접 준비 | 면접 Q&A 열람 (noindex) |
 | `/morning-signal` | Morning Signal | 뉴스 대시보드(보기 전용) — KPI·벤토·피드, Supabase 조회 |
+| `/morning-signal/todo` | Morning Signal TO-DO | 할 일 목록 — PIN 4자리 잠금·만들기·상태·첨부, Supabase 저장 (noindex) |
 
 ## 기술 스택
 
@@ -78,7 +79,8 @@ app/
 │   ├── otp.tsx              # /otp
 │   ├── ahram.tsx            # /ahram
 │   ├── morning-signal.tsx   # /morning-signal
-│   └── morning-signal/      # 전용 컴포넌트·model·CSS
+│   ├── morning-signal-todo.tsx # /morning-signal/todo
+│   └── morning-signal/      # 전용 컴포넌트·model·CSS (Shell·Header 공용, todo/ = TO-DO)
 ├── components/
 │   ├── ui/                  # shadcn/ui — 수동 수정 금지
 │   └── [Feature]/           # index.tsx 단일 파일 원칙

@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TO-DO 목록 시안 v2</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800&family=Geist+Mono:wght@400;500;600&family=IBM+Plex+Sans+KR:wght@400;500;600;700&display=swap">
+<style>
+  :root { --f: "Geist","IBM Plex Sans KR",system-ui,sans-serif; --fm: "Geist Mono",ui-monospace,monospace; --ease: cubic-bezier(.16,1,.3,1); --spring: cubic-bezier(.34,1.56,.64,1); }
+  * { box-sizing: border-box; margin: 0; }
+  body { background: #0b0f1d; color: #e2e8f0; font: 14px/1.6 var(--f); -webkit-font-smoothing: antialiased; padding: 28px 16px 60px; }
+  .wrap { max-width: 1060px; margin: 0 auto; display: flex; gap: 36px; flex-wrap: wrap; justify-content: center; align-items: flex-start; }
+  .notes { flex: 1 1 360px; max-width: 500px; }
+  .notes h1 { font-size: 21px; font-weight: 700; letter-spacing: -.02em; color: #f8fafc; }
+  .notes .lead { color: #94a3b8; margin-top: 6px; font-size: 13.5px; }
+  .notes h3 { margin-top: 18px; font-size: 14px; color: #f1f5f9; }
+  .notes ul { margin-top: 6px; padding-left: 18px; color: #cbd5e1; font-size: 13px; display: grid; gap: 5px; }
+  .notes b { color: #f1f5f9; } .notes .src { color: #64748b; font-size: 11.5px; }
+  .ctrl { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+  .ctrl button { font: 600 12.5px var(--f); color: #e2e8f0; background: #1a1e2f; border: 1px solid rgba(148,163,184,.2); border-radius: 999px; padding: 7px 14px; cursor: pointer; }
+  .ctrl button.on { background: #6366f1; border-color: #6366f1; color: #fff; }
+
+  /* ── phone ─────────────────────────────── */
+  .phone { --bg: #f8fafc; --surface: #ffffff; --tint: #f1f4fb; --line: #e8ebf2; --ink: #0f172a; --mute: #64748b; --faint: #94a3b8; --b1: #6366f1;
+           --todo: #3b82f6; --prog: #f59e0b; --done: #22c55e; --red: #ef4444;
+           position: relative; width: 380px; height: 760px; flex: none; border-radius: 48px; overflow: clip; background: var(--bg); color: var(--ink);
+           border: 1px solid rgba(148,163,184,.3); box-shadow: 0 40px 90px -40px rgba(0,0,0,.85), inset 0 0 0 7px #0b1022; }
+  .phone.dark { --bg: #020617; --surface: #0b1020; --tint: #0e1427; --line: rgba(148,163,184,.12); --ink: #f1f5f9; --mute: #94a3b8; --faint: #64748b;
+           --todo: #60a5fa; --prog: #fbbf24; }
+  .notch { position: absolute; top: 14px; left: 50%; translate: -50% 0; width: 100px; height: 28px; border-radius: 20px; background: #000; z-index: 30; }
+  .screen { position: absolute; inset: 7px; border-radius: 41px; overflow-y: auto; overflow-x: hidden; scrollbar-width: none; padding-bottom: 120px; }
+  .screen::-webkit-scrollbar { display: none; }
+  .top { position: sticky; top: 0; z-index: 10; padding: 50px 18px 10px; background: color-mix(in srgb, var(--bg) 86%, transparent); backdrop-filter: blur(14px); display: flex; align-items: center; gap: 12px; }
+  .seg { display: flex; gap: 18px; flex: 1; }
+  .seg span { font: 700 17px var(--f); letter-spacing: -.02em; color: var(--faint); }
+  .seg span.on { color: var(--ink); }
+  .icon-btn { width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; color: var(--mute); }
+
+  /* 섹션 공통 */
+  .sec { padding: 0 18px; margin-top: 14px; }
+  .sh { display: flex; align-items: baseline; gap: 8px; padding: 0 2px 4px; }
+  .sh b { font-size: 13px; font-weight: 700; letter-spacing: -.01em; }
+  .sh .c { font: 600 12px var(--fm); color: var(--faint); }
+  .sh .r { margin-left: auto; font-size: 12px; color: var(--faint); }
+
+  /* 남은 일 — 은은한 면 하나 */
+  .pending { background: var(--tint); border-radius: 18px; padding: 4px 14px; }
+  .sub { font: 600 10px var(--fm); letter-spacing: .1em; padding: 10px 0 0 32px; }
+  .sub.p { color: var(--prog); } .sub.t { color: var(--todo); }
+  .more-btn { display: block; width: 100%; text-align: left; border: 0; background: transparent; color: var(--b1); font: 600 12.5px var(--f); padding: 10px 0 10px 32px; cursor: pointer; border-top: 1px solid var(--line); }
+  .clear { color: var(--mute); font-size: 13px; padding: 14px 0; text-align: center; }
+
+  /* 행 */
+  .row { display: flex; align-items: flex-start; gap: 12px; padding: 11px 0; position: relative; cursor: pointer; }
+  .row + .row::before { content: ""; position: absolute; top: 0; left: 32px; right: 0; height: 1px; background: var(--line); }
+  .row.enter { animation: enter .5s var(--spring); }
+  @keyframes enter { from { opacity: 0; transform: translateY(-8px); } }
+  .ck { flex: none; width: 20px; height: 20px; margin-top: 1px; border: 0; padding: 0; background: none; cursor: pointer; position: relative; }
+  .ck svg { display: block; }
+  .ck .ring { fill: none; stroke-width: 1.8; transition: stroke .25s; }
+  .ck .pie { transition: opacity .25s; }
+  .ck .disc { transform-origin: 10px 10px; transform: scale(0); transition: transform .35s var(--spring); }
+  .ck .chk { fill: none; stroke: #fff; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 13; stroke-dashoffset: 13; transition: stroke-dashoffset .3s .1s var(--ease); }
+  .s-todo .ring { stroke: var(--todo); } .s-todo .pie { opacity: 0; }
+  .s-progress .ring { stroke: var(--prog); } .s-progress .pie { opacity: 1; fill: var(--prog); }
+  .s-done .ring { stroke: var(--done); } .s-done .pie { opacity: 0; } .s-done .disc { transform: scale(1); fill: var(--done); } .s-done .chk { stroke-dashoffset: 0; }
+  .tx { flex: 1; min-width: 0; }
+  .tt { font-size: 15px; font-weight: 500; letter-spacing: -.01em; line-height: 1.4; display: inline; background: linear-gradient(currentColor, currentColor) no-repeat 0 58% / 0 1.2px; transition: background-size .4s var(--ease), color .3s; }
+  .s-done .tt { background-size: 100% 1.2px; color: var(--faint); }
+  .mt { display: flex; align-items: center; gap: 8px; margin-top: 2px; font-size: 12px; color: var(--faint); }
+  .mt .due.soon { color: var(--red); font-weight: 600; }
+  .mt svg { width: 13px; height: 13px; }
+  .st { flex: none; font: 600 9.5px var(--fm); letter-spacing: .06em; margin-top: 4px; }
+  .s-todo .st { color: var(--todo); } .s-progress .st { color: var(--prog); } .s-done .st { color: var(--faint); }
+  .pending .st { display: none; }
+
+  /* 날짜 그룹 */
+  .day .sh b { font-size: 15px; }
+  .day .sh .d { font-size: 12px; color: var(--faint); }
+  .loader { margin: 16px auto 0; width: 22px; height: 22px; border-radius: 50%; border: 2px solid var(--line); border-top-color: var(--b1); animation: rot .8s linear infinite; }
+  @keyframes rot { to { transform: rotate(360deg); } }
+  .end { text-align: center; color: var(--faint); font-size: 12px; margin-top: 22px; }
+
+  /* 상태 메뉴 (액션시트) + 상세/만들기 시트 */
+  .dim { position: absolute; inset: 0; z-index: 15; background: rgba(2,6,23,.35); opacity: 0; pointer-events: none; transition: opacity .3s; }
+  .dim.on { opacity: 1; pointer-events: auto; }
+  .sheet { position: absolute; left: 7px; right: 7px; bottom: 7px; z-index: 18; background: var(--surface); border-radius: 28px 28px 41px 41px; padding: 10px 20px 34px; transform: translateY(105%); transition: transform .45s var(--ease); max-height: 86%; overflow-y: auto; scrollbar-width: none; }
+  .sheet.on { transform: none; }
+  .handle { width: 38px; height: 5px; border-radius: 3px; background: var(--line); margin: 0 auto 14px; }
+  .opt { display: flex; align-items: center; gap: 12px; width: 100%; border: 0; background: transparent; padding: 13px 4px; font: 600 13px var(--fm); letter-spacing: .05em; color: var(--ink); cursor: pointer; border-bottom: 1px solid var(--line); }
+  .opt:last-child { border-bottom: 0; }
+  .opt .cur { margin-left: auto; color: var(--b1); font-family: var(--f); }
+  .segs { display: flex; background: var(--tint); border-radius: 12px; padding: 3px; margin-top: 14px; }
+  .segs button { flex: 1; border: 0; background: transparent; border-radius: 9px; padding: 8px 0; font: 600 10.5px var(--fm); letter-spacing: .05em; color: var(--mute); cursor: pointer; transition: background .25s, color .25s; }
+  .segs button.on.todo { background: var(--todo); color: #fff; } .segs button.on.progress { background: var(--prog); color: #fff; } .segs button.on.done { background: var(--done); color: #fff; }
+  .dt h3 { font-size: 20px; font-weight: 700; letter-spacing: -.025em; line-height: 1.35; }
+  .kv { display: flex; gap: 12px; padding: 11px 0; border-bottom: 1px solid var(--line); font-size: 13.5px; }
+  .kv span { color: var(--faint); width: 44px; flex: none; }
+  .kv a { color: var(--b1); word-break: break-all; }
+  .note { margin-top: 12px; font-size: 14px; color: var(--mute); white-space: pre-wrap; }
+  .thumbs { display: flex; gap: 6px; flex-wrap: wrap; }
+  .thumbs i { width: 56px; height: 56px; border-radius: 10px; background: linear-gradient(135deg, #c7d2fe, #fbcfe8); display: grid; place-items: center; font: 500 9.5px var(--f); color: #475569; font-style: normal; text-align: center; overflow: hidden; }
+  .thumbs img { width: 100%; height: 100%; object-fit: cover; }
+  .new input.t { width: 100%; border: 0; outline: none; background: transparent; font: 600 19px var(--f); letter-spacing: -.02em; color: var(--ink); padding: 4px 0; }
+  .new textarea { width: 100%; border: 0; outline: none; background: transparent; font: 400 14px var(--f); color: var(--mute); resize: none; height: 44px; }
+  .pills { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px; }
+  .pill { display: inline-flex; align-items: center; gap: 5px; border: 1px solid var(--line); background: transparent; border-radius: 999px; padding: 6px 11px; font: 500 12.5px var(--f); color: var(--mute); cursor: pointer; }
+  .pill.on { color: var(--b1); border-color: color-mix(in srgb, var(--b1) 40%, transparent); background: color-mix(in srgb, var(--b1) 8%, transparent); }
+  .xf { display: none; margin-top: 10px; } .xf.on { display: flex; gap: 8px; animation: enter .3s var(--ease); }
+  .xf input { flex: 1; min-width: 0; border: 0; outline: none; background: var(--tint); border-radius: 10px; padding: 9px 11px; font: 500 13.5px var(--f); color: var(--ink); }
+  .addbar { display: flex; justify-content: flex-end; margin-top: 16px; }
+  .addbar button { border: 0; border-radius: 999px; padding: 10px 20px; font: 700 14px var(--f); color: #fff; background: var(--b1); cursor: pointer; }
+  .addbar button:disabled { opacity: .35; }
+  .fab { position: absolute; right: 24px; bottom: 28px; z-index: 12; width: 56px; height: 56px; border-radius: 50%; border: 0; color: #fff; cursor: pointer; background: var(--b1); box-shadow: 0 12px 26px -10px rgba(99,102,241,.9); display: grid; place-items: center; transition: transform .3s var(--spring); }
+  .fab:active { transform: scale(.9); }
+  @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="phone" id="ph">
+    <div class="notch"></div>
+    <div class="screen" id="screen">
+      <div class="top">
+        <div class="seg"><span>뉴스</span><span class="on">TO-DO</span></div>
+        <div class="icon-btn" title="다시 잠그기"><svg width="17" height="17" viewBox="0 0 22 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="2" y="10" width="18" height="12" rx="4"/><path d="M6 10V7a5 5 0 0 1 10 0v3"/></svg></div>
+      </div>
+      <section class="sec" id="pendingSec"></section>
+      <div id="days"></div>
+      <div id="tail"></div>
+    </div>
+    <div class="dim" id="dim"></div>
+    <div class="sheet" id="sheet"></div>
+    <button class="fab" id="fab" aria-label="할 일 만들기"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button>
+  </div>
+
+  <div class="notes">
+    <h1>TO-DO 목록 — 다듬은 시안</h1>
+    <p class="lead">카드·테두리·태그 상자를 걷어내고 <b>줄 목록</b>으로 바꿨습니다. 원을 누르면 상태 고르기, 줄을 누르면 상세, ＋는 만들기입니다.</p>
+    <h3>레퍼런스에서 가져온 것</h3>
+    <ul>
+      <li><b>Things 3</b> — 줄 목록과 넉넉한 여백. 메모·마감·첨부는 줄 안에 작은 표시로만 두고, 자세한 건 눌러서 봅니다. 완료 기록은 날짜별 Logbook처럼 남깁니다.</li>
+      <li><b>Apple 미리 알림 · Todoist</b> — 맨 앞 원 하나가 상태이자 버튼입니다. 마감이 임박하면 날짜 글자만 빨갛게 바꿉니다(칩 없음).</li>
+      <li><b>Linear 계열 상태 아이콘</b> — 빈 원(TODO) → 반 찬 원(IN PROGRESS) → 체크(DONE). 색만으로 구분하지 않도록 모양과 영문 표기를 함께 씁니다.</li>
+      <li><b>Todoist 빠른 추가</b> — 만들기는 제목 한 줄부터 시작하고, 날짜·링크·첨부·메모는 필요할 때만 버튼으로 펼칩니다.</li>
+    </ul>
+    <h3>「남은 일」</h3>
+    <ul>
+      <li>테두리 없이 옅은 면 하나로만 구분합니다. IN PROGRESS → TODO 순서로 세로 묶음입니다.</li>
+      <li>처음엔 <b>3개까지만</b> 보이고 나머지는 「N개 더 보기」로 접어 둡니다.</li>
+    </ul>
+    <p class="src">참고: 미리 알림 완료 항목 처리(<a style="color:#818cf8" href="https://support.apple.com/en-lb/guide/reminders/remnd854fc47/mac">Apple</a>), Things 3 Today·Logbook 구성(<a style="color:#818cf8" href="https://birchtree.me/blog/my-simple-ask-for-things-4/">birchtree</a>), 상태 아이콘 관례(<a style="color:#818cf8" href="https://feedback.clickup.com/feature-requests/p/status-progress-icons-assume-too-much">ClickUp</a>)</p>
+    <h3>테마</h3>
+    <div class="ctrl"><button id="tL" class="on">라이트</button><button id="tD">다크</button></div>
+  </div>
+</div>
+
+<script>
+(() => {
+  const $ = (id) => document.getElementById(id)
+  const TODAY = '2026-10-23', WD = ['일', '월', '화', '수', '목', '금', '토'], WDL = ['일요일', '월요일', '화요일', '수요일', '목요일', '금요일', '토요일']
+  const LABEL = { todo: 'TODO', progress: 'IN PROGRESS', done: 'DONE' }
+  const ph = $('ph'), screen = $('screen'), pendingSec = $('pendingSec'), daysEl = $('days'), tail = $('tail'), sheet = $('sheet'), dim = $('dim')
+  let seq = 100, expanded = false, loaded = false
+  let items = [
+    { id: 1, c: '2026-10-23', s: 'todo', t: '문화센터 겨울학기 예약', b: '아기 오감놀이 반 · 오픈 10시 정각에 바로 신청', l: 'https://culture.example.com/winter', due: '2026-10-27', time: '10:00' },
+    { id: 2, c: '2026-10-23', s: 'progress', t: '주말 장보기', b: '우유, 기저귀 4단계, 바나나, 두부, 계란', f: ['장보기 메모.jpg'] },
+    { id: 3, c: '2026-10-23', s: 'done', t: '민수 축의금 보내기' },
+    { id: 4, c: '2026-10-22', s: 'todo', t: '민수 결혼식 참석', b: '강남 ○○웨딩홀 3층 · 주차 2시간 무료', l: 'https://wedding.example.com/minsu', due: '2026-11-07', time: '12:30', f: ['모바일 청첩장.png'] },
+    { id: 5, c: '2026-10-22', s: 'done', t: '어린이집 서류 제출', b: '건강검진 결과지 포함' },
+    { id: 6, c: '2026-10-20', s: 'progress', t: '자동차 보험 갱신 비교', b: '만기 11/2 · 두 군데 견적 받는 중', due: '2026-10-25' },
+    { id: 11, c: '2026-10-20', s: 'todo', t: '겨울 이불 세탁 맡기기' },
+    { id: 7, c: '2026-10-20', s: 'done', t: '치과 예약' },
+  ]
+  const older = [
+    { id: 8, c: '2026-10-16', s: 'done', t: '아기 예방접종 예약' },
+    { id: 9, c: '2026-10-16', s: 'done', t: '택배 반품 접수' },
+    { id: 10, c: '2026-10-14', s: 'done', t: '여권 사진 찍기' },
+  ]
+  const d2 = (s) => { const [y, m, d] = s.split('-').map(Number); return new Date(y, m - 1, d) }
+  const diff = (a, b) => Math.round((d2(a) - d2(b)) / 864e5)
+  const md = (s) => { const d = d2(s); return `${d.getMonth() + 1}/${d.getDate()} (${WD[d.getDay()]})` }
+  const ico = { link: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M10 14a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1 1"/><path d="M14 10a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1-1"/></svg>',
+               clip: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M21 11l-8.5 8.5a5 5 0 0 1-7-7L14 4a3.5 3.5 0 0 1 5 5l-8.5 8.5a2 2 0 0 1-3-3L15 7"/></svg>',
+               note: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M5 6h14M5 12h14M5 18h9"/></svg>' }
+  const circle = () => `<svg width="20" height="20" viewBox="0 0 20 20"><circle class="ring" cx="10" cy="10" r="8.5"/><path class="pie" d="M10 4.6a5.4 5.4 0 0 1 0 10.8z"/><circle class="disc" cx="10" cy="10" r="9.6"/><path class="chk" d="M6.2 10.3l2.6 2.6 5-5.2"/></svg>`
+
+  function row(it) {
+    const m = []
+    if (it.due) { const left = diff(it.due, TODAY); m.push(`<span class="due ${it.s !== 'done' && left <= 3 ? 'soon' : ''}">${md(it.due)}${it.time ? ' ' + it.time : ''}</span>`) }
+    if (it.b) m.push(ico.note)
+    if (it.l) m.push(ico.link)
+    if (it.f?.length) m.push(ico.clip)
+    return `<div class="row s-${it.s}" data-id="${it.id}"><button class="ck" aria-label="상태 바꾸기">${circle()}</button>
+      <div class="tx"><span class="tt">${it.t}</span>${m.length ? `<div class="mt">${m.join('')}</div>` : ''}</div><span class="st">${LABEL[it.s]}</span></div>`
+  }
+  function renderPending(enterId) {
+    const open = items.filter((i) => i.s !== 'done')
+    // 마감이 가까운 것 → 먼저 추가한 것 순
+    const by = (a, b) => (a.due || '9999').localeCompare(b.due || '9999') || a.c.localeCompare(b.c)
+    const sorted = [...open.filter((i) => i.s === 'progress').sort(by), ...open.filter((i) => i.s === 'todo').sort(by)]
+    const shown = expanded ? sorted : sorted.slice(0, 3)
+    let h = `<div class="sh"><b>남은 일</b><span class="c">${open.length}</span></div><div class="pending">`
+    if (!open.length) h += `<div class="clear">남은 일이 없어요</div>`
+    let last = ''
+    for (const it of shown) { if (it.s !== last) { h += `<div class="sub ${it.s === 'progress' ? 'p' : 't'}">${LABEL[it.s]}</div>`; last = it.s } h += row(it) }
+    if (sorted.length > 3) h += `<button class="more-btn" id="moreBtn">${expanded ? '접기' : `${sorted.length - 3}개 더 보기`}</button>`
+    pendingSec.innerHTML = h + '</div>'
+    if (enterId) pendingSec.querySelector(`[data-id="${enterId}"]`)?.classList.add('enter')
+  }
+  function renderDays(enterId) {
+    const g = {}; items.forEach((i) => (g[i.c] ||= []).push(i))
+    daysEl.innerHTML = Object.keys(g).sort().reverse().map((c) => {
+      const n = diff(TODAY, c), d = d2(c), name = n === 0 ? '오늘' : n === 1 ? '어제' : `${d.getMonth() + 1}월 ${d.getDate()}일`
+      const list = g[c].sort((a, b) => b.id - a.id)
+      return `<section class="sec day" style="margin-top:22px"><div class="sh"><b>${name}</b><span class="d">${n <= 1 ? `${d.getMonth() + 1}월 ${d.getDate()}일 ` : ''}${WDL[d.getDay()]}</span><span class="r">${list.filter((i) => i.s === 'done').length}/${list.length}</span></div>${list.map(row).join('')}</section>`
+    }).join('')
+    if (enterId) daysEl.querySelector(`[data-id="${enterId}"]`)?.classList.add('enter')
+    tail.innerHTML = loaded ? '<div class="end">처음 기록까지 다 봤어요</div>' : '<div class="loader"></div>'
+  }
+  renderPending(); renderDays()
+  new IntersectionObserver((es) => { if (es[0].isIntersecting && !loaded) { loaded = true; setTimeout(() => { items = items.concat(older); renderDays() }, 700) } }, { root: screen, rootMargin: '60px' }).observe(tail)
+
+  function setStatus(id, s) {
+    const it = items.find((i) => i.id === id); if (!it || it.s === s) return
+    const prev = it.s; it.s = s
+    document.querySelectorAll(`.row[data-id="${id}"]`).forEach((r) => { r.className = `row s-${s}`; r.querySelector('.st').textContent = LABEL[s] })
+    const p = pendingSec.querySelector(`.row[data-id="${id}"]`)
+    if (s === 'done' && p) {
+      setTimeout(() => p.animate([{ opacity: 1, height: p.offsetHeight + 'px' }, { opacity: 0, height: '0px', paddingTop: '0px', paddingBottom: '0px' }], { duration: 360, easing: 'cubic-bezier(.7,0,.3,1)', fill: 'forwards' }).finished.then(() => { renderPending(); renderDays() }), 700)
+    } else { renderPending(prev === 'done' ? id : null); setTimeout(renderDays, 450) }
+  }
+
+  // 시트
+  const openSheet = (html) => { sheet.innerHTML = '<div class="handle"></div>' + html; sheet.classList.add('on'); dim.classList.add('on') }
+  const closeSheet = () => { sheet.classList.remove('on'); dim.classList.remove('on') }
+  dim.addEventListener('click', closeSheet)
+  function statusMenu(id) {
+    const cur = items.find((i) => i.id === id).s
+    openSheet(Object.keys(LABEL).map((k) => `<button class="opt s-${k}" data-s="${k}"><span class="ck">${circle()}</span>${LABEL[k]}${k === cur ? '<span class="cur">현재</span>' : ''}</button>`).join(''))
+    sheet.onclick = (e) => { const b = e.target.closest('.opt'); if (b) { closeSheet(); setTimeout(() => setStatus(id, b.dataset.s), 200) } }
+  }
+  function detail(id) {
+    const it = items.find((i) => i.id === id)
+    const thumbs = (it.f || []).map((f) => `<i>${it.urls?.[f] ? `<img src="${it.urls[f]}">` : f}</i>`).join('')
+    openSheet(`<div class="dt"><h3>${it.t}</h3>
+      <div class="segs">${Object.keys(LABEL).map((k) => `<button class="${k} ${k === it.s ? 'on' : ''}" data-s="${k}">${LABEL[k]}</button>`).join('')}</div>
+      <div style="margin-top:10px">${it.due ? `<div class="kv"><span>날짜</span>${md(it.due)}${it.time ? ' ' + it.time : ''}</div>` : ''}${it.l ? `<div class="kv"><span>링크</span><a href="#" onclick="return false">${it.l}</a></div>` : ''}${thumbs ? `<div class="kv"><span>첨부</span><div class="thumbs">${thumbs}</div></div>` : ''}<div class="kv"><span>추가</span>${md(it.c)}</div></div>
+      ${it.b ? `<div class="note">${it.b}</div>` : ''}</div>`)
+    sheet.onclick = (e) => { const b = e.target.closest('.segs button'); if (b) { sheet.querySelectorAll('.segs button').forEach((x) => x.classList.toggle('on', x === b)); setStatus(id, b.dataset.s) } }
+  }
+  let files = []
+  function create() {
+    files = []
+    openSheet(`<div class="new"><input class="t" id="nT" placeholder="할 일을 입력하세요"><textarea id="nB" placeholder="메모 (선택)"></textarea>
+      <div class="pills"><button class="pill" data-x="date">📅 날짜</button><button class="pill" data-x="link">🔗 링크</button><label class="pill" data-x="file">📎 첨부<input id="nF" type="file" multiple accept="image/*,application/pdf" hidden></label></div>
+      <div class="xf" id="x-date"><input id="nD" type="date"><input id="nH" type="time"></div>
+      <div class="xf" id="x-link"><input id="nL" type="url" placeholder="https://"></div>
+      <div class="xf" id="x-file"><div class="thumbs" id="nThumbs"></div></div>
+      <div class="addbar"><button id="nAdd" disabled>추가</button></div></div>`)
+    setTimeout(() => $('nT').focus(), 300)
+    $('nT').addEventListener('input', () => { $('nAdd').disabled = !$('nT').value.trim() })
+    $('nF').addEventListener('change', (e) => {
+      for (const f of e.target.files) { const url = f.type.startsWith('image/') ? URL.createObjectURL(f) : null; files.push({ name: f.name, url }); $('nThumbs').insertAdjacentHTML('beforeend', `<i>${url ? `<img src="${url}">` : '📄 ' + f.name.slice(0, 10)}</i>`) }
+      $('x-file').classList.add('on'); sheet.querySelector('[data-x="file"]').classList.add('on')
+    })
+    sheet.onclick = (e) => {
+      const p = e.target.closest('.pill'); if (p && p.dataset.x !== 'file') { p.classList.toggle('on'); $('x-' + p.dataset.x).classList.toggle('on') }
+      if (e.target.id === 'nAdd') {
+        let l = $('nL').value.trim(); if (l && !/^https?:\/\//.test(l)) l = 'https://' + l
+        const it = { id: ++seq, c: TODAY, s: 'todo', t: $('nT').value.trim(), b: $('nB').value.trim(), l: l || undefined, due: $('nD').value || undefined, time: $('nH').value || undefined, f: files.map((f) => f.name), urls: Object.fromEntries(files.map((f) => [f.name, f.url])) }
+        items.push(it); closeSheet(); screen.scrollTo({ top: 0, behavior: 'smooth' })
+        setTimeout(() => { expanded = true; renderPending(it.id); renderDays(it.id) }, 280)
+      }
+    }
+  }
+  $('fab').addEventListener('click', create)
+  screen.addEventListener('click', (e) => {
+    if (e.target.id === 'moreBtn') { expanded = !expanded; renderPending(); return }
+    const r = e.target.closest('.row'); if (!r) return
+    if (e.target.closest('.ck')) statusMenu(+r.dataset.id); else detail(+r.dataset.id)
+  })
+  const st = (d) => { ph.classList.toggle('dark', d); $('tD').classList.toggle('on', d); $('tL').classList.toggle('on', !d) }
+  $('tL').addEventListener('click', () => st(false)); $('tD').addEventListener('click', () => st(true))
+})()
+</script>
+</body>
+</html>

@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PIN 시안 D — 레퍼런스 재현</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800&family=Geist+Mono:wght@400;500;600&family=IBM+Plex+Sans+KR:wght@400;500;600;700&display=swap">
+<style>
+  :root { --f: "Geist","IBM Plex Sans KR",system-ui,sans-serif; --fm: "Geist Mono",ui-monospace,monospace; --ease: cubic-bezier(.16,1,.3,1); --spring: cubic-bezier(.34,1.56,.64,1); }
+  * { box-sizing: border-box; margin: 0; }
+  body { background: #0b0f1d; color: #e2e8f0; font: 14px/1.6 var(--f); -webkit-font-smoothing: antialiased; padding: 28px 16px 60px; }
+  .wrap { max-width: 1040px; margin: 0 auto; display: flex; gap: 36px; flex-wrap: wrap; justify-content: center; align-items: flex-start; }
+  .notes { flex: 1 1 360px; max-width: 520px; }
+  .notes h1 { font-size: 21px; font-weight: 700; letter-spacing: -.02em; color: #f8fafc; }
+  .notes .lead { color: #94a3b8; margin-top: 6px; }
+  .notes code { font-family: var(--fm); font-size: 12.5px; color: #a5b4fc; background: #1a1e2f; padding: 1px 6px; border-radius: 6px; }
+  .notes ol { margin: 18px 0 0; padding-left: 0; list-style: none; counter-reset: n; display: grid; gap: 10px; }
+  .notes li { counter-increment: n; background: #111628; border: 1px solid rgba(148,163,184,.14); border-radius: 14px; padding: 11px 14px 11px 46px; position: relative; color: #cbd5e1; font-size: 13px; }
+  .notes li::before { content: counter(n); position: absolute; left: 14px; top: 11px; width: 22px; height: 22px; border-radius: 7px; background: #312e81; color: #c7d2fe; font: 600 12px var(--fm); display: grid; place-items: center; }
+  .notes li b { color: #f1f5f9; }
+  .notes .t { font: 500 11px var(--fm); color: #64748b; margin-left: 4px; }
+  .ctrl { display: flex; gap: 8px; margin-top: 18px; flex-wrap: wrap; }
+  .ctrl button { font: 600 12.5px var(--f); color: #e2e8f0; background: #1a1e2f; border: 1px solid rgba(148,163,184,.2); border-radius: 999px; padding: 7px 14px; cursor: pointer; }
+  .ctrl button.on { background: #6366f1; border-color: #6366f1; color: #fff; }
+  .pick { margin-top: 14px; font: 600 13px var(--f); color: #fff; background: #4f46e5; border: 0; border-radius: 999px; padding: 9px 18px; cursor: pointer; }
+
+  /* ── phone + theme tokens ───────────────────────── */
+  .phone { --bg1: #f5f3ff; --bg2: #fdf2f8; --card: #ffffff; --line: #e7e5f4; --ink: #0f172a; --mute: #64748b; --slot: #c7c3f3; --slot-bg: #ffffff;
+           --b1: #6366f1; --b2: #8b5cf6; --b-soft: #eef0ff; --track: #ececf6; --ok: #22c55e; --ok2: #16a34a; --ok-soft: #dcfce7; --err: #ef4444; --err-soft: #fee2e2;
+           --shadow: 0 1px 2px rgba(15,23,42,.04), 0 24px 48px -24px rgba(79,70,229,.28);
+           position: relative; width: 360px; height: 720px; flex: none; border-radius: 46px; overflow: clip; background: linear-gradient(160deg, var(--bg1), var(--bg2));
+           border: 1px solid rgba(148,163,184,.3); box-shadow: 0 40px 90px -40px rgba(0,0,0,.85), inset 0 0 0 7px #0b1022; }
+  .phone.dark { --bg1: #020617; --bg2: #0b1124; --card: #0e1223; --line: rgba(148,163,184,.16); --ink: #f8fafc; --mute: #94a3b8; --slot: rgba(129,140,248,.45); --slot-bg: #0b0f1e;
+           --b1: #6366f1; --b2: #8b5cf6; --b-soft: rgba(99,102,241,.16); --track: #1a1e2f; --ok-soft: rgba(34,197,94,.16); --err-soft: rgba(239,68,68,.14);
+           --shadow: 0 1px 0 rgba(255,255,255,.03) inset, 0 24px 48px -24px rgba(0,0,0,.9); }
+  .phone .glow { position: absolute; inset: -30%; pointer-events: none; }
+  .phone .glow i { position: absolute; width: 60%; height: 60%; border-radius: 50%; filter: blur(70px); opacity: .35; animation: drift 16s ease-in-out infinite alternate; }
+  .phone .glow i:nth-child(1) { background: #c4b5fd; left: 5%; top: 10%; } .phone .glow i:nth-child(2) { background: #f9a8d4; right: 0; bottom: 10%; animation-delay: -7s; }
+  .phone.dark .glow i { opacity: .16; } .phone.dark .glow i:nth-child(1) { background: #60a5fa; } .phone.dark .glow i:nth-child(2) { background: #22d3ee; }
+  @keyframes drift { to { transform: translate(8%, -6%) scale(1.15); } }
+  .notch { position: absolute; top: 14px; left: 50%; translate: -50% 0; width: 100px; height: 28px; border-radius: 20px; background: #000; z-index: 9; }
+  .sbar { position: absolute; top: 18px; left: 30px; right: 30px; display: flex; justify-content: space-between; font: 600 13px var(--f); color: var(--ink); z-index: 8; }
+  .eyebrow { position: absolute; top: 70px; left: 0; right: 0; text-align: center; font: 600 10.5px var(--fm); letter-spacing: .16em; text-transform: uppercase; color: var(--b1); }
+
+  /* ── card ─────────────────────────────────────── */
+  .card { position: absolute; left: 20px; right: 20px; top: 104px; background: var(--card); border: 1px solid var(--line); border-radius: 26px; box-shadow: var(--shadow);
+          padding: 30px 22px 22px; display: flex; flex-direction: column; align-items: center; transition: transform .6s var(--ease), opacity .45s, filter .45s; }
+  .card.out { transform: translateY(-14px) scale(.96); opacity: 0; filter: blur(8px); pointer-events: none; }
+  .eye { position: absolute; top: 14px; right: 14px; width: 30px; height: 30px; border-radius: 10px; border: 1px solid var(--line); background: transparent; color: var(--mute); display: grid; place-items: center; cursor: pointer; }
+
+  /* lock + ring */
+  .lock { position: relative; width: 76px; height: 76px; }
+  .lock svg.ring { position: absolute; inset: 0; transform: rotate(-90deg); }
+  .lock .trk { fill: none; stroke: var(--b-soft); stroke-width: 3; }
+  .lock .arc { fill: none; stroke: url(#gArc); stroke-width: 3; stroke-linecap: round; transition: stroke-dashoffset .45s var(--ease), stroke .3s; }
+  .lock.spin svg.ring { animation: spin .9s linear infinite; }
+  .lock.ok .arc { stroke: var(--ok); } .lock.err .arc { stroke: var(--err); } .lock.err .trk { stroke: var(--err-soft); } .lock.ok .trk { stroke: var(--ok-soft); }
+  @keyframes spin { to { transform: rotate(270deg); } }
+  .core { position: absolute; inset: 11px; border-radius: 50%; background: var(--b-soft); display: grid; place-items: center; color: var(--b1); transition: background .35s, color .3s, transform .4s var(--spring), box-shadow .4s; }
+  .core svg { position: absolute; transition: opacity .25s, transform .4s var(--spring); }
+  .core .ic-check { opacity: 0; transform: scale(.4); }
+  .core .ic-check path { stroke-dasharray: 22; stroke-dashoffset: 22; transition: stroke-dashoffset .4s .15s var(--ease); }
+  .lock.err .core { background: var(--err-soft); color: var(--err); }
+  .lock.ok .core { background: linear-gradient(145deg, #4ade80, var(--ok2)); color: #fff; transform: scale(1.06); box-shadow: 0 10px 24px -8px rgba(34,197,94,.7); }
+  .lock.ok .ic-lock { opacity: 0; transform: scale(.4) rotate(-20deg); }
+  .lock.ok .ic-check { opacity: 1; transform: none; } .lock.ok .ic-check path { stroke-dashoffset: 0; }
+  .halo { position: absolute; inset: 11px; border-radius: 50%; border: 2px solid var(--ok); opacity: 0; pointer-events: none; }
+  .halo.go { animation: halo .8s var(--ease) forwards; }
+  @keyframes halo { 0% { opacity: .7; transform: scale(1) } 100% { opacity: 0; transform: scale(1.9) } }
+
+  .title { margin-top: 16px; font-size: 21px; font-weight: 700; letter-spacing: -.025em; color: var(--ink); height: 30px; white-space: nowrap; }
+  .title span, .desc span { display: inline-block; animation: blurIn .5s var(--ease) both; }
+  @keyframes blurIn { from { opacity: 0; filter: blur(6px); transform: translateY(5px) } }
+  .desc { margin-top: 4px; font-size: 12.5px; color: var(--mute); height: 20px; white-space: nowrap; }
+
+  /* slots */
+  .slots { display: flex; gap: 12px; margin-top: 24px; cursor: text; }
+  .slot { position: relative; width: 56px; height: 64px; border-radius: 16px; border: 1.6px solid var(--line); background: var(--slot-bg); display: grid; place-items: center;
+          transition: border-color .2s, box-shadow .25s, background .3s, transform .35s var(--spring); }
+  .slot .win { position: absolute; inset: 0; overflow: hidden; border-radius: inherit; }
+  .slot .col { position: absolute; left: 0; right: 0; top: 0; }
+  .slot .col span { height: 61px; display: grid; place-items: center; font: 600 26px var(--f); color: var(--ink); }
+  .slot .m { position: absolute; left: 50%; top: 50%; width: 12px; height: 12px; margin: -6px 0 0 -6px; border-radius: 50%; background: var(--ink); animation: pop .32s var(--spring); }
+  @keyframes pop { 0% { transform: scale(.2) } 60% { transform: scale(1.35) } 100% { transform: scale(1) } }
+  .slot .ul { position: absolute; left: 22px; right: 22px; bottom: 11px; height: 2px; border-radius: 2px; background: var(--slot); opacity: 0; transition: opacity .2s; }
+  .slot.filled .ul { opacity: .9; }
+  .slot .ph { width: 5px; height: 5px; border-radius: 50%; background: var(--slot); transition: opacity .2s, transform .3s var(--spring); }
+  .slot.filled .ph, .slot.active .ph { opacity: 0; transform: scale(0); }
+  .slot .caret { position: absolute; width: 2px; height: 26px; border-radius: 2px; background: var(--b1); opacity: 0; }
+  .slot.active { border-color: var(--b1); box-shadow: 0 0 0 4px var(--b-soft); }
+  .slot.active .caret { animation: caret 1.05s steps(1) infinite; }
+  @keyframes caret { 0%, 100% { opacity: 1 } 50% { opacity: 0 } }
+  .slot.filled { border-color: var(--slot); }
+  .slot .pt { position: absolute; left: 50%; top: 50%; width: 4px; height: 4px; margin: -2px; border-radius: 50%; background: var(--b2); pointer-events: none; }
+  .slots.err .slot { border-color: var(--err); background: var(--err-soft); }
+  .slots.err .slot .col span, .slots.err .slot .m { color: var(--err); background-color: transparent; }
+  .slots.err .slot .m { background: var(--err); }
+  .slots.err .slot .ul { background: var(--err); }
+  .slot.ok { border-color: transparent; background: linear-gradient(150deg, #4ade80, var(--ok2)); box-shadow: 0 10px 20px -10px rgba(22,163,74,.8); }
+  .slot.ok .col span { color: #fff; } .slot.ok .m { background: #fff; } .slot.ok .ul { background: rgba(255,255,255,.7); }
+
+  .err-msg { margin-top: 12px; height: 18px; font-size: 12px; font-weight: 500; color: var(--err); display: flex; align-items: center; gap: 6px; opacity: 0; transform: translateY(-4px); transition: opacity .25s, transform .3s var(--ease); }
+  .err-msg.show { opacity: 1; transform: none; }
+  .err-msg i { width: 14px; height: 14px; border-radius: 50%; background: var(--err); color: #fff; font: 700 10px var(--f); font-style: normal; display: grid; place-items: center; }
+
+  /* cta */
+  .cta { position: relative; margin-top: 12px; width: 100%; height: 48px; border-radius: 14px; border: 0; background: var(--track); overflow: hidden; cursor: pointer; font: 600 14px var(--f); }
+  .cta .fill { position: absolute; inset: 0; width: 0; background: linear-gradient(90deg, var(--b1), var(--b2)); transition: width .45s var(--ease), background .4s; }
+  .cta .lbl { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; gap: 8px; transition: clip-path .45s var(--ease); }
+  .cta .lbl.base { color: var(--mute); }
+  .cta .lbl.over { color: #fff; clip-path: inset(0 100% 0 0); }
+  .cta .sp { width: 14px; height: 14px; border-radius: 50%; border: 2px solid rgba(255,255,255,.4); border-top-color: #fff; animation: spin2 .7s linear infinite; display: none; }
+  @keyframes spin2 { to { transform: rotate(360deg) } }
+  .cta.busy .sp { display: inline-block; }
+  .cta.ok .fill { background: linear-gradient(90deg, #22c55e, #16a34a); }
+  .foot { margin-top: 14px; font-size: 11.5px; color: var(--mute); }
+  .foot b { font-family: var(--fm); color: var(--ink); }
+
+  /* unlocked */
+  .todo { position: absolute; left: 20px; right: 20px; top: 96px; opacity: 0; pointer-events: none; }
+  .todo.show { opacity: 1; pointer-events: auto; }
+  .todo h4 { font-size: 26px; font-weight: 800; letter-spacing: -.03em; color: var(--ink); }
+  .todo p { color: var(--mute); font-size: 12.5px; }
+  .todo .sk { height: 64px; border-radius: 18px; background: var(--card); border: 1px solid var(--line); margin-top: 12px; display: flex; align-items: center; gap: 12px; padding: 0 16px; opacity: 0; transform: translateY(18px); box-shadow: var(--shadow); }
+  .todo.show .sk { animation: up .6s var(--ease) forwards; }
+  .todo.show .sk:nth-of-type(2) { animation-delay: .07s } .todo.show .sk:nth-of-type(3) { animation-delay: .14s } .todo.show .sk:nth-of-type(4) { animation-delay: .21s }
+  .todo .sk i { width: 20px; height: 20px; border-radius: 50%; border: 2px solid var(--slot); flex: none; }
+  .todo .sk b { height: 10px; border-radius: 5px; background: var(--track); flex: 1; }
+  @keyframes up { to { opacity: 1; transform: none; } }
+  .relock { margin-top: 20px; font: 600 12.5px var(--f); color: var(--b1); background: var(--b-soft); border: 0; border-radius: 999px; padding: 8px 16px; cursor: pointer; }
+  #hid { position: absolute; opacity: 0; pointer-events: none; width: 1px; height: 1px; left: -9999px; }
+
+  @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="phone" id="ph">
+    <div class="glow"><i></i><i></i></div>
+    <div class="notch"></div>
+    <div class="sbar"><span>9:41</span><span>●●● 100</span></div>
+    <div class="eyebrow">Morning Signal · Private</div>
+
+    <div class="card" id="card">
+      <button class="eye" id="eye" title="숫자 보기" aria-label="숫자 보기"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg></button>
+      <div class="lock" id="lock">
+        <svg class="ring" viewBox="0 0 76 76"><defs><linearGradient id="gArc" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#6366f1"/><stop offset="1" stop-color="#a78bfa"/></linearGradient></defs>
+          <circle class="trk" cx="38" cy="38" r="35"/><circle class="arc" id="arc" cx="38" cy="38" r="35"/></svg>
+        <div class="core">
+          <svg class="ic-lock" width="22" height="24" viewBox="0 0 22 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="2" y="10" width="18" height="12" rx="4"/><path d="M6 10V7a5 5 0 0 1 10 0v3"/><circle cx="11" cy="16" r="1.4" fill="currentColor"/></svg>
+          <svg class="ic-check" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>
+        </div>
+        <div class="halo" id="halo"></div>
+      </div>
+      <div class="title" id="title"></div>
+      <div class="desc" id="desc"></div>
+      <div class="slots" id="slots"></div>
+      <div class="err-msg" id="err"><i>!</i>PIN이 맞지 않아요. 다시 입력해 주세요.</div>
+      <button class="cta" id="cta"><span class="fill" id="fill"></span><span class="lbl base" id="lb"></span><span class="lbl over" id="lo"></span></button>
+      <div class="foot">시연용 PIN <b>1234</b> · 키보드로 입력하세요</div>
+    </div>
+
+    <div class="todo" id="todo">
+      <h4>TO-DO</h4><p>잠금이 풀리면 목록이 아래에서 올라와요</p>
+      <div class="sk"><i></i><b></b></div><div class="sk"><i></i><b></b></div><div class="sk"><i></i><b></b></div>
+      <button class="relock" id="relock">다시 잠그기</button>
+    </div>
+    <input id="hid" inputmode="numeric" autocomplete="one-time-code" maxlength="4">
+  </div>
+
+  <div class="notes">
+    <h1>시안 D — 보내주신 릴스 재현</h1>
+    <p class="lead">릴스(<code>OTP Animation V15 — Smooth &amp; Modern UI</code>)를 0.1초 단위로 뜯어 본 모션 6가지를 PIN 화면에 옮겼습니다. 화면을 한 번 클릭하고 키보드 숫자를 눌러 보세요. <code>1234</code>가 성공이고 나머지는 실패입니다.</p>
+    <ol>
+      <li><b>숫자 굴림</b> — 숫자를 넣으면 칸 안에서 다른 숫자 몇 개가 슬롯머신처럼 굴러가다 멈추고, 멈출 때 작은 점들이 튀어 나갑니다. <span class="t">~0.4s</span></li>
+      <li><b>버튼이 진행 막대</b> — 아래 버튼이 입력한 칸 수만큼 왼쪽부터 차오르고, 글자색도 채워진 경계에서 흰색으로 갈라집니다. 4칸이 차면 「확인 중」 스피너로 바뀝니다.</li>
+      <li><b>자물쇠 링</b> — 자물쇠를 둘러싼 링이 입력 진행률만큼 그려지고, 확인 중에는 빙글 돕니다.</li>
+      <li><b>성공</b> — 칸이 왼쪽부터 하나씩 초록으로 바뀌며 살짝 떠오르고, 자물쇠가 초록 원으로 채워지면서 체크로 바뀌고 파동이 퍼집니다. 제목은 글자 단위로 흐림이 걷히며 「확인됐어요」로 바뀌고, 버튼은 초록 「열기 →」가 됩니다. <span class="t">~1.0s</span></li>
+      <li><b>실패</b> — 링·칸이 빨갛게 바뀌고, 숫자가 찌그러졌다 펴진 뒤 줄 전체가 좌우로 흔들립니다. 오류 문구가 내려옵니다. <span class="t">~0.6s</span></li>
+      <li><b>되돌리기</b> — 숫자가 왼쪽부터 하나씩 아래로 떨어지며 사라지고, 버튼 막대가 다시 비워진 뒤 첫 칸에 커서가 돌아옵니다. <span class="t">~0.5s</span></li>
+    </ol>
+    <p class="lead" style="margin-top:14px">PIN이라 숫자는 잠시 보였다가 점으로 가려지게 바꿨습니다(오른쪽 위 눈 아이콘으로 숫자 보기). 릴스는 밝은 테마인데, 지금 대시보드에 라이트/다크 전환이 있으니 둘 다 맞췄습니다.</p>
+    <div class="ctrl">
+      <button id="tLight" class="on">라이트</button><button id="tDark">다크</button>
+      <button id="auto">자동 재생(성공 → 실패)</button>
+    </div>
+    <button class="pick" data-choice="d">D로 갈래요</button>
+  </div>
+</div>
+
+<script>
+(() => {
+  const PIN = '1234', LEN = 4
+  const $ = (id) => document.getElementById(id)
+  const ph = $('ph'), card = $('card'), lock = $('lock'), arc = $('arc'), halo = $('halo'), title = $('title'), desc = $('desc')
+  const slotsEl = $('slots'), errEl = $('err'), cta = $('cta'), fill = $('fill'), lb = $('lb'), lo = $('lo'), todo = $('todo'), hid = $('hid')
+  const C = 2 * Math.PI * 35
+  arc.style.strokeDasharray = C
+  const slots = []
+  for (let i = 0; i < LEN; i++) {
+    const s = document.createElement('div')
+    s.className = 'slot'
+    s.innerHTML = '<div class="win"></div><i class="ph"></i><b class="caret"></b><i class="ul"></i>'
+    slotsEl.appendChild(s); slots.push(s)
+  }
+  let val = '', busy = false, mask = true
+  const timers = []
+  const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
+
+  function text(el, str) { el.innerHTML = [...str].map((c, i) => `<span style="animation-delay:${i * 26}ms">${c === ' ' ? '&nbsp;' : c}</span>`).join('') }
+  function label(str, spin) {
+    const sp = spin ? '<i class="sp"></i>' : ''
+    lb.innerHTML = sp + str; lo.innerHTML = sp + str
+    cta.classList.toggle('busy', !!spin)
+  }
+  function progress(n) {
+    const p = (n / LEN) * 100
+    fill.style.width = p + '%'
+    lo.style.clipPath = `inset(0 ${100 - p}% 0 0)`
+    arc.style.strokeDashoffset = C * (1 - n / LEN)
+  }
+  function active() { slots.forEach((s, i) => s.classList.toggle('active', !busy && i === val.length)) }
+
+  function burst(slot) {
+    for (let k = 0; k < 8; k++) {
+      const p = document.createElement('i'); p.className = 'pt'; slot.appendChild(p)
+      const a = (k / 8) * Math.PI * 2 + Math.random() * .4, r = 30 + Math.random() * 10
+      p.animate([{ transform: 'translate(0,0) scale(1)', opacity: .9 }, { transform: `translate(${Math.cos(a) * r}px, ${Math.sin(a) * r * 1.1}px) scale(.3)`, opacity: 0 }],
+        { duration: 520, easing: 'cubic-bezier(.16,1,.3,1)' }).finished.then(() => p.remove())
+    }
+  }
+  function putDigit(i, d) {
+    const s = slots[i], win = s.querySelector('.win')
+    const seq = [0, 1, 2].map(() => String((+d + 3 + Math.floor(Math.random() * 6)) % 10)).concat(d)
+    win.innerHTML = `<div class="col">${seq.map((x) => `<span>${x}</span>`).join('')}</div>`
+    s.classList.add('filled')
+    win.firstChild.animate([{ transform: 'translateY(0)' }, { transform: 'translateY(-75%)' }], { duration: 420, easing: 'cubic-bezier(.22,1,.36,1)', fill: 'forwards' })
+    setTimeout(() => { burst(s); s.animate([{ transform: 'scale(1)' }, { transform: 'scale(1.08)' }, { transform: 'scale(1)' }], { duration: 300, easing: 'cubic-bezier(.34,1.56,.64,1)' }) }, 330)
+    clearTimeout(timers[i])
+    if (mask) timers[i] = setTimeout(() => { if (s.classList.contains('filled') && !s.classList.contains('ok')) win.innerHTML = '<span class="m"></span>' }, 900)
+  }
+  function dropDigit(i, delay = 0) {
+    const s = slots[i], win = s.querySelector('.win'), el = win.firstElementChild
+    clearTimeout(timers[i])
+    return new Promise((res) => {
+      setTimeout(() => {
+        s.classList.remove('filled')
+        if (!el) return res()
+        el.animate([{ transform: el.classList.contains('col') ? 'translateY(-75%)' : 'none', opacity: 1 }, { transform: el.classList.contains('col') ? 'translateY(-50%)' : 'translateY(22px)', opacity: 0 }],
+          { duration: 260, easing: 'cubic-bezier(.7,0,.84,0)', fill: 'forwards' }).finished.then(() => { win.innerHTML = ''; res() })
+      }, delay)
+    })
+  }
+
+  function press(d) {
+    if (busy || val.length >= LEN) return
+    if (errEl.classList.contains('show')) errEl.classList.remove('show')
+    putDigit(val.length, d); val += d; progress(val.length); active()
+    if (val.length === LEN) verify()
+  }
+  function back() {
+    if (busy || !val) return
+    val = val.slice(0, -1); dropDigit(val.length); progress(val.length); active()
+  }
+
+  async function verify() {
+    busy = true; active()
+    await sleep(380)
+    lock.classList.add('spin'); arc.style.strokeDashoffset = C * .72; label('확인 중', true)
+    await sleep(820)
+    lock.classList.remove('spin')
+    if (val === PIN) return success()
+    fail()
+  }
+  async function success() {
+    arc.style.strokeDashoffset = 0; lock.classList.add('ok')
+    slots.forEach((s, i) => setTimeout(() => {
+      s.classList.add('ok')
+      s.animate([{ transform: 'translateY(0) scale(1)' }, { transform: 'translateY(-7px) scale(1.06)' }, { transform: 'translateY(0) scale(1)' }], { duration: 420, easing: 'cubic-bezier(.34,1.56,.64,1)' })
+    }, i * 90))
+    setTimeout(() => { halo.classList.remove('go'); void halo.offsetWidth; halo.classList.add('go') }, 260)
+    setTimeout(() => { text(title, '확인됐어요'); text(desc, 'TO-DO를 열고 있어요') }, 300)
+    cta.classList.add('ok'); label('열기 →', false)
+    await sleep(1350)
+    card.classList.add('out')
+    await sleep(260)
+    todo.classList.add('show')
+  }
+  async function fail() {
+    lock.classList.add('err'); slotsEl.classList.add('err'); arc.style.strokeDashoffset = 0; label('확인', false)
+    slots.forEach((s, i) => { const el = s.querySelector('.win').firstElementChild; el && el.animate(
+      [{ transform: (el.classList.contains('col') ? 'translateY(-75%) ' : '') + 'scaleY(1)' }, { transform: (el.classList.contains('col') ? 'translateY(-75%) ' : '') + 'translateY(5px) scaleY(.55)' }, { transform: (el.classList.contains('col') ? 'translateY(-75%) ' : '') + 'scaleY(1)' }],
+      { duration: 260, delay: i * 30, easing: 'ease-out' }) })
+    setTimeout(() => {
+      slotsEl.animate([0, -12, 10, -8, 6, -3, 0].map((x) => ({ transform: `translateX(${x}px)` })), { duration: 480, easing: 'cubic-bezier(.36,.07,.19,.97)' })
+      lock.animate([0, -8, 7, -4, 0].map((d) => ({ transform: `rotate(${d}deg)` })), { duration: 420 })
+      try { navigator.vibrate && navigator.vibrate([30, 40, 30]) } catch {}
+      errEl.classList.add('show')
+    }, 240)
+    await sleep(1150)
+    // 되돌리기 — 왼쪽부터 떨어지고 막대가 비워진다
+    progress(0)
+    await Promise.all(slots.map((_, i) => dropDigit(i, i * 70)))
+    slotsEl.classList.remove('err'); lock.classList.remove('err')
+    val = ''; busy = false; active(); hid.value = ''
+  }
+
+  function reset() {
+    todo.classList.remove('show'); card.classList.remove('out')
+    lock.className = 'lock'; slotsEl.className = 'slots'; cta.className = 'cta'; errEl.classList.remove('show')
+    slots.forEach((s) => { s.className = 'slot'; s.querySelector('.win').innerHTML = '' })
+    val = ''; busy = false; hid.value = ''
+    text(title, '본인 확인'); text(desc, 'PIN 4자리를 입력하세요'); label('확인', false); progress(0); active()
+  }
+  reset()
+
+  // 입력 — 휴대폰은 숨은 숫자 입력칸(숫자 키패드), 데스크톱은 키보드
+  const focus = () => hid.focus({ preventScroll: true })
+  slotsEl.addEventListener('click', focus); card.addEventListener('click', focus)
+  hid.addEventListener('input', () => { const d = hid.value.replace(/\D/g, '').slice(-1); hid.value = ''; d && press(d) })
+  document.addEventListener('keydown', (e) => {
+    if (document.activeElement === hid) { if (e.key === 'Backspace') { e.preventDefault(); back() } return }
+    if (/^[0-9]$/.test(e.key)) press(e.key)
+    else if (e.key === 'Backspace') back()
+  })
+  $('relock').addEventListener('click', reset)
+  $('eye').addEventListener('click', (e) => {
+    e.stopPropagation(); mask = !mask
+    slots.forEach((s, i) => { if (!s.classList.contains('filled')) return; const w = s.querySelector('.win'); if (mask) w.innerHTML = '<span class="m"></span>'; else w.innerHTML = `<div class="col" style="transform:translateY(-75%)"><span></span><span></span><span></span><span>${val[i] ?? ''}</span></div>` })
+  })
+  const setTheme = (dark) => { ph.classList.toggle('dark', dark); $('tDark').classList.toggle('on', dark); $('tLight').classList.toggle('on', !dark) }
+  $('tLight').addEventListener('click', () => setTheme(false)); $('tDark').addEventListener('click', () => setTheme(true))
+  $('auto').addEventListener('click', async () => {
+    reset(); await sleep(400)
+    for (const d of '1234') { press(d); await sleep(420) }
+    await sleep(3600); reset(); await sleep(500)
+    for (const d of '5454') { press(d); await sleep(420) }
+  })
+})()
+</script>
+</body>
+</html>

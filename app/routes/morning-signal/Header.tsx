@@ -9,6 +9,7 @@ import {
   useState,
 } from 'react'
 import { flushSync } from 'react-dom'
+import { Link } from 'react-router'
 import type { DaySummary } from '../../../api/morning-signal'
 import { calendarCells, dateParts, labelEn } from './model'
 
@@ -191,6 +192,89 @@ function Calendar({ days, cur, onPick, ref }: CalendarProps) {
   )
 }
 
+/** 로고 + 제목 + (뉴스만) 갱신 스탬프 */
+function Brand({ stamp }: { stamp?: string }) {
+  return (
+    <div className="brand">
+      <div className="logo" aria-hidden="true">
+        <span>
+          <i />
+          <i />
+          <i />
+        </span>
+      </div>
+      <div>
+        <h1>Morning Signal</h1>
+        {stamp !== undefined && (
+          <p>
+            <i className="live" />
+            <span>{stamp}</span>
+          </p>
+        )}
+      </div>
+    </div>
+  )
+}
+
+/**
+ * 뉴스 | TO-DO 보기 전환 — 레퍼런스 .vsw(dashboard/morning-signal.html 230–235·287행). 두 화면 같은 모양.
+ * 페이지를 오가는 링크라서 tablist 가 아니라 nav + aria-current 다(피드의 AI·시사·GitHub 탭과도 겹치지 않는다).
+ */
+export function ViewSwitch({ view }: { view: 'news' | 'todo' }) {
+  const links = [
+    { key: 'news', label: '뉴스', to: '/morning-signal' },
+    { key: 'todo', label: 'TO-DO', to: '/morning-signal/todo' },
+  ] as const
+  return (
+    <nav className="vsw" aria-label="보기 전환">
+      {links.map((l) => (
+        <Link
+          key={l.key}
+          to={l.to}
+          aria-current={view === l.key ? 'page' : undefined}
+          className={view === l.key ? 'on' : undefined}
+        >
+          {l.label}
+        </Link>
+      ))}
+    </nav>
+  )
+}
+
+/** TO-DO·PIN 화면 헤더 — 날짜 이동·스탬프 대신 (잠금이 풀렸을 때만) 자물쇠 버튼 */
+export function TodoHeader({ onLock }: { onLock?: () => void }) {
+  return (
+    <header className="top">
+      <Brand />
+      <div className="mid">
+        <ViewSwitch view="todo" />
+        {onLock && (
+          <button type="button" className="lockbtn" aria-label="다시 잠그기" onClick={onLock}>
+            <svg width="17" height="17" viewBox="0 0 22 24" fill="none" aria-hidden="true">
+              <rect
+                x="2"
+                y="10"
+                width="18"
+                height="12"
+                rx="4"
+                stroke="currentColor"
+                strokeWidth="2"
+              />
+              <path
+                d="M6 10V7a5 5 0 0 1 10 0v3"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+              />
+            </svg>
+          </button>
+        )}
+      </div>
+      <ThemeButton />
+    </header>
+  )
+}
+
 interface HeaderProps {
   days: DaySummary[]
   cur: string | null
@@ -234,23 +318,9 @@ export default function Header({ days, cur, dir, stamp, onGo }: HeaderProps) {
 
   return (
     <header className="top">
-      <div className="brand">
-        <div className="logo" aria-hidden="true">
-          <span>
-            <i />
-            <i />
-            <i />
-          </span>
-        </div>
-        <div>
-          <h1>Morning Signal</h1>
-          <p>
-            <i className="live" />
-            <span>{stamp}</span>
-          </p>
-        </div>
-      </div>
+      <Brand stamp={stamp} />
       <div className="mid">
+        <ViewSwitch view="news" />
         <div className="datenav">
           <button
             type="button"

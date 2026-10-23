@@ -2,6 +2,8 @@
 
 `feat/morning-signal` 브랜치가 만들어진 뒤 위에서부터 차례로 따라 하는 체크리스트다. 이 저장소는 공개라서 **토큰·키 값은 어디에도 적지 않는다.**
 
+> TO-DO 탭(`/morning-signal/todo`) 설정은 [`todo-setup.md`](./todo-setup.md)를 따른다.
+
 ## 1. Supabase 테이블 만들기
 
 - 위치: Supabase 대시보드 → /ahram이 쓰는 같은 프로젝트 → SQL Editor

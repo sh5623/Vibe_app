@@ -1,0 +1,1232 @@
+/* /morning-signal/todo 전용 스타일 — 시안 docs/morning-signal/todo-mockups/{pin-gate,todo-list}.html 이식.
+   토큰은 morning-signal.css 의 html[data-ms-theme] 값을 쓰고, TO-DO 전용 값만 여기서 더한다. 선택자는 .ms 아래. */
+:root[data-ms-theme] {
+  --td-todo: #3b82f6;
+  --td-prog: #f59e0b;
+  --td-done: #22c55e;
+  --td-red: #ef4444;
+  --td-b1: #6366f1;
+  --td-b2: #8b5cf6;
+  --td-tint: #eef2fb;
+  --td-line: #e3e8f2;
+}
+:root[data-ms-theme="dark"] {
+  --td-todo: #60a5fa;
+  --td-prog: #fbbf24;
+  --td-tint: rgba(148, 163, 184, 0.07);
+  --td-line: rgba(148, 163, 184, 0.12);
+}
+
+.ms .todo-view {
+  display: grid;
+  gap: 18px;
+  max-width: 640px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+/* ── PIN 잠금(시안 D) ─────────────────────────────────────────────── */
+.ms .pin {
+  --td-soft: color-mix(in srgb, var(--td-b1) 12%, transparent);
+  --td-slot: color-mix(in srgb, var(--td-b1) 38%, var(--border));
+  --td-ok2: #16a34a;
+  --td-ok-soft: color-mix(in srgb, var(--td-done) 16%, transparent);
+  --td-err-soft: color-mix(in srgb, var(--td-red) 14%, transparent);
+  position: relative;
+  width: 100%;
+  max-width: 360px;
+  margin: 28px auto 0;
+  padding: 30px 22px 24px;
+  border-radius: 26px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  transition:
+    transform 0.6s var(--ease),
+    opacity 0.45s,
+    filter 0.45s;
+}
+.ms .pin.out {
+  transform: translateY(-14px) scale(0.96);
+  opacity: 0;
+  filter: blur(8px);
+  pointer-events: none;
+}
+.ms .pin .eye {
+  all: unset;
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  width: 30px;
+  height: 30px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  color: var(--muted-fg);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+}
+.ms .pin .eye:focus-visible {
+  outline: 2px solid var(--td-b1);
+  outline-offset: 2px;
+}
+
+/* 자물쇠 + 진행 링 */
+.ms .pin .lock {
+  position: relative;
+  width: 76px;
+  height: 76px;
+  flex: none;
+}
+.ms .pin .pin-ring {
+  position: absolute;
+  inset: 0;
+  transform: rotate(-90deg);
+}
+.ms .pin .trk {
+  fill: none;
+  stroke: var(--td-soft);
+  stroke-width: 3;
+}
+.ms .pin .arc {
+  fill: none;
+  stroke: url(#td-arc);
+  stroke-width: 3;
+  stroke-linecap: round;
+  transition:
+    stroke-dashoffset 0.45s var(--ease),
+    stroke 0.3s;
+}
+.ms .pin .lock.spin .pin-ring {
+  animation: td-spin 0.9s linear infinite;
+}
+.ms .pin .lock.ok .arc {
+  stroke: var(--td-done);
+}
+.ms .pin .lock.ok .trk {
+  stroke: var(--td-ok-soft);
+}
+.ms .pin .lock.err .arc {
+  stroke: var(--td-red);
+}
+.ms .pin .lock.err .trk {
+  stroke: var(--td-err-soft);
+}
+@keyframes td-spin {
+  to {
+    transform: rotate(270deg);
+  }
+}
+.ms .pin .core {
+  position: absolute;
+  inset: 11px;
+  border-radius: 50%;
+  background: var(--td-soft);
+  color: var(--td-b1);
+  display: grid;
+  place-items: center;
+  transition:
+    background 0.35s,
+    color 0.3s,
+    transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1),
+    box-shadow 0.4s;
+}
+.ms .pin .core svg {
+  position: absolute;
+  transition:
+    opacity 0.25s,
+    transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.ms .pin .ic-check {
+  opacity: 0;
+  transform: scale(0.4);
+}
+.ms .pin .ic-check path {
+  stroke-dasharray: 22;
+  stroke-dashoffset: 22;
+  transition: stroke-dashoffset 0.4s 0.15s var(--ease);
+}
+.ms .pin .lock.err .core {
+  background: var(--td-err-soft);
+  color: var(--td-red);
+}
+.ms .pin .lock.ok .core {
+  background: linear-gradient(145deg, #4ade80, var(--td-ok2));
+  color: #fff;
+  transform: scale(1.06);
+  box-shadow: 0 10px 24px -8px rgba(34, 197, 94, 0.7);
+}
+.ms .pin .lock.ok .ic-lock {
+  opacity: 0;
+  transform: scale(0.4) rotate(-20deg);
+}
+.ms .pin .lock.ok .ic-check {
+  opacity: 1;
+  transform: none;
+}
+.ms .pin .lock.ok .ic-check path {
+  stroke-dashoffset: 0;
+}
+.ms .pin .halo {
+  position: absolute;
+  inset: 11px;
+  border-radius: 50%;
+  border: 2px solid var(--td-done);
+  opacity: 0;
+  pointer-events: none;
+  animation: td-halo 0.8s var(--ease) 0.26s forwards;
+}
+@keyframes td-halo {
+  0% {
+    opacity: 0.7;
+    transform: scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.9);
+  }
+}
+
+/* 제목·설명 — 글자마다 흐림이 걷힌다 */
+.ms .pin-title {
+  margin: 16px 0 0;
+  font: 700 21px / 30px var(--f);
+  letter-spacing: -0.025em;
+  color: var(--ink);
+  height: 30px;
+  white-space: nowrap;
+}
+.ms .pin-desc {
+  margin: 4px 0 0;
+  font-size: 12.5px;
+  color: var(--muted-fg);
+  min-height: 20px;
+  text-align: center;
+}
+.ms .pin-desc b {
+  font: 600 12px var(--fm);
+  color: var(--td-red);
+}
+.ms .pin.off .pin-desc {
+  color: var(--td-red);
+}
+.ms .pin-title span,
+.ms .pin-desc span {
+  display: inline-block;
+  animation: td-blur-in 0.5s var(--ease) both;
+}
+@keyframes td-blur-in {
+  from {
+    opacity: 0;
+    filter: blur(6px);
+    transform: translateY(5px);
+  }
+}
+
+/* 칸 4개 + 칸 위에 겹친 투명 입력칸(input-otp 방식 — 칸을 누르면 바로 숫자 키패드) */
+.ms .pin .slots {
+  position: relative;
+  display: flex;
+  gap: 12px;
+  margin-top: 24px;
+}
+.ms .pin-input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  border: 0;
+  padding: 0;
+  font-size: 16px;
+  color: transparent;
+  caret-color: transparent;
+  background: transparent;
+  cursor: text;
+}
+.ms .pin-input:disabled {
+  cursor: not-allowed;
+}
+.ms .pin .slot {
+  position: relative;
+  width: 56px;
+  height: 64px;
+  border-radius: 16px;
+  border: 1.6px solid var(--border);
+  background: var(--card);
+  display: grid;
+  place-items: center;
+  transition:
+    border-color 0.2s,
+    box-shadow 0.25s,
+    background 0.3s,
+    opacity 0.3s;
+}
+.ms .pin.off .slot {
+  opacity: 0.45;
+}
+.ms .pin .win {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  border-radius: inherit;
+}
+.ms .pin .col {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  animation: td-roll 0.42s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+.ms .pin .col.still {
+  animation: none;
+}
+.ms .pin .col span {
+  height: 61px;
+  display: grid;
+  place-items: center;
+  font: 600 26px var(--f);
+  color: var(--ink);
+}
+@keyframes td-roll {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(-75%);
+  }
+}
+.ms .pin .m {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 12px;
+  height: 12px;
+  margin: -6px 0 0 -6px;
+  border-radius: 50%;
+  background: var(--ink);
+  animation: td-pop 0.32s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+@keyframes td-pop {
+  0% {
+    transform: scale(0.2);
+  }
+  60% {
+    transform: scale(1.35);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+.ms .pin .ul {
+  position: absolute;
+  left: 22px;
+  right: 22px;
+  bottom: 11px;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--td-slot);
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+.ms .pin .slot.filled .ul {
+  opacity: 0.9;
+}
+.ms .pin .ph {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--td-slot);
+  transition:
+    opacity 0.2s,
+    transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.ms .pin .slot.filled .ph,
+.ms .pin .slot.active .ph {
+  opacity: 0;
+  transform: scale(0);
+}
+.ms .pin .caret {
+  position: absolute;
+  width: 2px;
+  height: 26px;
+  border-radius: 2px;
+  background: var(--td-b1);
+  opacity: 0;
+}
+.ms .pin .slot.active {
+  border-color: var(--td-b1);
+  box-shadow: 0 0 0 4px var(--td-soft);
+}
+.ms .pin .slot.active .caret {
+  animation: td-caret 1.05s steps(1) infinite;
+}
+@keyframes td-caret {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0;
+  }
+}
+.ms .pin .slot.filled {
+  border-color: var(--td-slot);
+}
+.ms .pin .burst i {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 4px;
+  height: 4px;
+  margin: -2px;
+  border-radius: 50%;
+  background: var(--td-b2);
+  opacity: 0;
+  pointer-events: none;
+  animation: td-burst 0.52s var(--ease) 0.33s;
+}
+@keyframes td-burst {
+  from {
+    opacity: 0.9;
+    transform: translate(0, 0) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translate(var(--dx), var(--dy)) scale(0.3);
+  }
+}
+.ms .pin .slots.err .slot {
+  border-color: var(--td-red);
+  background: var(--td-err-soft);
+}
+.ms .pin .slots.err .col span {
+  color: var(--td-red);
+}
+.ms .pin .slots.err .m,
+.ms .pin .slots.err .ul {
+  background: var(--td-red);
+}
+.ms .pin .slots.clearing .win > * {
+  animation: td-drop 0.26s cubic-bezier(0.7, 0, 0.84, 0) forwards;
+  animation-delay: calc(var(--i) * 70ms);
+}
+.ms .pin .slots.clearing .win > .col {
+  animation-name: td-drop-col;
+}
+@keyframes td-drop {
+  to {
+    transform: translateY(22px);
+    opacity: 0;
+  }
+}
+@keyframes td-drop-col {
+  from {
+    transform: translateY(-75%);
+  }
+  to {
+    transform: translateY(-50%);
+    opacity: 0;
+  }
+}
+.ms .pin .slot.ok {
+  border-color: transparent;
+  background: linear-gradient(150deg, #4ade80, var(--td-ok2));
+  box-shadow: 0 10px 20px -10px rgba(22, 163, 74, 0.8);
+  transition-delay: calc(var(--i) * 90ms);
+  animation: td-lift 0.42s cubic-bezier(0.34, 1.56, 0.64, 1) calc(var(--i) * 90ms);
+}
+.ms .pin .slot.ok .col span {
+  color: #fff;
+}
+.ms .pin .slot.ok .m {
+  background: #fff;
+}
+.ms .pin .slot.ok .ul {
+  background: rgba(255, 255, 255, 0.7);
+}
+@keyframes td-lift {
+  50% {
+    transform: translateY(-7px) scale(1.06);
+  }
+}
+
+.ms .pin .err-msg {
+  margin-top: 12px;
+  min-height: 18px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--td-red);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  opacity: 0;
+  transform: translateY(-4px);
+  transition:
+    opacity 0.25s,
+    transform 0.3s var(--ease);
+}
+.ms .pin .err-msg.show {
+  opacity: 1;
+  transform: none;
+}
+.ms .pin .err-msg i {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--td-red);
+  color: #fff;
+  font: 700 10px / 14px var(--f);
+  font-style: normal;
+  text-align: center;
+}
+
+/* 진행 막대 겸 버튼(장식 — 입력은 자동 확인) */
+.ms .pin .cta {
+  position: relative;
+  margin-top: 12px;
+  width: 100%;
+  height: 48px;
+  border-radius: 14px;
+  background: var(--muted);
+  overflow: hidden;
+  font: 600 14px var(--f);
+}
+.ms .pin .cta .fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  background: linear-gradient(90deg, var(--td-b1), var(--td-b2));
+  transition:
+    width 0.45s var(--ease),
+    background 0.4s;
+}
+.ms .pin .cta .lbl {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: clip-path 0.45s var(--ease);
+}
+.ms .pin .cta .lbl.base {
+  color: var(--muted-fg);
+}
+.ms .pin .cta .lbl.over {
+  color: #fff;
+}
+.ms .pin .cta .sp {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.4);
+  border-top-color: #fff;
+  animation: td-rot 0.7s linear infinite;
+}
+.ms .pin .cta .lbl.base .sp {
+  border-color: var(--border);
+  border-top-color: var(--muted-fg);
+}
+@keyframes td-rot {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.ms .pin .cta.ok .fill {
+  background: linear-gradient(90deg, #22c55e, #16a34a);
+}
+/* 모션 줄이기는 morning-signal.css 의 `.ms *` 규칙이 TO-DO 까지 덮는다 */
+
+/* ── 목록(시안 v2 — 줄 목록, 카드·테두리·태그 상자 없음) ─────────────── */
+.ms .todo-view {
+  gap: 22px;
+  padding-bottom: 96px;
+}
+.ms .todo-pending-h {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin: 6px 2px 6px;
+  font: 700 13px / 1.4 var(--f);
+  letter-spacing: -0.01em;
+  color: var(--ink);
+}
+.ms .todo-pending-h span {
+  font: 600 12px var(--fm);
+  color: var(--muted-fg);
+}
+.ms .todo-pending {
+  background: var(--td-tint);
+  border-radius: 18px;
+  padding: 4px 14px;
+}
+.ms .todo-sub {
+  margin: 0;
+  padding: 10px 0 0 32px;
+  font: 600 10px var(--fm);
+  letter-spacing: 0.1em;
+}
+.ms .todo-sub.progress {
+  color: var(--td-prog);
+}
+.ms .todo-sub.todo {
+  color: var(--td-todo);
+}
+.ms .todo-clear {
+  margin: 0;
+  padding: 16px 0;
+  text-align: center;
+  font-size: 13px;
+  color: var(--muted-fg);
+}
+.ms .todo-more {
+  all: unset;
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 10px 0 10px 32px;
+  border-top: 1px solid var(--td-line);
+  font: 600 12.5px var(--f);
+  color: var(--td-b1);
+  cursor: pointer;
+}
+.ms .todo-more:focus-visible {
+  outline: 2px solid var(--td-b1);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+/* 줄 — 앞 원이 상태이자 버튼, 정보는 작은 표시 한 줄 */
+.ms .trow {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 11px 0;
+}
+/* 줄 사이 선 — 묶음의 첫 줄(소제목 바로 아래 포함)에는 긋지 않는다 */
+.ms .trow.sep::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 32px;
+  right: 0;
+  height: 1px;
+  background: var(--td-line);
+}
+.ms .trow.enter {
+  animation: td-enter 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+@keyframes td-enter {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+}
+.ms .trow.leaving {
+  overflow: hidden;
+  animation: td-leave 0.36s cubic-bezier(0.7, 0, 0.3, 1) 0.7s forwards;
+}
+@keyframes td-leave {
+  from {
+    max-height: 120px;
+    opacity: 1;
+  }
+  to {
+    max-height: 0;
+    opacity: 0;
+    padding-block: 0;
+  }
+}
+.ms .trow-ck {
+  all: unset;
+  flex: none;
+  width: 20px;
+  height: 20px;
+  margin-top: 1px;
+  cursor: pointer;
+  border-radius: 50%;
+}
+.ms .trow-ck:focus-visible {
+  outline: 2px solid var(--td-b1);
+  outline-offset: 3px;
+}
+.ms .si {
+  display: block;
+  overflow: visible;
+}
+.ms .si-ring {
+  fill: none;
+  stroke-width: 1.8;
+  transition: stroke 0.25s;
+}
+.ms .si-pie {
+  opacity: 0;
+  transition: opacity 0.25s;
+}
+.ms .si-disc {
+  transform-origin: 10px 10px;
+  transform: scale(0);
+  transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.ms .si-chk {
+  fill: none;
+  stroke: #fff;
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 13;
+  stroke-dashoffset: 13;
+  transition: stroke-dashoffset 0.3s 0.1s var(--ease);
+}
+.ms .s-todo .si-ring {
+  stroke: var(--td-todo);
+}
+.ms .s-progress .si-ring {
+  stroke: var(--td-prog);
+}
+.ms .s-progress .si-pie {
+  opacity: 1;
+  fill: var(--td-prog);
+}
+.ms .s-done .si-ring {
+  stroke: var(--td-done);
+}
+.ms .s-done .si-disc {
+  transform: scale(1);
+  fill: var(--td-done);
+}
+.ms .s-done .si-chk {
+  stroke-dashoffset: 0;
+}
+.ms .trow-tx {
+  all: unset;
+  flex: 1;
+  min-width: 0;
+  cursor: pointer;
+  display: block;
+}
+.ms .trow-tx:focus-visible {
+  outline: 2px solid var(--td-b1);
+  outline-offset: 4px;
+  border-radius: 6px;
+}
+.ms .trow-tt {
+  font: 500 15px / 1.4 var(--f);
+  letter-spacing: -0.01em;
+  color: var(--ink);
+  overflow-wrap: anywhere;
+  background: linear-gradient(currentColor, currentColor) no-repeat 0 58% / 0 1.2px;
+  transition:
+    background-size 0.4s var(--ease),
+    color 0.3s;
+}
+.ms .s-done .trow-tt {
+  background-size: 100% 1.2px;
+  color: var(--muted-fg);
+}
+.ms .trow-mt {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 2px;
+  font-size: 12px;
+  color: var(--muted-fg);
+}
+.ms .trow .trow-mt svg {
+  width: 13px;
+  height: 13px;
+  display: block;
+}
+.ms .trow-due.soon {
+  color: var(--td-red);
+  font-weight: 600;
+}
+.ms .trow-st {
+  flex: none;
+  margin-top: 4px;
+  font: 600 9.5px var(--fm);
+  letter-spacing: 0.06em;
+}
+.ms .s-todo .trow-st {
+  color: var(--td-todo);
+}
+.ms .s-progress .trow-st {
+  color: var(--td-prog);
+}
+.ms .s-done .trow-st {
+  color: var(--muted-fg);
+}
+
+/* 날짜 묶음 */
+.ms .todo-day .dh {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 0 2px 4px;
+}
+.ms .todo-day .dh b {
+  font: 700 15px var(--f);
+  letter-spacing: -0.02em;
+  color: var(--ink);
+}
+.ms .todo-day .dh-sub {
+  font-size: 12px;
+  color: var(--muted-fg);
+}
+.ms .todo-day .dh-n {
+  margin-left: auto;
+  font: 500 12px var(--fm);
+  color: var(--muted-fg);
+}
+.ms .todo-tail {
+  min-height: 40px;
+  display: grid;
+  place-items: center;
+  font-size: 12px;
+  color: var(--muted-fg);
+}
+.ms .todo-tail p {
+  margin: 0;
+}
+.ms .todo-retry {
+  all: unset;
+  padding: 8px 16px;
+  border-radius: 999px;
+  border: 1px solid var(--td-line);
+  font: 600 12.5px var(--f);
+  color: var(--td-b1);
+  cursor: pointer;
+}
+.ms .todo-retry:focus-visible {
+  outline: 2px solid var(--td-b1);
+  outline-offset: 2px;
+}
+.ms .todo-loader {
+  display: block;
+  margin: 16px auto;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 2px solid var(--td-line);
+  border-top-color: var(--td-b1);
+  animation: td-rot 0.8s linear infinite;
+}
+
+/* ── 시트 ─────────────────────────────────────────────────────────── */
+.ms .todo-sheet {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+}
+.ms .todo-dim {
+  all: unset;
+  position: absolute;
+  inset: 0;
+  background: rgba(2, 6, 23, 0.35);
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+.ms .todo-sheet.on .todo-dim {
+  opacity: 1;
+}
+.ms .todo-panel {
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  width: min(100%, 560px);
+  max-height: 86vh;
+  overflow-y: auto;
+  box-sizing: border-box;
+  padding: 10px 20px calc(24px + env(safe-area-inset-bottom, 0px));
+  border-radius: 28px 28px 0 0;
+  background: var(--card);
+  box-shadow: 0 -12px 40px -12px rgba(2, 6, 23, 0.35);
+  transform: translate(-50%, 105%);
+  transition: transform 0.45s var(--ease);
+}
+.ms .todo-sheet.on .todo-panel {
+  transform: translate(-50%, 0);
+}
+.ms .todo-handle {
+  width: 38px;
+  height: 5px;
+  border-radius: 3px;
+  background: var(--td-line);
+  margin: 0 auto 12px;
+}
+.ms .todo-opts-t {
+  margin: 0 4px 6px;
+  font: 600 14px var(--f);
+  color: var(--muted-fg);
+  overflow-wrap: anywhere;
+}
+.ms .todo-opt {
+  all: unset;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 13px 4px;
+  border-bottom: 1px solid var(--td-line);
+  font: 600 13px var(--fm);
+  letter-spacing: 0.05em;
+  color: var(--ink);
+  cursor: pointer;
+}
+.ms .todo-opt:last-child {
+  border-bottom: 0;
+}
+.ms .todo-opt:focus-visible {
+  outline: 2px solid var(--td-b1);
+  outline-offset: -2px;
+  border-radius: 10px;
+}
+.ms .todo-opt em {
+  margin-left: auto;
+  font: 500 12px var(--f);
+  font-style: normal;
+  color: var(--td-b1);
+}
+
+/* ── 만들기·수정 ─────────────────────────────────────────────────────── */
+.ms .todo-new {
+  display: grid;
+  gap: 4px;
+}
+.ms .todo-new-t {
+  all: unset;
+  box-sizing: border-box;
+  width: 100%;
+  padding: 4px 0;
+  font: 600 19px / 1.4 var(--f);
+  letter-spacing: -0.02em;
+  color: var(--ink);
+}
+.ms .todo-new-b {
+  all: unset;
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 44px;
+  /* iOS Safari 는 16px 미만 입력칸에 포커스하면 화면을 확대한다 — 입력칸은 전부 16px 이상 */
+  font: 400 16px / 1.5 var(--f);
+  color: var(--muted-fg);
+  white-space: pre-wrap;
+}
+.ms .todo-new-t::placeholder,
+.ms .todo-new-b::placeholder {
+  color: var(--muted-fg);
+  opacity: 0.7;
+}
+.ms .todo-edit .todo-new-t {
+  border-bottom: 1px solid var(--td-line);
+  padding-bottom: 8px;
+}
+.ms .todo-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 6px;
+}
+.ms .todo-pill {
+  all: unset;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 11px;
+  border: 1px solid var(--td-line);
+  border-radius: 999px;
+  font: 500 12.5px var(--f);
+  color: var(--muted-fg);
+  cursor: pointer;
+}
+.ms .todo-pill.on {
+  color: var(--td-b1);
+  border-color: color-mix(in srgb, var(--td-b1) 40%, transparent);
+  background: color-mix(in srgb, var(--td-b1) 8%, transparent);
+}
+.ms .todo-pill:focus-visible,
+.ms .todo-pill:focus-within {
+  outline: 2px solid var(--td-b1);
+  outline-offset: 2px;
+}
+.ms .todo-xf {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+  animation: td-enter 0.3s var(--ease);
+}
+.ms .todo-xf input {
+  all: unset;
+  box-sizing: border-box;
+  flex: 1;
+  min-width: 0;
+  padding: 9px 11px;
+  border-radius: 10px;
+  background: var(--td-tint);
+  font: 500 16px var(--f);
+  color: var(--ink);
+}
+.ms .todo-xf input:disabled {
+  opacity: 0.45;
+}
+.ms .todo-xf input:focus-visible {
+  outline: 2px solid var(--td-b1);
+  outline-offset: 1px;
+}
+
+/* 첨부 미리보기 */
+.ms .todo-thumbs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+.ms .todo-file {
+  position: relative;
+  width: 56px;
+  height: 56px;
+  border-radius: 10px;
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+  background: var(--td-tint);
+  border: 1px solid var(--td-line);
+  text-decoration: none;
+}
+.ms .todo-file img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.ms .todo-file em {
+  font: 500 9.5px / 1.2 var(--f);
+  font-style: normal;
+  color: var(--muted-fg);
+  padding: 3px;
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+.ms .todo-file.up img {
+  opacity: 0.45;
+}
+.ms .todo-file-sp {
+  position: absolute;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 2px solid var(--td-line);
+  border-top-color: var(--td-b1);
+  animation: td-rot 0.8s linear infinite;
+}
+.ms .todo-file button {
+  all: unset;
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: rgba(2, 6, 23, 0.6);
+  color: #fff;
+  font: 600 12px / 1 var(--f);
+  cursor: pointer;
+}
+
+/* 버튼 줄 */
+.ms .todo-actions {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 8px;
+  margin-top: 16px;
+}
+.ms .todo-actions .todo-pill {
+  margin-right: auto;
+}
+.ms .todo-btn {
+  all: unset;
+  padding: 10px 18px;
+  border-radius: 999px;
+  font: 700 14px var(--f);
+  color: var(--ink);
+  background: var(--td-tint);
+  cursor: pointer;
+}
+.ms .todo-btn.primary {
+  color: #fff;
+  background: var(--td-b1);
+}
+.ms .todo-btn.danger {
+  color: #fff;
+  background: var(--td-red);
+}
+.ms .todo-btn:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+.ms .todo-btn:focus-visible {
+  outline: 2px solid var(--td-b1);
+  outline-offset: 2px;
+}
+
+/* ── 상세 ───────────────────────────────────────────────────────────── */
+.ms .todo-dt h3 {
+  margin: 0;
+  font: 700 20px / 1.35 var(--f);
+  letter-spacing: -0.025em;
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+.ms .todo-segs {
+  display: flex;
+  margin: 14px 0 0;
+  padding: 3px;
+  border: 0;
+  min-width: 0;
+  border-radius: 12px;
+  background: var(--td-tint);
+}
+/* 라디오는 라벨 전체에 투명하게 겹쳐 둔다 — 누르는 곳이 곧 입력칸 */
+.ms .todo-segs input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+.ms .todo-segs label {
+  position: relative;
+  flex: 1;
+  padding: 8px 0;
+  border-radius: 9px;
+  text-align: center;
+  font: 600 10.5px var(--fm);
+  letter-spacing: 0.05em;
+  color: var(--muted-fg);
+  cursor: pointer;
+  transition:
+    background 0.25s,
+    color 0.25s;
+}
+.ms .todo-segs label.on {
+  color: #fff;
+}
+.ms .todo-segs .seg-todo.on {
+  background: var(--td-todo);
+}
+.ms .todo-segs .seg-progress.on {
+  background: var(--td-prog);
+}
+.ms .todo-segs .seg-done.on {
+  background: var(--td-done);
+}
+.ms .todo-segs label:has(:focus-visible) {
+  outline: 2px solid var(--td-b1);
+  outline-offset: 1px;
+}
+.ms .todo-kv {
+  margin: 10px 0 0;
+}
+.ms .todo-kv > div {
+  display: flex;
+  gap: 12px;
+  padding: 11px 0;
+  border-bottom: 1px solid var(--td-line);
+  font-size: 13.5px;
+}
+.ms .todo-kv dt {
+  flex: none;
+  width: 44px;
+  color: var(--muted-fg);
+}
+.ms .todo-kv dd {
+  margin: 0;
+  min-width: 0;
+  color: var(--ink);
+}
+.ms .todo-kv dd .todo-thumbs {
+  margin-top: 0;
+}
+.ms .todo-kv a {
+  color: var(--td-b1);
+  overflow-wrap: anywhere;
+}
+.ms .todo-note {
+  margin: 12px 0 0;
+  font-size: 14px;
+  color: var(--muted-fg);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.ms .todo-confirm {
+  margin-top: 16px;
+  padding: 14px;
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--td-red) 8%, transparent);
+}
+.ms .todo-confirm p {
+  margin: 0;
+  font: 600 14px var(--f);
+  color: var(--ink);
+}
+.ms .todo-confirm .todo-actions {
+  margin-top: 10px;
+}
+
+/* ── 만들기 버튼·알림 ────────────────────────────────────────────────── */
+.ms .todo-fab {
+  all: unset;
+  position: fixed;
+  right: max(20px, env(safe-area-inset-right, 0px));
+  bottom: calc(24px + env(safe-area-inset-bottom, 0px));
+  z-index: 40;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  color: #fff;
+  background: var(--td-b1);
+  box-shadow: 0 12px 26px -10px rgba(99, 102, 241, 0.9);
+  cursor: pointer;
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.ms .todo-fab:active {
+  transform: scale(0.9);
+}
+.ms .todo-fab:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--td-b1) 45%, transparent);
+  outline-offset: 3px;
+}
+.ms .todo-toast {
+  position: fixed;
+  left: 50%;
+  bottom: calc(96px + env(safe-area-inset-bottom, 0px));
+  z-index: 60;
+  max-width: calc(100% - 32px);
+  padding: 10px 16px;
+  border-radius: 12px;
+  background: var(--ink);
+  color: var(--card);
+  font: 600 13px var(--f);
+  box-shadow: var(--shadow);
+  transform: translate(-50%, 12px);
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    opacity 0.25s,
+    transform 0.3s var(--ease);
+}
+.ms .todo-toast.show {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
