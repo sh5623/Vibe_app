@@ -1,0 +1,1324 @@
+/* /morning-signal 전용 스타일 — 레퍼런스 second-brain .wiki-automation/dashboard/morning-signal.html 6–276행 이식.
+   이식 규칙: 토큰은 html[data-ms-theme] 이 있을 때만(라우트가 마운트 중일 때만) 적용, body → .ms,
+   나머지 선택자는 .ms 아래로, @keyframes 는 ms- 접두. 개발 보기 전용 규칙(.vsw·.devhead·.devgrid·.devcard·
+   .dempty·.crow·.ctype·.sum·.jiras·.jira·.raw)은 뺐다.
+   레이아웃: 헤더(로고·날짜 이동·테마) → KPI 4 → 벤토(한 줄·도넛·카테고리바·바리스트) → 피드
+   팔레트: ui-ux-pro-max Analytics Dashboard(라이트, 기본) / Financial Dashboard(다크). */
+:root[data-ms-theme] {
+  --bg: #f8fafc;
+  --card: #ffffff;
+  --muted: #e9eef6;
+  --muted-fg: #475569;
+  --ink: #0f172a;
+  --border: #dbeafe;
+  --primary: #1e40af;
+  --s-ai: #3b82f6;
+  --s-world: #0891b2;
+  --s-gh: #d97706;
+  --hi: #dc2626;
+  --mid: #b45309;
+  --low: #94a3b8;
+  --ok: #15803d;
+  --on-primary: #ffffff;
+  --glow: 0.1;
+  --shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 8px 24px -12px rgba(30, 64, 175, 0.18);
+  --ease: cubic-bezier(0.16, 1, 0.3, 1);
+  --f: "Geist", "IBM Plex Sans KR", system-ui, sans-serif;
+  --fm: "Geist Mono", "IBM Plex Sans KR", ui-monospace, monospace;
+  color-scheme: light;
+  /* 레퍼런스는 body 배경이 캔버스로 번진다 — 오버스크롤 영역도 같은 색이 되게 html 에 둔다 */
+  background: var(--bg);
+}
+:root[data-ms-theme="dark"] {
+  --bg: #020617;
+  --card: #0e1223;
+  --muted: #1a1e2f;
+  --muted-fg: #94a3b8;
+  --ink: #f8fafc;
+  --border: rgba(148, 163, 184, 0.16);
+  --primary: #60a5fa;
+  --s-ai: #60a5fa;
+  --s-world: #22d3ee;
+  --s-gh: #fbbf24;
+  --hi: #ef4444;
+  --mid: #f59e0b;
+  --low: #64748b;
+  --ok: #22c55e;
+  --on-primary: #020617;
+  --glow: 0.16;
+  --shadow: 0 1px 0 rgba(255, 255, 255, 0.03) inset, 0 12px 32px -16px rgba(0, 0, 0, 0.7);
+  color-scheme: dark;
+}
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+.ms * {
+  box-sizing: border-box;
+}
+.ms {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font: 14px / 1.6 var(--f);
+  min-height: 100vh;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+.ms .aurora {
+  position: fixed;
+  inset: -25vmax;
+  pointer-events: none;
+  z-index: 0;
+}
+.ms .aurora i {
+  position: absolute;
+  width: 44vmax;
+  height: 44vmax;
+  border-radius: 50%;
+  filter: blur(100px);
+  opacity: var(--glow);
+  animation: ms-drift 26s ease-in-out infinite alternate;
+}
+.ms .aurora i:nth-child(1) {
+  background: var(--s-ai);
+  left: 10%;
+  top: 0;
+}
+.ms .aurora i:nth-child(2) {
+  background: var(--s-world);
+  right: 6%;
+  top: 26%;
+  animation-duration: 31s;
+  animation-delay: -8s;
+}
+.ms .aurora i:nth-child(3) {
+  background: var(--s-gh);
+  left: 34%;
+  bottom: 2%;
+  animation-duration: 37s;
+  animation-delay: -14s;
+}
+@keyframes ms-drift {
+  50% {
+    transform: translate(6vmax, -4vmax) scale(1.1);
+  }
+  100% {
+    transform: translate(-5vmax, 5vmax) scale(0.92);
+  }
+}
+.ms .grid-bg {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-image:
+    linear-gradient(var(--border) 1px, transparent 1px),
+    linear-gradient(90deg, var(--border) 1px, transparent 1px);
+  background-size: 48px 48px;
+  -webkit-mask-image: radial-gradient(ellipse at 50% 0%, #000 0%, transparent 65%);
+  mask-image: radial-gradient(ellipse at 50% 0%, #000 0%, transparent 65%);
+  opacity: 0.35;
+}
+.ms .wrap {
+  position: relative;
+  z-index: 1;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding-block: 22px 64px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: grid;
+  gap: 16px;
+}
+.ms .card {
+  background: color-mix(in srgb, var(--card) 88%, transparent);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  box-shadow: var(--shadow);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+}
+
+/* 헤더 */
+.ms .top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.ms .brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+.ms .logo {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  display: grid;
+  place-items: center;
+  box-shadow: var(--shadow);
+  flex: none;
+}
+.ms .logo span {
+  display: flex;
+  gap: 3px;
+  align-items: end;
+  height: 16px;
+}
+.ms .logo i {
+  width: 3px;
+  border-radius: 2px;
+  transform-origin: bottom;
+  animation: ms-eq 1.6s ease-in-out infinite;
+}
+.ms .logo i:nth-child(1) {
+  background: var(--s-ai);
+  height: 40%;
+}
+.ms .logo i:nth-child(2) {
+  background: var(--s-world);
+  height: 100%;
+  animation-delay: -0.4s;
+}
+.ms .logo i:nth-child(3) {
+  background: var(--s-gh);
+  height: 65%;
+  animation-delay: -0.8s;
+}
+@keyframes ms-eq {
+  50% {
+    transform: scaleY(0.45);
+  }
+}
+.ms .brand h1 {
+  margin: 0;
+  font: 700 19px / 1.1 var(--f);
+  letter-spacing: -0.02em;
+}
+.ms .brand p {
+  margin: 2px 0 0;
+  font: 500 12px / 1.2 var(--fm);
+  color: var(--muted-fg);
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.ms .live {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--ok);
+  box-shadow: 0 0 0 0 var(--ok);
+  animation: ms-ping 2s infinite;
+  flex: none;
+}
+@keyframes ms-ping {
+  70% {
+    box-shadow: 0 0 0 7px transparent;
+  }
+  100% {
+    box-shadow: 0 0 0 0 transparent;
+  }
+}
+.ms .theme {
+  all: unset;
+  cursor: pointer;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  display: grid;
+  place-items: center;
+  color: var(--ink);
+  background: var(--card);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+  transition: transform 0.2s var(--ease);
+  flex: none;
+}
+.ms .theme:hover {
+  transform: rotate(-8deg) scale(1.05);
+}
+.ms .theme:active {
+  transform: scale(0.92);
+}
+.ms .theme:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 3px;
+}
+.ms .theme svg {
+  width: 20px;
+  height: 20px;
+  overflow: visible;
+}
+.ms .theme .core {
+  transform-origin: 12px 12px;
+  transition: transform 0.6s var(--ease);
+}
+.ms .theme .bite {
+  transition: transform 0.6s var(--ease);
+}
+.ms .theme .rays {
+  transform-origin: 12px 12px;
+  transition:
+    transform 0.6s var(--ease),
+    opacity 0.4s;
+}
+:root[data-ms-theme="dark"] .ms .theme .core {
+  transform: scale(1);
+}
+:root[data-ms-theme="dark"] .ms .theme .bite {
+  transform: translate(0, 0);
+}
+:root[data-ms-theme="dark"] .ms .theme .rays {
+  transform: rotate(-90deg) scale(0.3);
+  opacity: 0;
+}
+:root:not([data-ms-theme="dark"]) .ms .theme .core {
+  transform: scale(0.6);
+}
+:root:not([data-ms-theme="dark"]) .ms .theme .bite {
+  transform: translate(9px, -9px);
+}
+:root:not([data-ms-theme="dark"]) .ms .theme .rays {
+  transform: rotate(0) scale(1);
+  opacity: 1;
+}
+
+/* 날짜 이동 */
+.ms .datenav {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 4px;
+  border-radius: 12px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+}
+.ms .datenav > button {
+  all: unset;
+  cursor: pointer;
+  height: 32px;
+  min-width: 32px;
+  display: grid;
+  place-items: center;
+  border-radius: 8px;
+  color: var(--muted-fg);
+  font: 600 18px / 1 var(--f);
+  transition:
+    background 0.2s,
+    color 0.2s,
+    transform 0.2s var(--ease);
+}
+.ms .datenav > button:hover:not([disabled]) {
+  background: var(--muted);
+  color: var(--ink);
+}
+.ms .datenav > button:active:not([disabled]) {
+  transform: scale(0.94);
+}
+.ms .datenav > button[disabled] {
+  opacity: 0.35;
+  cursor: default;
+}
+.ms .datenav > button:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+.ms .datenav .cur {
+  padding: 0 12px;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  overflow: hidden;
+  font: 600 13px / 1 var(--f);
+  color: var(--ink);
+  min-width: 136px;
+  justify-content: center;
+}
+.ms .datenav .cur .t {
+  display: inline-block;
+}
+.ms .datenav .cur .t.in-l {
+  animation: ms-tInL 0.45s var(--ease);
+}
+.ms .datenav .cur .t.in-r {
+  animation: ms-tInR 0.45s var(--ease);
+}
+@keyframes ms-tInL {
+  from {
+    opacity: 0;
+    transform: translateX(-14px);
+  }
+}
+@keyframes ms-tInR {
+  from {
+    opacity: 0;
+    transform: translateX(14px);
+  }
+}
+.ms .datenav .cur em {
+  font: 600 11px / 1 var(--fm);
+  font-style: normal;
+  padding: 4px 6px;
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--primary) 14%, transparent);
+  color: var(--primary);
+}
+.ms .cal {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 50%;
+  width: 288px;
+  margin-left: -144px;
+  padding: 14px;
+  z-index: 30;
+  display: grid;
+  gap: 10px;
+  transform-origin: top center;
+  animation: ms-calIn 0.3s var(--ease);
+  background: var(--card);
+}
+.ms .cal[hidden] {
+  display: none;
+}
+@keyframes ms-calIn {
+  from {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.95);
+  }
+}
+.ms .cal .hd {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font: 600 14px / 1 var(--f);
+}
+.ms .cal .hd button {
+  all: unset;
+  cursor: pointer;
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  border-radius: 7px;
+  color: var(--muted-fg);
+  font: 600 16px / 1 var(--f);
+}
+.ms .cal .hd button:hover:not([disabled]) {
+  background: var(--muted);
+  color: var(--ink);
+}
+.ms .cal .hd button[disabled] {
+  opacity: 0.3;
+  cursor: default;
+}
+.ms .cal .hd button:focus-visible {
+  outline: 2px solid var(--primary);
+}
+.ms .cal .wk,
+.ms .cal .days {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 4px;
+  text-align: center;
+}
+.ms .cal .wk span {
+  font: 500 11px / 1 var(--fm);
+  color: var(--muted-fg);
+}
+.ms .cal .days span {
+  height: 38px;
+}
+.ms .cal .days button {
+  all: unset;
+  cursor: pointer;
+  position: relative;
+  height: 38px;
+  border-radius: 9px;
+  display: grid;
+  place-items: center;
+  font: 600 13px / 1 var(--fm);
+  color: var(--ink);
+  transition: background 0.2s;
+  animation: ms-cellIn 0.35s var(--ease) both;
+  animation-delay: var(--d);
+}
+@keyframes ms-cellIn {
+  from {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+}
+.ms .cal .days button::after {
+  content: "";
+  position: absolute;
+  bottom: 6px;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--s-ai);
+  opacity: var(--dot, 0);
+}
+.ms .cal .days button:hover:not([disabled]) {
+  background: var(--muted);
+}
+.ms .cal .days button.on {
+  background: var(--primary);
+  color: var(--on-primary);
+}
+.ms .cal .days button.on::after {
+  background: var(--on-primary);
+}
+.ms .cal .days button[disabled] {
+  cursor: default;
+  opacity: 0.35;
+}
+.ms .cal .days button:focus-visible {
+  outline: 2px solid var(--primary);
+}
+.ms .cal p {
+  margin: 0;
+  font-size: 11px;
+  color: var(--muted-fg);
+}
+
+/* 상태 안내 */
+.ms .state {
+  padding: 28px 24px;
+  display: grid;
+  gap: 6px;
+  text-align: center;
+}
+.ms .state[hidden] {
+  display: none;
+}
+.ms .state b {
+  font: 700 18px / 1.3 var(--f);
+}
+.ms .state span {
+  color: var(--muted-fg);
+}
+.ms .content[hidden] {
+  display: none;
+}
+.ms .content {
+  display: grid;
+  gap: 16px;
+}
+
+/* KPI */
+.ms .kpis {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+.ms .kpi {
+  padding: 14px 16px 12px;
+  display: grid;
+  gap: 8px;
+  animation: ms-rise 0.7s var(--ease) both;
+  animation-delay: var(--d);
+  position: relative;
+  overflow: hidden;
+  min-width: 0;
+}
+.ms .kpi .lab {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font: 600 12px / 1 var(--f);
+  color: var(--muted-fg);
+}
+.ms .kpi .lab i {
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  flex: none;
+}
+.ms .kchip {
+  margin-left: auto;
+  font: 600 11px / 1 var(--f);
+  padding: 4px 7px;
+  border-radius: 6px;
+  color: var(--hi);
+  background: color-mix(in srgb, var(--hi) 12%, transparent);
+  animation: ms-pop 0.5s var(--ease) both;
+}
+.ms .kchip[hidden] {
+  display: none;
+}
+.ms .kchip.zero {
+  color: var(--mid);
+  background: color-mix(in srgb, var(--mid) 13%, transparent);
+}
+.ms .kpi .row {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 8px;
+}
+.ms .kpi .num {
+  font: 700 34px / 1 var(--f);
+  letter-spacing: -0.03em;
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+}
+.ms .kpi .num small {
+  font: 500 13px / 1 var(--f);
+  color: var(--muted-fg);
+  letter-spacing: 0;
+}
+.ms .delta {
+  font: 600 11px / 1 var(--fm);
+  padding: 5px 7px;
+  border-radius: 999px;
+  background: var(--muted);
+  color: var(--muted-fg);
+  display: inline-flex;
+  gap: 4px;
+  align-items: center;
+  animation: ms-pop 0.5s var(--ease) both;
+  animation-delay: calc(var(--d) + 0.5s);
+  white-space: nowrap;
+}
+.ms .delta svg {
+  width: 9px;
+  height: 9px;
+}
+.ms .delta.down svg {
+  transform: rotate(180deg);
+}
+.ms .delta.flat svg {
+  transform: rotate(90deg);
+}
+@keyframes ms-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.6);
+  }
+}
+.ms .spark {
+  width: 100%;
+  height: 36px;
+  display: block;
+  overflow: visible;
+}
+.ms .spark path.l {
+  fill: none;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: var(--len);
+  stroke-dashoffset: var(--len);
+  animation: ms-draw 1.1s var(--ease) forwards;
+  animation-delay: calc(var(--d) + 0.2s);
+}
+.ms .spark path.a {
+  opacity: 0;
+  animation: ms-fade 0.8s ease forwards;
+  animation-delay: calc(var(--d) + 0.6s);
+}
+.ms .spark circle.p {
+  animation: ms-pulseDot 2s ease-in-out infinite;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+@keyframes ms-draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+@keyframes ms-fade {
+  to {
+    opacity: 1;
+  }
+}
+@keyframes ms-pulseDot {
+  50% {
+    transform: scale(1.6);
+  }
+}
+.ms .kpi .sub {
+  font: 500 11px / 1.3 var(--f);
+  color: var(--muted-fg);
+}
+@keyframes ms-rise {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+}
+
+/* 숫자 롤링 */
+.ms .odo {
+  display: inline-flex;
+  font-variant-numeric: tabular-nums;
+}
+.ms .odo .d {
+  display: inline-block;
+  height: 1em;
+  overflow: hidden;
+  line-height: 1;
+}
+.ms .odo .reel {
+  display: block;
+  transition: transform 1.2s var(--ease);
+}
+.ms .odo .reel i {
+  display: block;
+  height: 1em;
+  font-style: normal;
+}
+
+/* 벤토 */
+.ms .bento {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+.ms .panel {
+  padding: 16px;
+  display: grid;
+  gap: 12px;
+  align-content: start;
+  position: relative;
+  overflow: hidden;
+  min-width: 0;
+  animation: ms-rise 0.8s var(--ease) both;
+  animation-delay: var(--d);
+  transform: perspective(1000px) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg));
+  transition: transform 0.5s var(--ease);
+}
+.ms .panel::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(
+    380px circle at var(--mx, 50%) var(--my, 50%),
+    color-mix(in srgb, var(--primary) 12%, transparent),
+    transparent 50%
+  );
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+.ms .panel:hover::after {
+  opacity: 1;
+}
+.ms .panel > h2 {
+  margin: 0;
+  font: 600 13px / 1.2 var(--f);
+  color: var(--muted-fg);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.ms .panel > h2 i,
+.ms .p-gh .hd h2 i {
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  flex: none;
+}
+/* Tailwind preflight 가 p 의 UA 여백(1em)을 지운다 — 레퍼런스는 기본 여백 그대로였다 */
+.ms .pempty {
+  margin: 1em 0;
+  font-size: 12.5px;
+  color: var(--muted-fg);
+}
+.ms .pempty[hidden] {
+  display: none;
+}
+.ms .p-line {
+  grid-column: span 2;
+  grid-row: span 2;
+  align-content: space-between;
+  padding: 20px;
+}
+.ms .eyebrow {
+  font: 500 12px / 1 var(--fm);
+  color: var(--muted-fg);
+  letter-spacing: 0.04em;
+}
+.ms .panel .line {
+  margin: 0;
+  font: 700 clamp(24px, 2.8vw, 34px) / 1.32 var(--f);
+  letter-spacing: -0.025em;
+  text-wrap: balance;
+  color: var(--ink);
+  display: block;
+}
+.ms .panel .line.none {
+  font-size: 18px;
+  color: var(--muted-fg);
+  font-weight: 600;
+}
+.ms .line .w {
+  display: inline-block;
+  animation: ms-wIn 0.7s var(--ease) both;
+}
+.ms .line .w.out {
+  animation: ms-wOut 0.22s ease-in both;
+}
+@keyframes ms-wIn {
+  from {
+    opacity: 0;
+    transform: translateY(0.55em);
+    filter: blur(6px);
+  }
+}
+@keyframes ms-wOut {
+  to {
+    opacity: 0;
+    transform: translateY(-0.35em);
+    filter: blur(4px);
+  }
+}
+.ms .line mark {
+  color: inherit;
+  background:
+    linear-gradient(
+      90deg,
+      color-mix(in srgb, var(--s-ai) 40%, transparent),
+      color-mix(in srgb, var(--s-world) 35%, transparent)
+    )
+    no-repeat 0 90% / 0% 36%;
+  animation: ms-sweep 0.9s 0.9s var(--ease) forwards;
+  border-radius: 3px;
+}
+@keyframes ms-sweep {
+  to {
+    background-size: 100% 36%;
+  }
+}
+.ms .tops {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 2px;
+}
+.ms .tops li {
+  display: grid;
+  grid-template-columns: 78px minmax(0, 1fr);
+  gap: 10px;
+  align-items: baseline;
+  padding: 9px 0;
+  border-top: 1px solid var(--border);
+  animation: ms-slideIn 0.6s var(--ease) both;
+  animation-delay: var(--d);
+}
+.ms .tops li b {
+  font: 600 11px / 1 var(--fm);
+  color: var(--k);
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+.ms .tops li b::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 2px;
+  background: var(--k);
+}
+.ms .tops li span {
+  font-size: 14px;
+  line-height: 1.45;
+  min-width: 0;
+}
+@keyframes ms-slideIn {
+  from {
+    opacity: 0;
+    transform: translateX(-14px);
+  }
+}
+.ms .donut {
+  position: relative;
+  width: 128px;
+  height: 128px;
+  margin: 0 auto;
+}
+.ms .donut svg {
+  width: 100%;
+  height: 100%;
+  transform: rotate(-90deg);
+}
+.ms .donut .trk {
+  fill: none;
+  stroke: var(--muted);
+  stroke-width: 11;
+}
+.ms .donut .seg {
+  fill: none;
+  stroke-width: 11;
+  stroke-linecap: butt;
+  transition:
+    stroke-dasharray 1.1s var(--ease),
+    stroke-dashoffset 1.1s var(--ease);
+}
+.ms .donut .ctr {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  text-align: center;
+}
+.ms .donut .ctr b {
+  font: 700 30px / 1 var(--f);
+}
+.ms .donut .ctr small {
+  display: block;
+  font: 500 11px / 1.2 var(--f);
+  color: var(--muted-fg);
+  margin-top: 4px;
+}
+.ms .legend {
+  display: grid;
+  gap: 6px;
+}
+.ms .legend div {
+  display: grid;
+  grid-template-columns: 10px 1fr auto;
+  gap: 8px;
+  align-items: center;
+  font-size: 12.5px;
+  color: var(--muted-fg);
+}
+.ms .legend i {
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+}
+.ms .legend b {
+  font: 600 12px / 1 var(--fm);
+  color: var(--ink);
+}
+.ms .catbar {
+  display: flex;
+  height: 12px;
+  border-radius: 6px;
+  overflow: hidden;
+  gap: 3px;
+  background: var(--muted);
+}
+.ms .catbar span {
+  display: block;
+  height: 100%;
+  border-radius: 3px;
+  transform-origin: left;
+  transform: scaleX(0);
+  transition: transform 0.9s var(--ease);
+}
+.ms .p-gh {
+  grid-column: span 2;
+}
+.ms .p-gh .hd {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.ms .p-gh .hd h2 {
+  margin: 0;
+  font: 600 13px / 1.2 var(--f);
+  color: var(--muted-fg);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.ms .pick {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.ms .pick span {
+  font: 600 11px / 1 var(--fm);
+  padding: 5px 7px;
+  border-radius: 6px;
+  color: var(--hi);
+  background: color-mix(in srgb, var(--hi) 12%, transparent);
+}
+.ms .barlist {
+  position: relative;
+  height: calc(5 * 32px);
+}
+.ms .barlist .empty {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: var(--muted-fg);
+  font-size: 13px;
+  border: 1px dashed var(--border);
+  border-radius: 10px;
+}
+.ms .barlist .row {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 26px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 72px;
+  gap: 10px;
+  align-items: center;
+  transition:
+    top 0.9s var(--ease),
+    opacity 0.4s;
+}
+.ms .barlist .nm {
+  position: relative;
+  height: 26px;
+  display: flex;
+  align-items: center;
+  padding: 0 9px;
+  font: 500 12.5px / 1 var(--f);
+  white-space: nowrap;
+  overflow: hidden;
+  border-radius: 6px;
+}
+.ms .barlist .nm .f {
+  position: absolute;
+  inset: 0;
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--s-gh) 28%, transparent);
+  transform-origin: left;
+  transform: scaleX(var(--s, 0));
+  transition: transform 1.1s var(--ease);
+}
+.ms .barlist .nm span {
+  position: relative;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ms .barlist .v {
+  font: 600 12px / 1 var(--fm);
+  text-align: right;
+}
+.ms .barlist .row.first .nm .f {
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--s-gh) 55%, transparent),
+    color-mix(in srgb, var(--s-gh) 22%, transparent)
+  );
+}
+.ms .barlist .row.first .nm .f::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    100deg,
+    transparent 30%,
+    rgba(255, 255, 255, 0.35) 50%,
+    transparent 70%
+  );
+  transform: translateX(-100%);
+  animation: ms-gleam 2.8s 1.4s ease-in-out infinite;
+}
+@keyframes ms-gleam {
+  55%,
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+/* 피드 */
+.ms .feed {
+  display: grid;
+  gap: 10px;
+}
+.ms .seg-tabs {
+  position: relative;
+  display: inline-flex;
+  gap: 2px;
+  padding: 4px;
+  border-radius: 12px;
+  background: var(--muted);
+  width: max-content;
+  max-width: 100%;
+  overflow-x: auto;
+}
+.ms .seg-tabs button {
+  all: unset;
+  cursor: pointer;
+  position: relative;
+  z-index: 1;
+  padding: 8px 14px;
+  border-radius: 9px;
+  font: 600 13px / 1 var(--f);
+  color: var(--muted-fg);
+  display: flex;
+  gap: 7px;
+  align-items: center;
+  white-space: nowrap;
+  transition: color 0.25s;
+}
+/* biome-ignore lint/style/noDescendingSpecificity: 달력·날짜 버튼과 다른 요소다 — 규칙 순서는 레퍼런스를 따른다 */
+.ms .seg-tabs button.on {
+  color: var(--ink);
+}
+.ms .seg-tabs button:focus-visible {
+  outline: 2px solid var(--primary);
+}
+/* biome-ignore lint/style/noDescendingSpecificity: 달력·날짜 버튼과 다른 요소다 — 규칙 순서는 레퍼런스를 따른다 */
+.ms .seg-tabs button em {
+  font: 600 11px / 1 var(--fm);
+  font-style: normal;
+  color: var(--muted-fg);
+}
+.ms .seg-tabs button em.bad {
+  color: var(--hi);
+}
+.ms .seg-tabs .ind {
+  position: absolute;
+  top: 4px;
+  bottom: 4px;
+  border-radius: 9px;
+  background: var(--card);
+  box-shadow:
+    0 1px 3px rgba(15, 23, 42, 0.12),
+    inset 0 -2px 0 var(--k, var(--s-ai));
+  transition:
+    left 0.45s var(--ease),
+    width 0.45s var(--ease);
+}
+.ms .list {
+  overflow: hidden;
+}
+.ms .list.sl {
+  animation: ms-slL 0.45s var(--ease);
+}
+.ms .list.sr {
+  animation: ms-slR 0.45s var(--ease);
+}
+@keyframes ms-slL {
+  from {
+    opacity: 0;
+    transform: translateX(-30px);
+  }
+}
+@keyframes ms-slR {
+  from {
+    opacity: 0;
+    transform: translateX(30px);
+  }
+}
+.ms .list .none {
+  padding: 22px 16px;
+  color: var(--muted-fg);
+  text-align: center;
+}
+.ms .item {
+  border-top: 1px solid var(--border);
+  animation: ms-rise 0.5s var(--ease) both;
+  animation-delay: var(--d);
+}
+.ms .item:first-child {
+  border-top: 0;
+}
+.ms .item > button {
+  all: unset;
+  cursor: pointer;
+  box-sizing: border-box;
+  width: 100%;
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr) auto auto 14px;
+  gap: 12px;
+  align-items: center;
+  padding: 12px 16px;
+  transition: background 0.2s;
+}
+.ms .item > button:hover {
+  background: color-mix(in srgb, var(--k) 6%, transparent);
+}
+.ms .item > button:focus-visible {
+  outline: 2px solid var(--k);
+  outline-offset: -2px;
+}
+.ms .item .no {
+  font: 500 12px / 1 var(--fm);
+  color: var(--muted-fg);
+}
+.ms .item .tt {
+  font-weight: 600;
+  font-size: 14px;
+  line-height: 1.45;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.ms .item .tag {
+  display: inline-block;
+  margin-left: 6px;
+  font: 600 11px / 1 var(--f);
+  padding: 3px 6px;
+  border-radius: 5px;
+  color: var(--mid);
+  background: color-mix(in srgb, var(--mid) 13%, transparent);
+  vertical-align: 2px;
+}
+.ms .item .meta {
+  font: 500 12px / 1 var(--fm);
+  color: var(--muted-fg);
+  white-space: nowrap;
+}
+.ms .chip {
+  font: 600 11px / 1 var(--f);
+  padding: 5px 8px;
+  border-radius: 6px;
+  white-space: nowrap;
+  display: inline-flex;
+  gap: 5px;
+  align-items: center;
+}
+.ms .chip::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+.ms .chip.h {
+  color: var(--hi);
+  background: color-mix(in srgb, var(--hi) 12%, transparent);
+}
+.ms .chip.m {
+  color: var(--mid);
+  background: color-mix(in srgb, var(--mid) 13%, transparent);
+}
+.ms .chip.l {
+  color: var(--muted-fg);
+  background: var(--muted);
+}
+.ms .chip.c {
+  color: var(--s-world);
+  background: color-mix(in srgb, var(--s-world) 12%, transparent);
+}
+.ms .chev {
+  width: 8px;
+  height: 8px;
+  border-right: 2px solid var(--muted-fg);
+  border-bottom: 2px solid var(--muted-fg);
+  transform: rotate(45deg);
+  transition: transform 0.35s var(--ease);
+}
+.ms .item.open .chev {
+  transform: rotate(225deg);
+}
+.ms .more {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.45s var(--ease);
+}
+.ms .item.open .more {
+  grid-template-rows: 1fr;
+}
+.ms .more > div {
+  overflow: hidden;
+}
+.ms .more .in {
+  padding: 0 16px 14px 56px;
+  display: grid;
+  gap: 6px;
+  color: var(--muted-fg);
+  font-size: 13.5px;
+  max-width: 80ch;
+}
+.ms .more .in p {
+  margin: 0;
+}
+.ms .more .in strong {
+  color: var(--ink);
+  font-weight: 600;
+}
+/* Tailwind preflight 가 a 의 UA 밑줄을 지운다 — 레퍼런스는 밑줄이 있었다 */
+.ms .more a {
+  color: var(--k);
+  font: 500 12px / 1.3 var(--fm);
+  overflow-wrap: anywhere;
+  text-decoration: underline;
+}
+
+/* 헤더 가운데 묶음(날짜 이동) — 레퍼런스는 보기 전환(.vsw)도 여기 있었다 */
+.ms .mid {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+@media (max-width: 1000px) {
+  .ms .kpis {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .ms .bento {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 640px) {
+  .ms .top {
+    flex-wrap: wrap;
+  }
+  .ms .mid {
+    order: 3;
+    width: 100%;
+  }
+  .ms .mid .datenav {
+    flex: 1;
+    justify-content: space-between;
+  }
+  .ms .cal {
+    left: auto;
+    right: 0;
+    margin-left: 0;
+  }
+}
+@media (max-width: 600px) {
+  .ms .kpis,
+  .ms .bento {
+    grid-template-columns: 1fr;
+  }
+  .ms .p-line,
+  .ms .p-gh {
+    grid-column: auto;
+    grid-row: auto;
+  }
+  .ms .item > button {
+    grid-template-columns: 22px minmax(0, 1fr) 14px;
+  }
+  .ms .item .chip,
+  .ms .item .meta {
+    grid-column: 2;
+  }
+  .ms .more .in {
+    padding-left: 16px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ms *,
+  .ms *::before,
+  .ms *::after {
+    /* biome-ignore lint/complexity/noImportantStyles: 인라인 style 의 animation-delay·transition-delay 까지 접근성 설정으로 덮어써야 한다(레퍼런스 그대로) */
+    animation-duration: 0.01ms !important;
+    /* biome-ignore lint/complexity/noImportantStyles: 위와 같은 이유 */
+    animation-iteration-count: 1 !important;
+    /* biome-ignore lint/complexity/noImportantStyles: 위와 같은 이유 */
+    transition-duration: 0.01ms !important;
+    /* biome-ignore lint/complexity/noImportantStyles: 위와 같은 이유 */
+    animation-delay: 0s !important;
+    /* biome-ignore lint/complexity/noImportantStyles: 위와 같은 이유 */
+    transition-delay: 0s !important;
+  }
+  .ms .aurora {
+    display: none;
+  }
+}

@@ -31,7 +31,7 @@ pnpm start        # ⚠️ 동작 안 함 — SPA 빌드라 build/server 가 없
 pnpm check        # biome check --write + Tailwind v3 grep
 pnpm typecheck    # react-router typegen && tsc --noEmit
 pnpm test         # vitest run
-pnpm test:e2e     # playwright test
+pnpm test:e2e     # playwright (e2e/*.e2e.ts)
 ```
 
 ## Project Overview
@@ -51,8 +51,12 @@ Vibe App — 개인 포트폴리오 + 인터랙티브 경험. RR7 프레임워�
 | `/letter` | 생일 인증 + 편지 |
 | `/stock` | 주식 대시보드 |
 | `/otp` | OTP 뷰어 |
+| `/ahram` | 면접 준비 (noindex) |
+| `/morning-signal` | Morning Signal 뉴스 대시보드(보기 전용) |
 | `/api/stock` | 주식 데이터 API (Vercel Function `api/stock.ts`) |
 | `/api/otp` | OTP API (Vercel Function `api/otp.ts`) |
+| `/api/ahram` | 면접 준비 콘텐츠 API (Vercel Function `api/ahram.ts`) |
+| `/api/morning-signal` | Morning Signal 조회·적재 API (Vercel Function `api/morning-signal.ts`) |
 
 라우트를 추가·삭제하면 위 표, 아래 Directory Structure, `README.md`의 「페이지 구성」 표와 트리를 **같은 커밋**에서 갱신한다. (#35·#37 두 PR이 연속으로 빠뜨렸고 2026-09-05에 뒤늦게 채웠다.)
 
@@ -72,7 +76,10 @@ app/                         # RR7 appDirectory (source root)
 │   ├── invitation.tsx       # /invitation
 │   ├── letter.tsx           # /letter
 │   ├── stock.tsx            # /stock
-│   └── otp.tsx              # /otp
+│   ├── otp.tsx              # /otp
+│   ├── ahram.tsx            # /ahram
+│   ├── morning-signal.tsx   # /morning-signal
+│   └── morning-signal/      # 라우트 전용 컴포넌트
 ├── components/
 │   ├── ui/                  # shadcn/ui — 손대지 말 것
 │   └── [Feature]/           # index.tsx 단일 파일 원칙
@@ -85,6 +92,8 @@ app/                         # RR7 appDirectory (source root)
 ├── styles/
 │   └── globals.css          # @import "tailwindcss"
 └── assets/                  # 정적 이미지
+e2e/                         # Playwright
+docs/morning-signal/         # schema.sql
 ```
 
 ## 🔴 React Router 7 — 프레임워크 모드 · SPA (`ssr: false`)
@@ -211,6 +220,7 @@ const [state, action, isPending] = useActionState(formAction, null)
 
 `.env.local` (Vite: `import.meta.env.*`):
 - `VITE_BIRTHDAY` — `/letter` 생일 인증
+- 서버 전용(값은 문서에 쓰지 않는다): `SUPABASE_URL`·`SUPABASE_SERVICE_ROLE_KEY`(ahram 공용)·`MS_INGEST_TOKEN`(Morning Signal 적재)
 
 ## 복잡도 예산 (feature spec 명시 시 오버라이드)
 

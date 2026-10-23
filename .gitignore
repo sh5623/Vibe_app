@@ -56,3 +56,7 @@ tsconfig.tsbuildinfo
 
 # Docs
 feature.md
+
+# Playwright 실행 산출물
+test-results/
+playwright-report/

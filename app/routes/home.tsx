@@ -83,6 +83,15 @@ export default function Home() {
         buttonText="보러가기"
         onClick={() => void navigate('/stock')}
       />
+      <HomeCard
+        title={
+          <>
+            Morning Signal<span>뉴스 대시보드</span>
+          </>
+        }
+        buttonText="보러가기"
+        onClick={() => void navigate('/morning-signal')}
+      />
       <BirthdayModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}

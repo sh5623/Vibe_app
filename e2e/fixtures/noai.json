@@ -1,0 +1,512 @@
+{
+  "days": [
+    {
+      "date": "2026-10-06",
+      "weekday": "화",
+      "counts": {
+        "ai": 4,
+        "world": 7,
+        "gh": 13
+      },
+      "status": {
+        "ai": "ok",
+        "world": "ok",
+        "gh": "ok"
+      },
+      "source": "backfill"
+    },
+    {
+      "date": "2026-10-07",
+      "weekday": "수",
+      "counts": {
+        "ai": 5,
+        "world": 5,
+        "gh": 12
+      },
+      "status": {
+        "ai": "ok",
+        "world": "ok",
+        "gh": "ok"
+      },
+      "source": "backfill"
+    },
+    {
+      "date": "2026-10-08",
+      "weekday": "목",
+      "counts": {
+        "ai": 3,
+        "world": 3,
+        "gh": 13
+      },
+      "status": {
+        "ai": "ok",
+        "world": "ok",
+        "gh": "ok"
+      },
+      "source": "backfill"
+    },
+    {
+      "date": "2026-10-09",
+      "weekday": "금",
+      "counts": {
+        "ai": 4,
+        "world": 5,
+        "gh": 9
+      },
+      "status": {
+        "ai": "ok",
+        "world": "ok",
+        "gh": "ok"
+      },
+      "source": "backfill"
+    },
+    {
+      "date": "2026-10-12",
+      "weekday": "월",
+      "counts": {
+        "ai": 6,
+        "world": 5,
+        "gh": 8
+      },
+      "status": {
+        "ai": "ok",
+        "world": "ok",
+        "gh": "ok"
+      },
+      "source": "backfill"
+    },
+    {
+      "date": "2026-10-13",
+      "weekday": "화",
+      "counts": {
+        "ai": 5,
+        "world": 7,
+        "gh": 9
+      },
+      "status": {
+        "ai": "ok",
+        "world": "ok",
+        "gh": "ok"
+      },
+      "source": "backfill"
+    },
+    {
+      "date": "2026-10-14",
+      "weekday": "수",
+      "counts": {
+        "ai": 6,
+        "world": 5,
+        "gh": 9
+      },
+      "status": {
+        "ai": "ok",
+        "world": "ok",
+        "gh": "ok"
+      },
+      "source": "backfill"
+    },
+    {
+      "date": "2026-10-15",
+      "weekday": "목",
+      "counts": {
+        "ai": 5,
+        "world": 8,
+        "gh": 12
+      },
+      "status": {
+        "ai": "ok",
+        "world": "ok",
+        "gh": "ok"
+      },
+      "source": "backfill"
+    },
+    {
+      "date": "2026-10-16",
+      "weekday": "금",
+      "counts": {
+        "ai": 7,
+        "world": 6,
+        "gh": 12
+      },
+      "status": {
+        "ai": "ok",
+        "world": "ok",
+        "gh": "ok"
+      },
+      "headline": "GPT-6·Gemini 4·Haiku 5.5가 한 주에 몰렸고, 코스피는 7.57% 급락했어요",
+      "highlight": "코스피는 7.57% 급락",
+      "tops": [
+        {
+          "theme": "ai",
+          "text": "OpenAI, ChatGPT에 GPT-6 + Intelligent UI 출시"
+        },
+        {
+          "theme": "world",
+          "text": "인천 구월동 무차별 흉기 난동…59세 전과자 체포"
+        },
+        {
+          "theme": "gh",
+          "text": "anthropics/claude-plugins-official · 오늘 +525"
+        }
+      ],
+      "fe": {
+        "high": 3,
+        "picks": ["anthropics/claude-plugins-official", "obra/superpowers"]
+      },
+      "source": "backfill",
+      "updatedAt": "2026-10-15T23:05:00Z"
+    },
+    {
+      "date": "2026-10-19",
+      "weekday": "월",
+      "counts": {
+        "ai": 6,
+        "world": 5,
+        "gh": 13
+      },
+      "status": {
+        "ai": "ok",
+        "world": "ok",
+        "gh": "ok"
+      },
+      "headline": "AI 에이전트를 막는 기업이 늘고, 코딩용 새 모델 루머가 돌아요",
+      "highlight": "막는 기업이 늘고",
+      "tops": [
+        {
+          "theme": "ai",
+          "text": "OpenAI API에 미공개 'Aurora' 모델 3종 등장"
+        },
+        {
+          "theme": "world",
+          "text": "부천 공장 화재 소방관 순직 — 오늘 영결식"
+        },
+        {
+          "theme": "gh",
+          "text": "anthropics/claude-plugins-official · 오늘 +1,187"
+        }
+      ],
+      "fe": {
+        "high": 4,
+        "picks": ["anthropics/claude-plugins-official", "cursor/plugins"]
+      },
+      "source": "routine",
+      "updatedAt": "2026-10-18T23:03:00Z"
+    }
+  ],
+  "feeds": {
+    "2026-10-19--world": {
+      "date": "2026-10-19",
+      "theme": "world",
+      "generatedAt": "2026-10-18T22:59:30Z",
+      "model": "claude-sonnet-5-5",
+      "status": "empty",
+      "items": []
+    },
+    "2026-10-16--ai": {
+      "date": "2026-10-16",
+      "theme": "ai",
+      "generatedAt": "2026-10-15T22:57:00Z",
+      "model": "slack-backfill",
+      "status": "ok",
+      "items": [
+        {
+          "title": "OpenAI, ChatGPT에 GPT-6 + Intelligent UI 출시 (10/7)",
+          "summary": null,
+          "publishedAt": null,
+          "impact": "high",
+          "impactNote": null,
+          "url": null,
+          "grade": null
+        },
+        {
+          "title": "Google, Gemini 4 Argon 개발자 공개 (10/13)",
+          "summary": null,
+          "publishedAt": null,
+          "impact": "high",
+          "impactNote": null,
+          "url": null,
+          "grade": null
+        },
+        {
+          "title": "Anthropic, Claude Haiku 5.5 출시 (10/7)",
+          "summary": null,
+          "publishedAt": null,
+          "impact": "high",
+          "impactNote": null,
+          "url": null,
+          "grade": null
+        },
+        {
+          "title": "Meta, 첫 프론티어 모델 Muse Wonder 공개 (10/12)",
+          "summary": null,
+          "publishedAt": null,
+          "impact": "mid",
+          "impactNote": null,
+          "url": null,
+          "grade": null
+        },
+        {
+          "title": "Microsoft & NVIDIA, 로컬 AI 구동 Surface Laptop Ultra 오늘 출하 (10/16)",
+          "summary": null,
+          "publishedAt": null,
+          "impact": "mid",
+          "impactNote": null,
+          "url": null,
+          "grade": null
+        },
+        {
+          "title": "Anthropic, 제3자 독립 평가 기관에 심층 접근 허용 (10/15)",
+          "summary": null,
+          "publishedAt": null,
+          "impact": "low",
+          "impactNote": null,
+          "url": null,
+          "grade": null
+        },
+        {
+          "title": "Anthropic, 싱가포르 사무소 개설 및 정부 MOU 체결 (10/14)",
+          "summary": null,
+          "publishedAt": null,
+          "impact": "low",
+          "impactNote": null,
+          "url": null,
+          "grade": null
+        }
+      ]
+    },
+    "2026-10-16--world": {
+      "date": "2026-10-16",
+      "theme": "world",
+      "generatedAt": "2026-10-15T23:01:00Z",
+      "model": "slack-backfill",
+      "status": "ok",
+      "items": [
+        {
+          "title": "인천 구월동 무차별 흉기 난동…59세 전과자 체포",
+          "summary": null,
+          "publishedAt": null,
+          "category": "시사·국제",
+          "url": null,
+          "grade": null
+        },
+        {
+          "title": "미국 9월 CPI 3.7% 상승…예상치 웃돌아 금리 인상 우려 재점화",
+          "summary": null,
+          "publishedAt": null,
+          "category": "경제",
+          "url": null,
+          "grade": null
+        },
+        {
+          "title": "'검은 목요일' 코스피 7.57% 폭락…삼성전자·SK하이닉스 두 자릿수 급락",
+          "summary": null,
+          "publishedAt": null,
+          "category": "경제",
+          "url": null,
+          "grade": null
+        },
+        {
+          "title": "원·달러 환율 1344.6원으로 상승…전 거래일 대비 6.3원↑",
+          "summary": null,
+          "publishedAt": null,
+          "category": "경제",
+          "url": null,
+          "grade": null
+        },
+        {
+          "title": "대한진단검사의학회 국제학술대회 'LMCE 2026' 서울 개최…주제는 'AI for AI'",
+          "summary": null,
+          "publishedAt": null,
+          "category": "상식·교양",
+          "url": null,
+          "grade": null
+        },
+        {
+          "title": "국립중앙과학관 '2026 테크콘E' 개막…첨단 국방과학 3일간 무료 체험",
+          "summary": null,
+          "publishedAt": null,
+          "category": "상식·교양",
+          "url": null,
+          "grade": null
+        }
+      ]
+    },
+    "2026-10-16--gh": {
+      "date": "2026-10-16",
+      "theme": "gh",
+      "generatedAt": "2026-10-15T23:06:00Z",
+      "model": "slack-backfill",
+      "status": "ok",
+      "items": [
+        {
+          "rank": 1,
+          "repo": "morluto/rea",
+          "url": "https://github.com/morluto/rea",
+          "description": null,
+          "language": "TypeScript",
+          "stars": "268.8k",
+          "starsToday": "+32,282",
+          "starsTodayNum": 32282,
+          "impact": "low",
+          "impactNote": null,
+          "fePick": false,
+          "grade": null
+        },
+        {
+          "rank": 2,
+          "repo": "anthropics/claude-plugins-official",
+          "url": "https://github.com/anthropics/claude-plugins-official",
+          "description": null,
+          "language": "Python",
+          "stars": "39.0k",
+          "starsToday": "+525",
+          "starsTodayNum": 525,
+          "impact": "high",
+          "impactNote": null,
+          "fePick": true,
+          "grade": null
+        },
+        {
+          "rank": 3,
+          "repo": "K-Dense-AI/scientific-agent-skills",
+          "url": "https://github.com/K-Dense-AI/scientific-agent-skills",
+          "description": null,
+          "language": "Python",
+          "stars": "50,416",
+          "starsToday": "+1,091",
+          "starsTodayNum": 1091,
+          "impact": "low",
+          "impactNote": null,
+          "fePick": false,
+          "grade": null
+        },
+        {
+          "rank": 4,
+          "repo": "JuliusBrussee/caveman",
+          "url": "https://github.com/JuliusBrussee/caveman",
+          "description": null,
+          "language": "Go",
+          "stars": "112,492",
+          "starsToday": "+530",
+          "starsTodayNum": 530,
+          "impact": "low",
+          "impactNote": null,
+          "fePick": false,
+          "grade": null
+        },
+        {
+          "rank": 5,
+          "repo": "debpalash/VoiceStudio",
+          "url": "https://github.com/debpalash/VoiceStudio",
+          "description": null,
+          "language": "Python",
+          "stars": "68,971",
+          "starsToday": "+3,027",
+          "starsTodayNum": 3027,
+          "impact": "low",
+          "impactNote": null,
+          "fePick": false,
+          "grade": null
+        },
+        {
+          "rank": 6,
+          "repo": "obra/superpowers",
+          "url": "https://github.com/obra/superpowers",
+          "description": null,
+          "language": "Shell",
+          "stars": "299.8k",
+          "starsToday": "+688",
+          "starsTodayNum": 688,
+          "impact": "high",
+          "impactNote": null,
+          "fePick": true,
+          "grade": null
+        },
+        {
+          "rank": 7,
+          "repo": "ruvnet/ruflo",
+          "url": "https://github.com/ruvnet/ruflo",
+          "description": null,
+          "language": "TypeScript",
+          "stars": "75,092",
+          "starsToday": "+224",
+          "starsTodayNum": 224,
+          "impact": "low",
+          "impactNote": null,
+          "fePick": false,
+          "grade": null
+        },
+        {
+          "rank": 8,
+          "repo": "mksglu/context-mode",
+          "url": "https://github.com/mksglu/context-mode",
+          "description": null,
+          "language": "TypeScript",
+          "stars": "29,770",
+          "starsToday": "+902",
+          "starsTodayNum": 902,
+          "impact": "low",
+          "impactNote": null,
+          "fePick": false,
+          "grade": null
+        },
+        {
+          "rank": 9,
+          "repo": "NationalSecurityAgency/ghidra",
+          "url": "https://github.com/NationalSecurityAgency/ghidra",
+          "description": null,
+          "language": "Java",
+          "stars": "88.7k",
+          "starsToday": "+1,366",
+          "starsTodayNum": 1366,
+          "impact": "low",
+          "impactNote": null,
+          "fePick": false,
+          "grade": null
+        },
+        {
+          "rank": 10,
+          "repo": "affaan-m/ECC",
+          "url": "https://github.com/affaan-m/ECC",
+          "description": null,
+          "language": "JavaScript",
+          "stars": "280,312",
+          "starsToday": "+1,015",
+          "starsTodayNum": 1015,
+          "impact": "low",
+          "impactNote": null,
+          "fePick": false,
+          "grade": null
+        },
+        {
+          "rank": 11,
+          "repo": "lightseekorg/tokenspeed",
+          "url": "https://github.com/lightseekorg/tokenspeed",
+          "description": null,
+          "language": "Python",
+          "stars": "2,465",
+          "starsToday": "+25",
+          "starsTodayNum": 25,
+          "impact": "low",
+          "impactNote": null,
+          "fePick": false,
+          "grade": null
+        },
+        {
+          "rank": 12,
+          "repo": "xerj-org/xerj",
+          "url": "https://github.com/xerj-org/xerj",
+          "description": null,
+          "language": "Rust",
+          "stars": "5,596",
+          "starsToday": "+725",
+          "starsTodayNum": 725,
+          "impact": "low",
+          "impactNote": null,
+          "fePick": false,
+          "grade": null
+        }
+      ]
+    }
+  }
+}
