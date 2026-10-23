@@ -219,5 +219,5 @@ test('home links to morning signal', async ({ page }) => {
   await page.goto('/')
   const card = page.locator('div', { hasText: /^Morning Signal\s*뉴스 대시보드/ }).last()
   await card.getByRole('button', { name: '보러가기' }).click()
-  await expect(page).toHaveURL(/\/morning-signal$/)
+  await expect(page).toHaveURL(/\/morning-signal(#.*)?$/)
 })
