@@ -4,9 +4,11 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import handler, {
   decodeCursor,
   encodeCursor,
+  isAttachmentPath,
   type ListResponse,
   normalizeLink,
   parseCookie,
+  safeFileName,
   signSession,
   type Todo,
   verifySession,
@@ -638,5 +640,237 @@ describe('handler — Task 2 CRUD', () => {
     const { res } = await call(makeReq('GET', { query: { op: 'list' }, cookie: cookie() }))
     expect(res.statusCode).toBe(503)
     expect(res.body).not.toContain('secret detail')
+  })
+})
+
+// ── Task 3: 첨부 ───────────────────────────────────────────────────────
+
+const STORAGE = 'https://example.supabase.co/storage/v1'
+const att = (n: number) => ({
+  path: `todos/${uuid(100 + n)}/photo-${n}.jpg`,
+  name: `사진 ${n}.jpg`,
+  type: 'image/jpeg',
+  size: 1000,
+})
+
+describe('helpers — Task 3', () => {
+  it('safeFileName keeps ascii stem and extension only', () => {
+    expect(safeFileName('영수증 사진.jpg')).toBe('file.jpg')
+    expect(safeFileName('Receipt 영수증 (1).JPG')).toBe('Receipt-1.jpg')
+    expect(safeFileName('../../etc/passwd')).toBe('etc-passwd')
+    expect(safeFileName('a'.repeat(200) + '.pdf')).toBe(`${'a'.repeat(60)}.pdf`)
+    expect(safeFileName('')).toBe('file')
+  })
+
+  it('isAttachmentPath', () => {
+    expect(isAttachmentPath(`todos/${uuid(1)}/photo.jpg`)).toBe(true)
+    expect(isAttachmentPath(`todos/${uuid(1)}/../x`)).toBe(false)
+    expect(isAttachmentPath('todos/x/photo.jpg')).toBe(false)
+    expect(isAttachmentPath(`other/${uuid(1)}/photo.jpg`)).toBe(false)
+    expect(isAttachmentPath(`todos/${uuid(1)}/사진.jpg`)).toBe(false)
+  })
+})
+
+describe('handler — Task 3 attachments', () => {
+  let fetchMock: ReturnType<typeof vi.fn>
+  let calls: Call[]
+  let current: Row
+  let storageFail: boolean
+  const cookie = () => validCookie()
+
+  beforeEach(() => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date(NOW))
+    process.env.SUPABASE_URL = 'https://example.supabase.co'
+    process.env.SUPABASE_SERVICE_ROLE_KEY = 'service-role-key'
+    process.env.MS_TODO_PIN = '1234'
+    process.env.MS_TODO_SECRET = SECRET
+    calls = []
+    storageFail = false
+    current = row(1, { attachments: [att(1), att(2)] })
+    fetchMock = vi.fn(async (url: string, init?: RequestInit) => {
+      const method = init?.method ?? 'GET'
+      calls.push({ url, method, body: init?.body ? JSON.parse(String(init.body)) : undefined })
+      if (url.startsWith(`${STORAGE}/object/upload/sign/`)) {
+        return okJson({ url: `${url.slice(STORAGE.length)}?token=tok` })
+      }
+      if (url === `${STORAGE}/object/sign/ms-todo`) {
+        const paths = (JSON.parse(String(init?.body)) as { paths: string[] }).paths
+        return okJson(
+          paths.map((p) => ({
+            path: p,
+            signedURL: `/object/sign/ms-todo/${p}?token=v`,
+            error: null,
+          }))
+        )
+      }
+      if (url === `${STORAGE}/object/ms-todo` && method === 'DELETE') {
+        return storageFail ? failJson(500, 'boom') : okJson([])
+      }
+      if (method === 'PATCH') {
+        const patch = JSON.parse(String(init?.body)) as Partial<Row>
+        current = { ...current, ...patch }
+        return okJson([current])
+      }
+      return okJson([current])
+    })
+    vi.stubGlobal('fetch', fetchMock)
+  })
+
+  afterEach(() => {
+    process.env = { ...ORIGINAL_ENV }
+    vi.useRealTimers()
+    vi.unstubAllGlobals()
+    vi.restoreAllMocks()
+  })
+
+  it('upload-url issues signed url for allowed file', async () => {
+    const { res, body } = await call(
+      makeReq('POST', {
+        query: { op: 'upload-url' },
+        body: { name: 'Receipt 영수증.jpg', type: 'image/jpeg', size: 1000 },
+        cookie: cookie(),
+      })
+    )
+    expect(res.statusCode).toBe(200)
+    const out = body as { path: string; uploadUrl: string }
+    expect(isAttachmentPath(out.path)).toBe(true)
+    expect(out.path.endsWith('/Receipt.jpg')).toBe(true)
+    expect(out.uploadUrl).toBe(`${STORAGE}/object/upload/sign/ms-todo/${out.path}?token=tok`)
+    expect(calls[0]?.method).toBe('POST')
+  })
+
+  it('upload-url rejects type and size', async () => {
+    const cases: Array<[unknown, string]> = [
+      [{ name: 'a.html', type: 'text/html', size: 10 }, 'UNSUPPORTED_FILE'],
+      [{ name: 'a.svg', type: 'image/svg+xml', size: 10 }, 'UNSUPPORTED_FILE'],
+      [{ name: 'a.pdf', type: 'application/pdf', size: 10485761 }, 'FILE_TOO_LARGE'],
+      [{ name: 'a.pdf', type: 'application/pdf', size: 0 }, 'INVALID_PAYLOAD'],
+      [{ type: 'application/pdf', size: 10 }, 'INVALID_PAYLOAD'],
+    ]
+    for (const [b, error] of cases) {
+      const { res, body } = await call(
+        makeReq('POST', { query: { op: 'upload-url' }, body: b, cookie: cookie() })
+      )
+      expect(res.statusCode, JSON.stringify(b)).toBe(400)
+      expect(body).toEqual({ error })
+    }
+    expect(fetchMock).not.toHaveBeenCalled()
+  })
+
+  it('upload-url accepts the size limit exactly', async () => {
+    const { res } = await call(
+      makeReq('POST', {
+        query: { op: 'upload-url' },
+        body: { name: 'a.pdf', type: 'application/pdf', size: 10485760 },
+        cookie: cookie(),
+      })
+    )
+    expect(res.statusCode).toBe(200)
+  })
+
+  it('create rejects foreign attachment paths and more than five', async () => {
+    const bad = [
+      [{ ...att(1), path: '../x' }],
+      [{ ...att(1), type: 'text/html' }],
+      [{ ...att(1), size: 10485761 }],
+      [att(1), att(2), att(3), att(4), att(5), att(6)],
+    ]
+    for (const attachments of bad) {
+      const { res } = await call(
+        makeReq('POST', {
+          query: { op: 'create' },
+          body: { title: 't', attachments },
+          cookie: cookie(),
+        })
+      )
+      expect(res.statusCode).toBe(400)
+    }
+    expect(calls.some((c) => c.method === 'POST')).toBe(false)
+  })
+
+  it('create stores attachment metadata', async () => {
+    await call(
+      makeReq('POST', {
+        query: { op: 'create' },
+        body: { title: 't', attachments: [att(1)] },
+        cookie: cookie(),
+      })
+    )
+    expect(calls.find((c) => c.method === 'POST')?.body).toMatchObject({ attachments: [att(1)] })
+  })
+
+  it('get signs attachment urls', async () => {
+    const { body } = await call(
+      makeReq('GET', { query: { op: 'get', id: uuid(1) }, cookie: cookie() })
+    )
+    const signs = calls.filter((c) => c.url === `${STORAGE}/object/sign/ms-todo`)
+    expect(signs).toHaveLength(1)
+    expect(signs[0]?.body).toEqual({ expiresIn: 3600, paths: [att(1).path, att(2).path] })
+    const todo = (body as { todo: Todo }).todo
+    expect(todo.attachments[0]?.url).toBe(`${STORAGE}/object/sign/ms-todo/${att(1).path}?token=v`)
+    expect(todo.attachments[1]?.name).toBe('사진 2.jpg')
+  })
+
+  it('get without attachments does not call storage', async () => {
+    current = row(1)
+    await call(makeReq('GET', { query: { op: 'get', id: uuid(1) }, cookie: cookie() }))
+    expect(calls.some((c) => c.url.startsWith(STORAGE))).toBe(false)
+  })
+
+  it('list does not sign attachments', async () => {
+    await call(makeReq('GET', { query: { op: 'list' }, cookie: cookie() }))
+    expect(calls.some((c) => c.url.startsWith(STORAGE))).toBe(false)
+  })
+
+  it('update deletes removed attachments after saving', async () => {
+    const { res } = await call(
+      makeReq('PATCH', {
+        query: { op: 'update', id: uuid(1) },
+        body: { attachments: [att(2)] },
+        cookie: cookie(),
+      })
+    )
+    expect(res.statusCode).toBe(200)
+    const patchAt = calls.findIndex((c) => c.method === 'PATCH')
+    const delAt = calls.findIndex(
+      (c) => c.url === `${STORAGE}/object/ms-todo` && c.method === 'DELETE'
+    )
+    expect(patchAt).toBeGreaterThan(-1)
+    expect(delAt).toBeGreaterThan(patchAt)
+    expect(calls[delAt]?.body).toEqual({ prefixes: [att(1).path] })
+  })
+
+  it('update without attachment change does not touch storage', async () => {
+    await call(
+      makeReq('PATCH', {
+        query: { op: 'update', id: uuid(1) },
+        body: { status: 'done' },
+        cookie: cookie(),
+      })
+    )
+    expect(calls.some((c) => c.url.startsWith(STORAGE))).toBe(false)
+  })
+
+  it('delete removes storage objects too', async () => {
+    const { res } = await call(
+      makeReq('DELETE', { query: { op: 'delete', id: uuid(1) }, cookie: cookie() })
+    )
+    expect(res.statusCode).toBe(200)
+    const del = calls.find((c) => c.url === `${STORAGE}/object/ms-todo`)
+    expect(del?.body).toEqual({ prefixes: [att(1).path, att(2).path] })
+    calls = []
+    current = row(1)
+    await call(makeReq('DELETE', { query: { op: 'delete', id: uuid(1) }, cookie: cookie() }))
+    expect(calls.some((c) => c.url.startsWith(STORAGE))).toBe(false)
+  })
+
+  it('storage delete failure does not fail the request', async () => {
+    storageFail = true
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    const { res } = await call(
+      makeReq('DELETE', { query: { op: 'delete', id: uuid(1) }, cookie: cookie() })
+    )
+    expect(res.statusCode).toBe(200)
   })
 })

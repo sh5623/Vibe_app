@@ -1,4 +1,4 @@
-import { createHash, createHmac, timingSafeEqual } from 'node:crypto'
+import { createHash, createHmac, randomUUID, timingSafeEqual } from 'node:crypto'
 import type { IncomingMessage, ServerResponse } from 'node:http'
 import { z } from 'zod'
 
@@ -145,14 +145,82 @@ function toTodo(r: TodoRow): Todo {
   }
 }
 
+// ── 첨부 ────────────────────────────────────────────────────────────────
+
+export const MAX_FILE_BYTES = 10_485_760
+export const MAX_FILES = 5
+export const BUCKET = 'ms-todo'
+export const SIGNED_VIEW_SECONDS = 3600
+
+const ATTACHMENT_PATH_RE =
+  /^todos\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\/[A-Za-z0-9_-]+(\.[a-z0-9]{1,8})?$/
+
+/**
+ * Storage 키용 파일명. Supabase Storage 는 ASCII 밖 문자가 든 키를 거부한다("Invalid key") —
+ * 그래서 영문·숫자·`_`·`-`만 남기고, 원래 이름(한글 등)은 DB 의 attachments[].name 에 둔다.
+ */
+export function safeFileName(name: string): string {
+  const m = /\.([A-Za-z0-9]{1,8})$/.exec(name)
+  const ext = m?.[1] ? `.${m[1].toLowerCase()}` : ''
+  const stem = (m ? name.slice(0, -m[0].length) : name)
+    .replace(/[^A-Za-z0-9_-]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 60)
+    .replace(/-+$/, '')
+  return `${stem || 'file'}${ext}`
+}
+
+export function isAttachmentPath(p: string): boolean {
+  return ATTACHMENT_PATH_RE.test(p)
+}
+
+/** 사진·PDF 만. SVG 는 스크립트를 품을 수 있어 뺀다. */
+function isAllowedType(t: string): boolean {
+  return (t.startsWith('image/') && t !== 'image/svg+xml') || t === 'application/pdf'
+}
+
+/** Storage 객체 삭제. 실패해도 요청은 성공으로 둔다(서버 로그만) — 할 일 자체는 이미 바뀌었다. */
+async function removeObjects(paths: string[]): Promise<void> {
+  if (!paths.length) return
+  try {
+    await sb(`/storage/v1/object/${BUCKET}`, {
+      method: 'DELETE',
+      body: JSON.stringify({ prefixes: paths }),
+    })
+  } catch (error) {
+    console.error('[api/morning-signal-todo] storage delete failed', error)
+  }
+}
+
+async function signAttachments(list: Attachment[]): Promise<Attachment[]> {
+  if (!list.length) return list
+  const signed = await sbJson<Array<{ path: string; signedURL?: string | null }>>(
+    `/storage/v1/object/sign/${BUCKET}`,
+    {
+      method: 'POST',
+      body: JSON.stringify({ expiresIn: SIGNED_VIEW_SECONDS, paths: list.map((a) => a.path) }),
+    }
+  )
+  const base = `${process.env.SUPABASE_URL ?? ''}/storage/v1`
+  const byPath = new Map(
+    signed.map((s) => [s.path, s.signedURL ? `${base}${s.signedURL}` : undefined])
+  )
+  return list.map((a) => ({ ...a, url: byPath.get(a.path) }))
+}
+
 // ── 검증 ────────────────────────────────────────────────────────────────
 
 const dateStr = z.string().refine(isDateString, 'must be a real YYYY-MM-DD date')
 const timeStr = z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/)
 const attachmentSchema = z.object({
-  path: z.string(),
+  path: z.string().refine(isAttachmentPath),
   name: z.string().min(1).max(200),
-  type: z.string(),
+  type: z.string().refine(isAllowedType),
+  size: z.number().int().positive().max(MAX_FILE_BYTES),
+})
+const uploadSchema = z.object({
+  name: z.string().min(1).max(200),
+  type: z.string().min(1),
   size: z.number().int().positive(),
 })
 const fields = {
@@ -161,7 +229,7 @@ const fields = {
   link: z.string().max(2000).nullish(),
   dueDate: dateStr.nullish(),
   dueTime: timeStr.nullish(),
-  attachments: z.array(attachmentSchema).max(5).optional(),
+  attachments: z.array(attachmentSchema).max(MAX_FILES).optional(),
 }
 const createSchema = z
   .object(fields)
@@ -475,7 +543,26 @@ async function handleGet(req: VercelRequest, res: ServerResponse) {
   const rows = await sbJson<TodoRow[]>(`${TODOS}?id=eq.${id}&select=*`)
   const r = rows[0]
   if (!r) return json(res, 404, { error: 'NOT_FOUND' })
-  return json(res, 200, { todo: toTodo(r) })
+  const todo = toTodo(r)
+  return json(res, 200, { todo: { ...todo, attachments: await signAttachments(todo.attachments) } })
+}
+
+async function handleUploadUrl(req: VercelRequest, res: ServerResponse) {
+  const body = await readJson(req, res)
+  if (body === undefined) return
+  const parsed = uploadSchema.safeParse(body)
+  if (!parsed.success) return json(res, 400, { error: 'INVALID_PAYLOAD' })
+  if (!isAllowedType(parsed.data.type)) return json(res, 400, { error: 'UNSUPPORTED_FILE' })
+  if (parsed.data.size > MAX_FILE_BYTES) return json(res, 400, { error: 'FILE_TOO_LARGE' })
+  // 업로드마다 새 uuid — 할 일 id 와 무관해서 만들기 전에 올려도 옮길 필요가 없다
+  const path = `todos/${randomUUID()}/${safeFileName(parsed.data.name)}`
+  const { url } = await sbJson<{ url: string }>(
+    `/storage/v1/object/upload/sign/${BUCKET}/${path}`,
+    {
+      method: 'POST',
+    }
+  )
+  return json(res, 200, { path, uploadUrl: `${process.env.SUPABASE_URL ?? ''}/storage/v1${url}` })
 }
 
 async function handleCreate(req: VercelRequest, res: ServerResponse) {
@@ -531,6 +618,12 @@ async function handleUpdate(req: VercelRequest, res: ServerResponse) {
     patch.done_at = parsed.data.status === 'done' ? now : null
   }
   patch.updated_at = now
+  // 첨부 목록이 바뀌면 빠진 파일을 지워야 하므로 이전 목록을 먼저 읽는다
+  const before = parsed.data.attachments
+    ? ((
+        await sbJson<Array<Pick<TodoRow, 'attachments'>>>(`${TODOS}?id=eq.${id}&select=attachments`)
+      )[0]?.attachments ?? [])
+    : []
   const rows = await sbJson<TodoRow[]>(`${TODOS}?id=eq.${id}`, {
     method: 'PATCH',
     headers: { Prefer: 'return=representation' },
@@ -538,6 +631,8 @@ async function handleUpdate(req: VercelRequest, res: ServerResponse) {
   })
   const r = rows[0]
   if (!r) return json(res, 404, { error: 'NOT_FOUND' })
+  const kept = new Set((parsed.data.attachments ?? []).map((a) => a.path))
+  await removeObjects(before.filter((a) => !kept.has(a.path)).map((a) => a.path))
   return json(res, 200, { todo: toTodo(r) })
 }
 
@@ -548,7 +643,9 @@ async function handleDelete(req: VercelRequest, res: ServerResponse) {
     method: 'DELETE',
     headers: { Prefer: 'return=representation' },
   })
-  if (!rows[0]) return json(res, 404, { error: 'NOT_FOUND' })
+  const r = rows[0]
+  if (!r) return json(res, 404, { error: 'NOT_FOUND' })
+  await removeObjects((r.attachments ?? []).map((a) => a.path))
   return json(res, 200, { ok: true })
 }
 
@@ -570,6 +667,7 @@ const PRIVATE_OPS: Record<string, { method: string; run: Op }> = {
   create: { method: 'POST', run: handleCreate },
   update: { method: 'PATCH', run: handleUpdate },
   delete: { method: 'DELETE', run: handleDelete },
+  'upload-url': { method: 'POST', run: handleUploadUrl },
 }
 
 export default async function handler(req: VercelRequest, res: ServerResponse) {
