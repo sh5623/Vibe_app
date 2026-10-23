@@ -186,7 +186,7 @@ interface Stat {
 
 const STATS: Stat[] = [
   { value: '0', label: '런타임 의존성 (Node CLI)' },
-  { value: '5', label: '스킬 · init select gate measure shadow' },
+  { value: '6', label: '스킬 · autopilot부터 shadow까지' },
   { value: '1', label: '읽기 전용 에이전트' },
   { value: '~30분', label: '레포 하나 세팅' },
 ]
@@ -198,7 +198,7 @@ interface BlockLine {
 }
 
 const SELECTION_BLOCK: BlockLine[] = [
-  { key: 'cmd', text: '$ pnpm exec e2e-rail select --base last-green', tone: 'muted' },
+  { key: 'cmd', text: '$ e2e-rail select --base last-green', tone: 'muted' },
   {
     key: 'change',
     text: 'change:   order search filter (OrderSearchFilter.tsx +2 more)',
@@ -521,7 +521,7 @@ const SHARD_CARDS: ShardCard[] = [
   {
     title: '락',
     command: 'e2e-rail lock status',
-    desc: '전수·샤드·워커 미지정 실행은 배타적인 heavy 락을, 나머지는 light 두 자리를 나눠 씁니다. 대기 중인 heavy가 있으면 새 light는 들어가지 못합니다.',
+    desc: '전수·샤드·워커 미지정 실행은 배타적인 heavy 락을, 나머지는 light 두 자리를 나눠 씁니다. 기다리는 동안 코드·모드·옵션·환경이 같은 실행이 끝나면 다시 돌리지 않고 그 결과를 받습니다.',
   },
   {
     title: '워커',
@@ -542,6 +542,12 @@ interface SkillRow {
 }
 
 const SKILLS: SkillRow[] = [
+  {
+    name: 'e2e-rail:autopilot',
+    when: '코드를 바꾸고 «끝났다» 고 말하기 전 (요청 없이도)',
+    enforces:
+      'status → 영향 점검을 거친 select → run → 실패면 근거를 남기며 진단·수정 최대 2회 → verify → 보고. 못 하면 «E2E: not verified — 사유» 로 끝낸다',
+  },
   {
     name: 'e2e-rail:init',
     when: 'e2e-rail이 없는 레포',
@@ -606,29 +612,34 @@ interface FixItem {
 
 const FIXES: FixItem[] = [
   {
+    version: '0.4.1',
+    title: '다른 환경의 요청이 앞선 실행의 결과를 받아 갔다',
+    fix: '대상 서버·계정·플래그가 달라도 같은 요청으로 봤다. 상속 환경·run.env·Node를 비밀 키 HMAC으로 비교하고, 값은 원장에 남기지 않는다',
+  },
+  {
+    version: '0.4.0',
+    title: '락 뒤에서 기다린 같은 실행이 결과를 받는다',
+    fix: '같은 코드·모드·옵션의 실행이 대기 중에 끝나면 다시 돌리지 않고 그 rc를 그대로 낸다. measure time이 아낄 수 있는 시간을 먼저 잰다',
+  },
+  {
+    version: '0.3.3',
+    title: '훅이 링크를 거쳐 다른 곳의 원장을 건드릴 수 있었다',
+    fix: '명령이 기록한 원장 실경로에서만 쓴다. Playwright 버전은 JSON으로만 읽어 의존성 코드를 돌리지 않는다',
+  },
+  {
+    version: '0.3.1',
+    title: '훅이 레포 설정이 import한 코드를 돌렸다',
+    fix: '명령이 설정의 결과 데이터를 기록하고 훅은 그 데이터만 읽는다. 레포를 여는 것만으로는 아무 코드도 돌지 않는다',
+  },
+  {
+    version: '0.3.0',
+    title: 'autopilot과 개인 모드',
+    fix: '개발 요청만으로 E2E 흐름까지 간다. 혼자 쓰면 init --personal로 레포에 파일 하나 남기지 않는다',
+  },
+  {
     version: '0.2.2',
     title: 'env로 켜고 끄는 라우트 목록이 앱 전체를 전수로 만들었다',
     fix: '149개 spec 앱에서 섀도 기록이 전부 trivial이었다. 같은 파일에 선언된 함수의 호출로 만든 const는 모든 return이 라우트 배열일 때 읽는다',
-  },
-  {
-    version: '0.2.1',
-    title: '움직이는 ref가 자동 재선택의 base를 바꿨다',
-    fix: 'select가 base를 이름이 아니라 커밋 id로 저장한다. 그 사이 커밋이 diff에서 빠지는 일이 없다',
-  },
-  {
-    version: '0.2.1',
-    title: '이전 정책으로 기록된 원장 줄이 verify를 통과했다',
-    fix: '모든 줄에 policy를 찍고 현재 정책의 줄만 센다. 올리면 전수를 한 번 다시 돌려야 한다',
-  },
-  {
-    version: '0.2.1',
-    title: '모드가 다른 샤드가 한 세트로 완성됐다',
-    fix: '샤드를 모드별로 묶어 완성 여부를 판정한다',
-  },
-  {
-    version: '0.2.0',
-    title: '더러운 트리의 통과가 last-green을 HEAD로 옮겼다',
-    fix: '지문에 clean을 추가했다. 깨끗한 트리의 전수 통과만 last-green을 옮긴다',
   },
   {
     version: '0.2.0',
@@ -742,6 +753,10 @@ const FAQS: Faq[] = [
   {
     q: 'unmapped spec이 많으면요?',
     a: 'goto 리터럴을 읽을 수 없는 spec은 unmapped라서 모든 src 변경마다 돕니다. unmapped 비율이 선택이 아낄 수 있는 상한이고, map --check가 목록을 보여 줍니다. spec에 리터럴 라우트를 주면 줄어듭니다.',
+  },
+  {
+    q: '에이전트가 E2E를 알아서 돌리나요?',
+    a: 'Claude Code에서는 그렇습니다. 코드를 바꾼 뒤 보고하기 전에 autopilot 스킬이 선택부터 verify까지 돌고, Stop 훅은 그 코드로 통과한 실행이 없으면 한 번 되묻습니다. 끄려면 설정에 autopilot: false를 둡니다.',
   },
   {
     q: 'fe-rail · self-improvement와 같이 쓸 수 있나요?',
@@ -1522,6 +1537,12 @@ export default function E2eRailPage() {
                   ))}
                 </ul>
               </Reveal>
+              <Reveal>
+                <p className={`${noteClass} mt-5`}>
+                  지문은 프로세스 환경을 담지 않습니다. 대상 서버·계정·기능 플래그를 바꿨다면
+                  verify를 믿지 말고 스위트를 다시 돌립니다.
+                </p>
+              </Reveal>
             </div>
           </section>
 
@@ -1625,7 +1646,7 @@ export default function E2eRailPage() {
                 index="06"
                 icon={<Bot className="w-4 h-4" aria-hidden="true" />}
                 label="Plugin layer"
-                title="CLI를 정직하게 쓰도록 강제하는 스킬 다섯 개"
+                title="CLI를 정직하게 쓰도록 강제하는 스킬과 훅"
                 desc={
                   <>
                     에이전트가 선택을 전수 통과로 보고하는 일을 막는 층입니다. 읽기 전용 에이전트{' '}
@@ -1637,7 +1658,7 @@ export default function E2eRailPage() {
               />
               <Reveal className={`${panelClass} overflow-x-auto`}>
                 <table className="w-full min-w-[620px] border-collapse text-left">
-                  <caption className="sr-only">e2e-rail 스킬 다섯 개</caption>
+                  <caption className="sr-only">e2e-rail 스킬</caption>
                   <thead>
                     <tr className="border-b-2 border-(--ink)">
                       <th scope="col" className={thClass}>
@@ -1674,8 +1695,11 @@ export default function E2eRailPage() {
               </Reveal>
               <Reveal>
                 <p className={`${noteClass} mt-5`}>
-                  SessionStart 훅이 여섯 규칙을 담은 doctrine을 모든 세션에 둡니다. Codex에는
-                  에이전트가 없어서 select 스킬이 같은 점검 목록을 직접 읽고 수행합니다.
+                  SessionStart 훅이 doctrine을 모든 세션에 둡니다. Claude Code에서는 판정만 하는
+                  훅이 더 붙습니다. 코드를 바꾼 턴에 그 코드로 통과한 실행이 없으면 멈추기 전에 한
+                  번 E2E를 요구하고, playwright test를 직접 돌리면 검증이 아니라고 알립니다. 훅은
+                  테스트를 시작하지 않고 레포 코드도 실행하지 않습니다. Codex에는 에이전트와 CLI가
+                  없어서 select 스킬이 같은 점검 목록을 직접 읽고, 레포에 고정한 CLI를 부릅니다.
                 </p>
               </Reveal>
             </div>
@@ -1734,9 +1758,9 @@ export default function E2eRailPage() {
                 id="changelog-title"
                 index="08"
                 icon={<Wrench className="w-4 h-4" aria-hidden="true" />}
-                label="Changelog · v0.2.x"
-                title="재현된 결함만 고쳤다"
-                desc="v0.2.0과 v0.2.1은 외부 감사가 낸 결함이고, 모두 실제 Playwright 1.63으로 재현한 뒤에 고쳤습니다. v0.2.2는 149개 spec 앱에 도입하다 나온 결함입니다. 세 버전이 지키려는 것은 하나입니다. 실행을 실제보다 큰 검증으로 내놓지 않고, 추측으로 좁히지 않는다는 것."
+                label="Changelog"
+                title="재현한 결함을 고치고, 잴 수 있는 것만 더했다"
+                desc="외부 감사·교차 리뷰·실제 도입에서 나온 결함을 실제 Playwright로 재현한 뒤에 고쳤습니다. 지키려는 것은 하나입니다. 실행을 실제보다 큰 검증으로 내놓지 않고, 추측으로 좁히지 않는다는 것."
               />
               <Reveal className={`${panelClass} overflow-hidden`}>
                 <ul className="list-none p-0 m-0">
