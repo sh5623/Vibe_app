@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router'
 import { useMsDay, useMsDays } from '@/hooks/use-morning-signal'
 import type { Route } from './+types/morning-signal'
 import Bento from './morning-signal/Bento'
+import Feed from './morning-signal/Feed'
 import Header from './morning-signal/Header'
 import Kpis from './morning-signal/Kpis'
 import { pickInitialDate, stampText } from './morning-signal/model'
@@ -86,8 +87,7 @@ export default function MorningSignal() {
           <div className="content">
             <Kpis days={days} day={view.day} feeds={view.feeds} />
             <Bento day={view.day} feeds={view.feeds} />
-            {/* Task 5: 피드 탭 + 목록 */}
-            <section className="feed" />
+            <Feed feeds={view.feeds} date={view.day.date} dir={sel?.dir ?? 0} />
           </div>
         )}
       </div>

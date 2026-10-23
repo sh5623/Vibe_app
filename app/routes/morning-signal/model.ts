@@ -297,3 +297,86 @@ export function barTop(items: GhItem[]): { repo: string; value: string; scale: n
     scale: Math.max(0.05, (g.starsTodayNum ?? 0) / max),
   }))
 }
+
+// ---------- 피드 ----------
+
+/** 레퍼런스 safeUrl — http(s) 만 링크로 쓴다. */
+export function safeUrl(u: unknown): string | null {
+  return typeof u === 'string' && /^https?:\/\//i.test(u) ? u : null
+}
+
+/** 'www.' 를 뗀 호스트, 파싱에 실패하면 원문. */
+export function domain(u: string): string {
+  try {
+    return new URL(u).hostname.replace(/^www\./, '')
+  } catch {
+    return u
+  }
+}
+
+export type ChipCls = 'h' | 'm' | 'l' | 'c'
+
+export interface FeedRowView {
+  title: string
+  tags: string[]
+  meta: string
+  chip: { cls: ChipCls; text: string } | null
+  summary: string | null
+  impactNote: string | null
+  grade: string | null
+  link: { href: string; label: string } | null
+}
+
+const IMP: Record<string, { cls: ChipCls; text: string }> = {
+  high: { cls: 'h', text: 'FE 높음' },
+  mid: { cls: 'm', text: 'FE 중간' },
+  low: { cls: 'l', text: 'FE 낮음' },
+}
+
+const orNull = (v: string | null | undefined): string | null => v || null
+
+/** 레퍼런스 rowsFor(553–569행)를 구조화한 것. */
+export function feedRows(theme: Theme, feed: Feed | undefined): FeedRowView[] {
+  if (!feed) return []
+  if (theme === 'gh') {
+    return (feed.items as GhItem[]).map((x) => {
+      const href = safeUrl(x.url)
+      return {
+        title: x.repo,
+        tags: [],
+        meta: [x.language, x.stars && `★ ${x.stars}`, x.starsToday].filter(Boolean).join(' · '),
+        chip: x.fePick ? { cls: 'h', text: 'FE 주목' } : (IMP[x.impact] ?? null),
+        summary: orNull(x.description),
+        impactNote: orNull(x.impactNote),
+        grade: null,
+        link: href ? { href, label: `${x.url.replace(/^https?:\/\//, '')} ↗` } : null,
+      }
+    })
+  }
+  const items = feed.items as (AiItem | WorldItem)[]
+  return items.map((x) => {
+    const href = safeUrl(x.url)
+    const ai = theme === 'ai' ? (x as AiItem) : null
+    return {
+      title: x.title,
+      tags: ai && Array.isArray(ai.tags) ? ai.tags : [],
+      meta: x.publishedAt ? `게재 ${x.publishedAt}` : '',
+      chip: ai
+        ? (IMP[ai.impact] ?? null)
+        : (x as WorldItem).category
+          ? { cls: 'c', text: (x as WorldItem).category }
+          : null,
+      summary: orNull(x.summary),
+      impactNote: ai ? orNull(ai.impactNote) : null,
+      grade: orNull(x.grade),
+      link: href ? { href, label: `${domain(x.url)} ↗` } : null,
+    }
+  })
+}
+
+/** 탭 건수 — 레퍼런스 renderTabCounts: 행이 없으면 수집 실패, 0건이면 「0건」. */
+export function tabCount(feed: Feed | undefined): { text: string; bad: boolean } {
+  if (!feed) return { text: '수집 실패', bad: true }
+  const n = feed.items.length
+  return { text: n ? String(n) : '0건', bad: !n }
+}

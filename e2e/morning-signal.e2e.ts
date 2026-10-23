@@ -162,7 +162,52 @@ test('headline renders mark and tops', async ({ page }) => {
 test('bento empty texts when feeds missing', async ({ page }) => {
   await mockApi(page, 'noai')
   await page.goto('/morning-signal')
-  await expect(page.getByText('AI 뉴스를 가져오지 못했어요.')).toBeVisible()
-  await expect(page.getByText('GitHub 트렌딩을 가져오지 못했어요.')).toBeVisible()
-  await expect(page.getByText('검증된 시사·경제 뉴스가 없는 날이에요.')).toBeVisible()
+  await expect(page.getByText('AI 뉴스를 가져오지 못했어요.', { exact: true })).toBeVisible()
+  await expect(page.getByText('GitHub 트렌딩을 가져오지 못했어요.', { exact: true })).toBeVisible()
+  await expect(page.getByText('검증된 시사·경제 뉴스가 없는 날이에요.', { exact: true })).toBeVisible()
+})
+
+test('tabs switch lists and rows expand', async ({ page }) => {
+  await mockApi(page, 'normal')
+  await page.goto('/morning-signal')
+  const tabs = page.getByRole('tab')
+  await expect(tabs.first()).toHaveAttribute('aria-selected', 'true')
+  await expect(page.locator('.list .item')).toHaveCount(6)
+
+  await page.getByRole('tab', { name: /GitHub/ }).click()
+  await expect(page.getByRole('tab', { name: /GitHub/ })).toHaveAttribute('aria-selected', 'true')
+  await expect(tabs.first()).toHaveAttribute('aria-selected', 'false')
+  await expect(page.locator('.list')).toHaveClass(/sr/)
+  await expect(page.locator('.list .item')).toHaveCount(13)
+
+  const first = page.locator('.list .item').first()
+  await first.locator('> button').click()
+  await expect(first.locator('> button')).toHaveAttribute('aria-expanded', 'true')
+  await expect(first).toHaveClass(/open/)
+  await expect(first.locator('.more a')).toHaveAttribute('target', '_blank')
+
+  // 날짜를 옮겨도 고른 탭이 남는다
+  await page.getByRole('button', { name: '이전 날짜' }).click()
+  await expect(page.getByRole('tab', { name: /GitHub/ })).toHaveAttribute('aria-selected', 'true')
+})
+
+test('tab counts flag failures', async ({ page }) => {
+  await mockApi(page, 'missing')
+  await page.goto('/morning-signal')
+  await expect(page.getByRole('tab', { name: /GitHub/ }).locator('em')).toHaveText('수집 실패')
+  await expect(page.getByRole('tab', { name: /GitHub/ }).locator('em')).toHaveClass(/bad/)
+  const world = page.getByRole('tab', { name: /시사/ })
+  await expect(world.locator('em')).toHaveText('0건')
+  await world.click()
+  await expect(page.locator('.list .none')).toHaveText(
+    '검증된 시사·경제·상식 뉴스가 없는 날이에요.'
+  )
+})
+
+test('reduced motion still renders everything', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' })
+  await mockApi(page, 'normal')
+  await page.goto('/morning-signal')
+  await expect(page.locator('[data-kpi="total"] .odo')).toHaveAttribute('data-value', '24')
+  await expect(page.locator('.list .item')).toHaveCount(6)
 })

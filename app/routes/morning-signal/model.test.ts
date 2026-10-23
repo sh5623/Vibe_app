@@ -17,14 +17,18 @@ import {
   chipFor,
   countsFor,
   deriveTops,
+  domain,
   donutModel,
+  feedRows,
   headlineParts,
   kpiModel,
   kstTime,
   labelEn,
   pickInitialDate,
+  safeUrl,
   sparkPath,
   stampText,
+  tabCount,
   WD_KO,
 } from './model'
 
@@ -307,5 +311,100 @@ describe('sparkPath', () => {
     const p = sparkPath([0, 10, 5])
     expect(p.line).toBe('M0.0 32.0 L110.0 4.0 L220.0 18.0')
     expect(p.end).toEqual([220, 18])
+  })
+})
+
+// ---------- 피드 ----------
+
+describe('safeUrl / domain', () => {
+  it('passes only http(s)', () => {
+    expect(safeUrl('https://a.com/x')).toBe('https://a.com/x')
+    expect(safeUrl('HTTP://a.com')).toBe('HTTP://a.com')
+    expect(safeUrl('javascript:alert(1)')).toBeNull()
+    expect(safeUrl('')).toBeNull()
+    expect(safeUrl(null)).toBeNull()
+    expect(safeUrl(5)).toBeNull()
+  })
+  it('strips www and falls back to raw on parse failure', () => {
+    expect(domain('https://www.fourweekmba.com/a')).toBe('fourweekmba.com')
+    expect(domain('not a url')).toBe('not a url')
+  })
+})
+
+const ai1 = (o: Partial<AiItem> = {}): AiItem => ({
+  ...aiItem('high'),
+  title: 'T',
+  summary: 'S',
+  publishedAt: '2026-10-18',
+  impactNote: 'N',
+  url: 'https://www.fourweekmba.com/x',
+  tags: ['루머'],
+  ...o,
+})
+
+describe('feedRows', () => {
+  it('ai maps chip, tags, meta, link', () => {
+    const [r] = feedRows('ai', feedOf('ai', [ai1()]))
+    expect(r?.chip).toEqual({ cls: 'h', text: 'FE 높음' })
+    expect(r?.tags).toEqual(['루머'])
+    expect(r?.meta).toBe('게재 2026-10-18')
+    expect(r?.link).toEqual({ href: 'https://www.fourweekmba.com/x', label: 'fourweekmba.com ↗' })
+    expect(r?.impactNote).toBe('N')
+    expect(r?.grade).toBe('A')
+  })
+  it('drops non-http urls', () => {
+    const rows = feedRows(
+      'ai',
+      feedOf('ai', [ai1({ url: 'javascript:alert(1)' }), ai1({ url: '' })])
+    )
+    expect(rows.map((r) => r.link)).toEqual([null, null])
+  })
+  it('world uses category chip and no impact note', () => {
+    const w: WorldItem = {
+      title: 'W',
+      summary: 'S',
+      publishedAt: null,
+      category: '경제',
+      url: 'https://a.com',
+      grade: 'B',
+    }
+    const [r] = feedRows('world', feedOf('world', [w]))
+    expect(r?.chip).toEqual({ cls: 'c', text: '경제' })
+    expect(r?.meta).toBe('')
+    expect(r?.impactNote).toBeNull()
+  })
+  it('gh meta and fePick chip', () => {
+    const g = ghItem('a/b', 2213, {
+      url: 'https://github.com/a/b',
+      description: 'D',
+      language: 'TypeScript',
+      stars: '52,971',
+      starsToday: '+2,213',
+      fePick: true,
+      grade: null as unknown as GhItem['grade'],
+    })
+    const [r] = feedRows('gh', feedOf('gh', [g]))
+    expect(r?.title).toBe('a/b')
+    expect(r?.meta).toBe('TypeScript · ★ 52,971 · +2,213')
+    expect(r?.chip).toEqual({ cls: 'h', text: 'FE 주목' })
+    expect(r?.link?.label).toBe('github.com/a/b ↗')
+    expect(r?.summary).toBe('D')
+    expect(r?.grade).toBeNull()
+    const [r2] = feedRows('gh', feedOf('gh', [{ ...g, fePick: false }]))
+    expect(r2?.chip).toEqual({ cls: 'l', text: 'FE 낮음' })
+  })
+  it('missing feed gives no rows', () => {
+    expect(feedRows('ai', undefined)).toEqual([])
+  })
+})
+
+describe('tabCount', () => {
+  it('maps missing, empty and filled', () => {
+    expect(tabCount(undefined)).toEqual({ text: '수집 실패', bad: true })
+    expect(tabCount(feedOf('ai', []))).toEqual({ text: '0건', bad: true })
+    expect(tabCount(feedOf('ai', [ai1(), ai1(), ai1(), ai1(), ai1()]))).toEqual({
+      text: '5',
+      bad: false,
+    })
   })
 })
