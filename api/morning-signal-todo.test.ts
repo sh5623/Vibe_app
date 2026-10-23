@@ -747,6 +747,8 @@ describe('handler — Task 3 attachments', () => {
     expect(out.path.endsWith('/Receipt.jpg')).toBe(true)
     expect(out.uploadUrl).toBe(`${STORAGE}/object/upload/sign/ms-todo/${out.path}?token=tok`)
     expect(calls[0]?.method).toBe('POST')
+    // Storage(Fastify)는 Content-Type: application/json 인데 본문이 비면 400으로 거절한다 — supabase-js 처럼 {} 를 보낸다
+    expect(calls[0]?.body).toEqual({})
   })
 
   it('upload-url rejects type and size', async () => {
