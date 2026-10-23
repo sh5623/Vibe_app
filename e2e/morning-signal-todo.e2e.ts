@@ -331,3 +331,143 @@ test('empty state', async ({ page }) => {
   await expect(page.getByText('아직 할 일이 없어요. ＋로 첫 할 일을 만들어 보세요.')).toBeVisible()
   await expect(page.locator('.todo-day')).toHaveCount(0)
 })
+
+// ── 만들기·상세·수정·삭제·첨부 ─────────────────────────────────────────
+
+const PNG = Buffer.from(
+  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=',
+  'base64'
+)
+
+async function openCreate(page: Page) {
+  await page.getByRole('button', { name: '할 일 만들기' }).click()
+  const sheet = page.getByRole('dialog', { name: '할 일 만들기' })
+  await expect(sheet).toBeVisible()
+  return sheet
+}
+
+test('create with title only appears in pending and today', async ({ page }) => {
+  await mockTodoApi(page, { unlocked: true, seed: seedDay() })
+  await page.goto('/morning-signal/todo')
+  const sheet = await openCreate(page)
+  await expect(sheet.getByRole('button', { name: '추가' })).toBeDisabled()
+  await sheet.getByPlaceholder('할 일을 입력하세요').fill('우유 사기')
+  await sheet.getByRole('button', { name: '추가' }).click()
+  await expect(sheet).toBeHidden()
+  await expect(page.locator('.todo-pending-h')).toContainText('6')
+  await expect(page.locator('.todo-day').first().locator('.trow').first()).toContainText(
+    '우유 사기'
+  )
+})
+
+test('create with date time link', async ({ page }) => {
+  await mockTodoApi(page, { unlocked: true })
+  await page.goto('/morning-signal/todo')
+  const sheet = await openCreate(page)
+  await sheet.getByPlaceholder('할 일을 입력하세요').fill('문화센터 예약')
+  await sheet.getByRole('button', { name: '📅 날짜' }).click()
+  await sheet.getByLabel('날짜', { exact: true }).fill('2026-10-27')
+  await sheet.getByLabel('시간', { exact: true }).fill('10:00')
+  await sheet.getByRole('button', { name: '🔗 링크' }).click()
+  await sheet.getByLabel('링크', { exact: true }).fill('culture.example.com')
+  await sheet.getByRole('button', { name: '추가' }).click()
+  const row = page.locator('.todo-day .trow').filter({ hasText: '문화센터 예약' })
+  await expect(row.locator('.trow-due')).toHaveText('10/27 (화) 10:00')
+  await row.locator('.trow-tx').click()
+  const detail = page.getByRole('dialog', { name: '할 일 상세' })
+  await expect(detail.getByRole('link', { name: 'https://culture.example.com/' })).toBeVisible()
+})
+
+test('create with attachment uploads via signed URL', async ({ page }) => {
+  const state = await mockTodoApi(page, { unlocked: true })
+  await page.goto('/morning-signal/todo')
+  const sheet = await openCreate(page)
+  await sheet.getByPlaceholder('할 일을 입력하세요').fill('영수증 정리')
+  await sheet
+    .locator('input[type=file]')
+    .setInputFiles({ name: '영수증.png', mimeType: 'image/png', buffer: PNG })
+  await expect(sheet.locator('.todo-file.done')).toHaveCount(1)
+  expect(state.uploads).toBe(1)
+  await sheet.getByRole('button', { name: '추가' }).click()
+  await page.locator('.todo-day .trow-tx').filter({ hasText: '영수증 정리' }).click()
+  await expect(
+    page.getByRole('dialog', { name: '할 일 상세' }).locator('.todo-thumbs img')
+  ).toHaveCount(1)
+})
+
+test('upload failure keeps sheet open', async ({ page }) => {
+  const state = await mockTodoApi(page, { unlocked: true })
+  state.uploadFail = true
+  await page.goto('/morning-signal/todo')
+  const sheet = await openCreate(page)
+  await sheet.getByPlaceholder('할 일을 입력하세요').fill('영수증 정리')
+  await sheet
+    .locator('input[type=file]')
+    .setInputFiles({ name: 'a.png', mimeType: 'image/png', buffer: PNG })
+  await expect(page.getByText('저장하지 못했어요. 다시 시도해 주세요.')).toBeVisible()
+  await expect(sheet).toBeVisible()
+  await expect(sheet.getByPlaceholder('할 일을 입력하세요')).toHaveValue('영수증 정리')
+  await expect(sheet.locator('.todo-file')).toHaveCount(0)
+  expect(state.creates).toBe(0)
+})
+
+test('double tap creates one todo', async ({ page }) => {
+  const state = await mockTodoApi(page, { unlocked: true })
+  await page.goto('/morning-signal/todo')
+  const sheet = await openCreate(page)
+  await sheet.getByPlaceholder('할 일을 입력하세요').fill('한 번만')
+  await sheet.getByRole('button', { name: '추가' }).click({ clickCount: 2 })
+  await expect(sheet).toBeHidden()
+  await expect(page.locator('.todo-day .trow')).toHaveCount(1)
+  expect(state.creates).toBe(1)
+})
+
+test('detail shows fields and changes status', async ({ page }) => {
+  await mockTodoApi(page, { unlocked: true, seed: seedDay() })
+  await page.goto('/morning-signal/todo')
+  await page.locator('.todo-day .trow-tx').filter({ hasText: '문화센터 겨울학기 예약' }).click()
+  const detail = page.getByRole('dialog', { name: '할 일 상세' })
+  await expect(detail.getByRole('heading', { name: '문화센터 겨울학기 예약' })).toBeVisible()
+  for (const k of ['날짜', '링크', '추가'])
+    await expect(detail.getByText(k, { exact: true })).toBeVisible()
+  await expect(detail.getByText('10/27 (화) 10:00')).toBeVisible()
+  await detail.getByRole('radio', { name: 'IN PROGRESS' }).click()
+  await expect(detail.getByRole('radio', { name: 'IN PROGRESS' })).toBeChecked()
+  await page.keyboard.press('Escape')
+  await expect(detail).toBeHidden()
+  await expect(
+    page.locator('.todo-day .trow').filter({ hasText: '문화센터 겨울학기 예약' })
+  ).toHaveClass(/s-progress/)
+})
+
+test('edit title', async ({ page }) => {
+  await mockTodoApi(page, { unlocked: true, seed: seedDay() })
+  await page.goto('/morning-signal/todo')
+  await page.locator('.todo-day .trow-tx').filter({ hasText: '민수 결혼식 참석' }).click()
+  const detail = page.getByRole('dialog', { name: '할 일 상세' })
+  await detail.getByRole('button', { name: '수정' }).click()
+  await detail.getByLabel('제목').fill('민수 결혼식 참석 (축의금 챙기기)')
+  await detail.getByRole('button', { name: '저장' }).click()
+  await expect(
+    detail.getByRole('heading', { name: '민수 결혼식 참석 (축의금 챙기기)' })
+  ).toBeVisible()
+  await page.keyboard.press('Escape')
+  await expect(page.locator('.todo-day .trow').filter({ hasText: '축의금 챙기기' })).toHaveCount(1)
+})
+
+test('delete asks inside sheet', async ({ page }) => {
+  let dialogs = 0
+  page.on('dialog', () => {
+    dialogs += 1
+  })
+  await mockTodoApi(page, { unlocked: true, seed: seedDay() })
+  await page.goto('/morning-signal/todo')
+  await page.locator('.todo-day .trow-tx').filter({ hasText: '겨울 이불 세탁 맡기기' }).click()
+  const detail = page.getByRole('dialog', { name: '할 일 상세' })
+  await detail.getByRole('button', { name: '삭제' }).click()
+  await expect(detail.getByText('이 할 일을 지울까요?')).toBeVisible()
+  await detail.getByRole('button', { name: '지우기' }).click()
+  await expect(detail).toBeHidden()
+  await expect(page.locator('.trow').filter({ hasText: '겨울 이불 세탁 맡기기' })).toHaveCount(0)
+  expect(dialogs).toBe(0)
+})

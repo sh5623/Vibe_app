@@ -879,3 +879,336 @@
   font-style: normal;
   color: var(--td-b1);
 }
+
+/* ── 만들기·수정 ─────────────────────────────────────────────────────── */
+.ms .todo-new {
+  display: grid;
+  gap: 4px;
+}
+.ms .todo-new-t {
+  all: unset;
+  box-sizing: border-box;
+  width: 100%;
+  padding: 4px 0;
+  font: 600 19px / 1.4 var(--f);
+  letter-spacing: -0.02em;
+  color: var(--ink);
+}
+.ms .todo-new-b {
+  all: unset;
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 44px;
+  font: 400 14px / 1.5 var(--f);
+  color: var(--muted-fg);
+  white-space: pre-wrap;
+}
+.ms .todo-new-t::placeholder,
+.ms .todo-new-b::placeholder {
+  color: var(--muted-fg);
+  opacity: 0.7;
+}
+.ms .todo-edit .todo-new-t {
+  border-bottom: 1px solid var(--td-line);
+  padding-bottom: 8px;
+}
+.ms .todo-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 6px;
+}
+.ms .todo-pill {
+  all: unset;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 11px;
+  border: 1px solid var(--td-line);
+  border-radius: 999px;
+  font: 500 12.5px var(--f);
+  color: var(--muted-fg);
+  cursor: pointer;
+}
+.ms .todo-pill.on {
+  color: var(--td-b1);
+  border-color: color-mix(in srgb, var(--td-b1) 40%, transparent);
+  background: color-mix(in srgb, var(--td-b1) 8%, transparent);
+}
+.ms .todo-pill:focus-visible,
+.ms .todo-pill:focus-within {
+  outline: 2px solid var(--td-b1);
+  outline-offset: 2px;
+}
+.ms .todo-xf {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+  animation: td-enter 0.3s var(--ease);
+}
+.ms .todo-xf input {
+  all: unset;
+  box-sizing: border-box;
+  flex: 1;
+  min-width: 0;
+  padding: 9px 11px;
+  border-radius: 10px;
+  background: var(--td-tint);
+  font: 500 14px var(--f);
+  color: var(--ink);
+}
+.ms .todo-xf input:disabled {
+  opacity: 0.45;
+}
+.ms .todo-xf input:focus-visible {
+  outline: 2px solid var(--td-b1);
+  outline-offset: 1px;
+}
+
+/* 첨부 미리보기 */
+.ms .todo-thumbs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+.ms .todo-file {
+  position: relative;
+  width: 56px;
+  height: 56px;
+  border-radius: 10px;
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+  background: var(--td-tint);
+  border: 1px solid var(--td-line);
+  text-decoration: none;
+}
+.ms .todo-file img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.ms .todo-file em {
+  font: 500 9.5px / 1.2 var(--f);
+  font-style: normal;
+  color: var(--muted-fg);
+  padding: 3px;
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+.ms .todo-file.up img {
+  opacity: 0.45;
+}
+.ms .todo-file-sp {
+  position: absolute;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 2px solid var(--td-line);
+  border-top-color: var(--td-b1);
+  animation: td-rot 0.8s linear infinite;
+}
+.ms .todo-file button {
+  all: unset;
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: rgba(2, 6, 23, 0.6);
+  color: #fff;
+  font: 600 12px / 1 var(--f);
+  cursor: pointer;
+}
+
+/* 버튼 줄 */
+.ms .todo-actions {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 8px;
+  margin-top: 16px;
+}
+.ms .todo-actions .todo-pill {
+  margin-right: auto;
+}
+.ms .todo-btn {
+  all: unset;
+  padding: 10px 18px;
+  border-radius: 999px;
+  font: 700 14px var(--f);
+  color: var(--ink);
+  background: var(--td-tint);
+  cursor: pointer;
+}
+.ms .todo-btn.primary {
+  color: #fff;
+  background: var(--td-b1);
+}
+.ms .todo-btn.danger {
+  color: #fff;
+  background: var(--td-red);
+}
+.ms .todo-btn:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+.ms .todo-btn:focus-visible {
+  outline: 2px solid var(--td-b1);
+  outline-offset: 2px;
+}
+
+/* ── 상세 ───────────────────────────────────────────────────────────── */
+.ms .todo-dt h3 {
+  margin: 0;
+  font: 700 20px / 1.35 var(--f);
+  letter-spacing: -0.025em;
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+.ms .todo-segs {
+  display: flex;
+  margin: 14px 0 0;
+  padding: 3px;
+  border: 0;
+  min-width: 0;
+  border-radius: 12px;
+  background: var(--td-tint);
+}
+.ms .todo-segs input {
+  position: absolute;
+  opacity: 0;
+  width: 1px;
+  height: 1px;
+  pointer-events: none;
+}
+.ms .todo-segs label {
+  flex: 1;
+  padding: 8px 0;
+  border-radius: 9px;
+  text-align: center;
+  font: 600 10.5px var(--fm);
+  letter-spacing: 0.05em;
+  color: var(--muted-fg);
+  cursor: pointer;
+  transition:
+    background 0.25s,
+    color 0.25s;
+}
+.ms .todo-segs label.on {
+  color: #fff;
+}
+.ms .todo-segs .seg-todo.on {
+  background: var(--td-todo);
+}
+.ms .todo-segs .seg-progress.on {
+  background: var(--td-prog);
+}
+.ms .todo-segs .seg-done.on {
+  background: var(--td-done);
+}
+.ms .todo-segs label:has(:focus-visible) {
+  outline: 2px solid var(--td-b1);
+  outline-offset: 1px;
+}
+.ms .todo-kv {
+  margin: 10px 0 0;
+}
+.ms .todo-kv > div {
+  display: flex;
+  gap: 12px;
+  padding: 11px 0;
+  border-bottom: 1px solid var(--td-line);
+  font-size: 13.5px;
+}
+.ms .todo-kv dt {
+  flex: none;
+  width: 44px;
+  color: var(--muted-fg);
+}
+.ms .todo-kv dd {
+  margin: 0;
+  min-width: 0;
+  color: var(--ink);
+}
+.ms .todo-kv dd .todo-thumbs {
+  margin-top: 0;
+}
+.ms .todo-kv a {
+  color: var(--td-b1);
+  overflow-wrap: anywhere;
+}
+.ms .todo-note {
+  margin: 12px 0 0;
+  font-size: 14px;
+  color: var(--muted-fg);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.ms .todo-confirm {
+  margin-top: 16px;
+  padding: 14px;
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--td-red) 8%, transparent);
+}
+.ms .todo-confirm p {
+  margin: 0;
+  font: 600 14px var(--f);
+  color: var(--ink);
+}
+.ms .todo-confirm .todo-actions {
+  margin-top: 10px;
+}
+
+/* ── 만들기 버튼·알림 ────────────────────────────────────────────────── */
+.ms .todo-fab {
+  all: unset;
+  position: fixed;
+  right: max(20px, env(safe-area-inset-right, 0px));
+  bottom: calc(24px + env(safe-area-inset-bottom, 0px));
+  z-index: 40;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  color: #fff;
+  background: var(--td-b1);
+  box-shadow: 0 12px 26px -10px rgba(99, 102, 241, 0.9);
+  cursor: pointer;
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.ms .todo-fab:active {
+  transform: scale(0.9);
+}
+.ms .todo-fab:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--td-b1) 45%, transparent);
+  outline-offset: 3px;
+}
+.ms .todo-toast {
+  position: fixed;
+  left: 50%;
+  bottom: calc(96px + env(safe-area-inset-bottom, 0px));
+  z-index: 60;
+  max-width: calc(100% - 32px);
+  padding: 10px 16px;
+  border-radius: 12px;
+  background: var(--ink);
+  color: var(--card);
+  font: 600 13px var(--f);
+  box-shadow: var(--shadow);
+  transform: translate(-50%, 12px);
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    opacity 0.25s,
+    transform 0.3s var(--ease);
+}
+.ms .todo-toast.show {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}

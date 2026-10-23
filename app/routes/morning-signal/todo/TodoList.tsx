@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useTodoList, useUpdateTodo } from '@/hooks/use-morning-signal-todo'
 import type { Todo, TodoStatus } from '../../../../api/morning-signal-todo'
-import { StatusIcon, StatusSheet, statusClass } from './TodoSheets'
+import { SAVE_FAILED, StatusIcon, StatusSheet, statusClass } from './TodoSheets'
 import {
   dayHeading,
   dueText,
@@ -117,7 +117,14 @@ function Row({ t, today, showLabel, leaving, entering, sep, onStatus, onOpen }: 
   )
 }
 
-export default function TodoList({ onOpen }: { onOpen: (id: string) => void }) {
+interface TodoListProps {
+  onOpen: (id: string) => void
+  /** 방금 만든 할 일 — 등장 모션을 준다 */
+  newId?: string | null
+  onError?: (message: string) => void
+}
+
+export default function TodoList({ onOpen, newId, onError }: TodoListProps) {
   const list = useTodoList(true)
   const update = useUpdateTodo()
   const [expanded, setExpanded] = useState(false)
@@ -196,7 +203,14 @@ export default function TodoList({ onOpen }: { onOpen: (id: string) => void }) {
     } else {
       markEntering(t.id)
     }
-    update.mutate({ id: t.id, patch: { status: s } })
+    update.mutate(
+      { id: t.id, patch: { status: s } },
+      {
+        onError: (e) => {
+          if (e.code !== 'LOCKED_SESSION') onError?.(SAVE_FAILED)
+        },
+      }
+    )
   }
 
   if (list.isPending) {
@@ -249,7 +263,7 @@ export default function TodoList({ onOpen }: { onOpen: (id: string) => void }) {
                     showLabel={false}
                     sep={!label}
                     leaving={leaving.has(t.id)}
-                    entering={entering.has(t.id)}
+                    entering={entering.has(t.id) || t.id === newId}
                     onStatus={setStatusFor}
                     onOpen={onOpen}
                   />
@@ -286,7 +300,7 @@ export default function TodoList({ onOpen }: { onOpen: (id: string) => void }) {
                 t={t}
                 today={today}
                 showLabel
-                entering={entering.has(t.id)}
+                entering={entering.has(t.id) || t.id === newId}
                 onStatus={setStatusFor}
                 onOpen={onOpen}
               />
