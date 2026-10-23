@@ -24,11 +24,6 @@
   width: 100%;
   margin: 0 auto;
 }
-.ms .todo-sh {
-  margin: 0;
-  font: 700 13px / 1.4 var(--f);
-  letter-spacing: -0.01em;
-}
 
 /* ── PIN 잠금(시안 D) ─────────────────────────────────────────────── */
 .ms .pin {
@@ -544,3 +539,343 @@
   background: linear-gradient(90deg, #22c55e, #16a34a);
 }
 /* 모션 줄이기는 morning-signal.css 의 `.ms *` 규칙이 TO-DO 까지 덮는다 */
+
+/* ── 목록(시안 v2 — 줄 목록, 카드·테두리·태그 상자 없음) ─────────────── */
+.ms .todo-view {
+  gap: 22px;
+  padding-bottom: 96px;
+}
+.ms .todo-pending-h {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin: 6px 2px 6px;
+  font: 700 13px / 1.4 var(--f);
+  letter-spacing: -0.01em;
+  color: var(--ink);
+}
+.ms .todo-pending-h span {
+  font: 600 12px var(--fm);
+  color: var(--muted-fg);
+}
+.ms .todo-pending {
+  background: var(--td-tint);
+  border-radius: 18px;
+  padding: 4px 14px;
+}
+.ms .todo-sub {
+  margin: 0;
+  padding: 10px 0 0 32px;
+  font: 600 10px var(--fm);
+  letter-spacing: 0.1em;
+}
+.ms .todo-sub.progress {
+  color: var(--td-prog);
+}
+.ms .todo-sub.todo {
+  color: var(--td-todo);
+}
+.ms .todo-clear {
+  margin: 0;
+  padding: 16px 0;
+  text-align: center;
+  font-size: 13px;
+  color: var(--muted-fg);
+}
+.ms .todo-more {
+  all: unset;
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 10px 0 10px 32px;
+  border-top: 1px solid var(--td-line);
+  font: 600 12.5px var(--f);
+  color: var(--td-b1);
+  cursor: pointer;
+}
+.ms .todo-more:focus-visible {
+  outline: 2px solid var(--td-b1);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+/* 줄 — 앞 원이 상태이자 버튼, 정보는 작은 표시 한 줄 */
+.ms .trow {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 11px 0;
+}
+/* 줄 사이 선 — 묶음의 첫 줄(소제목 바로 아래 포함)에는 긋지 않는다 */
+.ms .trow.sep::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 32px;
+  right: 0;
+  height: 1px;
+  background: var(--td-line);
+}
+.ms .trow.enter {
+  animation: td-enter 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+@keyframes td-enter {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+}
+.ms .trow.leaving {
+  overflow: hidden;
+  animation: td-leave 0.36s cubic-bezier(0.7, 0, 0.3, 1) 0.7s forwards;
+}
+@keyframes td-leave {
+  from {
+    max-height: 120px;
+    opacity: 1;
+  }
+  to {
+    max-height: 0;
+    opacity: 0;
+    padding-block: 0;
+  }
+}
+.ms .trow-ck {
+  all: unset;
+  flex: none;
+  width: 20px;
+  height: 20px;
+  margin-top: 1px;
+  cursor: pointer;
+  border-radius: 50%;
+}
+.ms .trow-ck:focus-visible {
+  outline: 2px solid var(--td-b1);
+  outline-offset: 3px;
+}
+.ms .si {
+  display: block;
+  overflow: visible;
+}
+.ms .si-ring {
+  fill: none;
+  stroke-width: 1.8;
+  transition: stroke 0.25s;
+}
+.ms .si-pie {
+  opacity: 0;
+  transition: opacity 0.25s;
+}
+.ms .si-disc {
+  transform-origin: 10px 10px;
+  transform: scale(0);
+  transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.ms .si-chk {
+  fill: none;
+  stroke: #fff;
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 13;
+  stroke-dashoffset: 13;
+  transition: stroke-dashoffset 0.3s 0.1s var(--ease);
+}
+.ms .s-todo .si-ring {
+  stroke: var(--td-todo);
+}
+.ms .s-progress .si-ring {
+  stroke: var(--td-prog);
+}
+.ms .s-progress .si-pie {
+  opacity: 1;
+  fill: var(--td-prog);
+}
+.ms .s-done .si-ring {
+  stroke: var(--td-done);
+}
+.ms .s-done .si-disc {
+  transform: scale(1);
+  fill: var(--td-done);
+}
+.ms .s-done .si-chk {
+  stroke-dashoffset: 0;
+}
+.ms .trow-tx {
+  all: unset;
+  flex: 1;
+  min-width: 0;
+  cursor: pointer;
+  display: block;
+}
+.ms .trow-tx:focus-visible {
+  outline: 2px solid var(--td-b1);
+  outline-offset: 4px;
+  border-radius: 6px;
+}
+.ms .trow-tt {
+  font: 500 15px / 1.4 var(--f);
+  letter-spacing: -0.01em;
+  color: var(--ink);
+  overflow-wrap: anywhere;
+  background: linear-gradient(currentColor, currentColor) no-repeat 0 58% / 0 1.2px;
+  transition:
+    background-size 0.4s var(--ease),
+    color 0.3s;
+}
+.ms .s-done .trow-tt {
+  background-size: 100% 1.2px;
+  color: var(--muted-fg);
+}
+.ms .trow-mt {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 2px;
+  font-size: 12px;
+  color: var(--muted-fg);
+}
+.ms .trow .trow-mt svg {
+  width: 13px;
+  height: 13px;
+  display: block;
+}
+.ms .trow-due.soon {
+  color: var(--td-red);
+  font-weight: 600;
+}
+.ms .trow-st {
+  flex: none;
+  margin-top: 4px;
+  font: 600 9.5px var(--fm);
+  letter-spacing: 0.06em;
+}
+.ms .s-todo .trow-st {
+  color: var(--td-todo);
+}
+.ms .s-progress .trow-st {
+  color: var(--td-prog);
+}
+.ms .s-done .trow-st {
+  color: var(--muted-fg);
+}
+
+/* 날짜 묶음 */
+.ms .todo-day .dh {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 0 2px 4px;
+}
+.ms .todo-day .dh b {
+  font: 700 15px var(--f);
+  letter-spacing: -0.02em;
+  color: var(--ink);
+}
+.ms .todo-day .dh-sub {
+  font-size: 12px;
+  color: var(--muted-fg);
+}
+.ms .todo-day .dh-n {
+  margin-left: auto;
+  font: 500 12px var(--fm);
+  color: var(--muted-fg);
+}
+.ms .todo-tail {
+  min-height: 40px;
+  display: grid;
+  place-items: center;
+  font-size: 12px;
+  color: var(--muted-fg);
+}
+.ms .todo-tail p {
+  margin: 0;
+}
+.ms .todo-loader {
+  display: block;
+  margin: 16px auto;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 2px solid var(--td-line);
+  border-top-color: var(--td-b1);
+  animation: td-rot 0.8s linear infinite;
+}
+
+/* ── 시트 ─────────────────────────────────────────────────────────── */
+.ms .todo-sheet {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+}
+.ms .todo-dim {
+  all: unset;
+  position: absolute;
+  inset: 0;
+  background: rgba(2, 6, 23, 0.35);
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+.ms .todo-sheet.on .todo-dim {
+  opacity: 1;
+}
+.ms .todo-panel {
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  width: min(100%, 560px);
+  max-height: 86vh;
+  overflow-y: auto;
+  box-sizing: border-box;
+  padding: 10px 20px calc(24px + env(safe-area-inset-bottom, 0px));
+  border-radius: 28px 28px 0 0;
+  background: var(--card);
+  box-shadow: 0 -12px 40px -12px rgba(2, 6, 23, 0.35);
+  transform: translate(-50%, 105%);
+  transition: transform 0.45s var(--ease);
+}
+.ms .todo-sheet.on .todo-panel {
+  transform: translate(-50%, 0);
+}
+.ms .todo-handle {
+  width: 38px;
+  height: 5px;
+  border-radius: 3px;
+  background: var(--td-line);
+  margin: 0 auto 12px;
+}
+.ms .todo-opts-t {
+  margin: 0 4px 6px;
+  font: 600 14px var(--f);
+  color: var(--muted-fg);
+  overflow-wrap: anywhere;
+}
+.ms .todo-opt {
+  all: unset;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 13px 4px;
+  border-bottom: 1px solid var(--td-line);
+  font: 600 13px var(--fm);
+  letter-spacing: 0.05em;
+  color: var(--ink);
+  cursor: pointer;
+}
+.ms .todo-opt:last-child {
+  border-bottom: 0;
+}
+.ms .todo-opt:focus-visible {
+  outline: 2px solid var(--td-b1);
+  outline-offset: -2px;
+  border-radius: 10px;
+}
+.ms .todo-opt em {
+  margin-left: auto;
+  font: 500 12px var(--f);
+  font-style: normal;
+  color: var(--td-b1);
+}

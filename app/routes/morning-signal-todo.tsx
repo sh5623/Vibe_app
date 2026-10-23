@@ -3,6 +3,7 @@ import type { Route } from './+types/morning-signal-todo'
 import { TodoHeader } from './morning-signal/Header'
 import Shell from './morning-signal/Shell'
 import PinGate from './morning-signal/todo/PinGate'
+import TodoList from './morning-signal/todo/TodoList'
 import './morning-signal/todo/todo.css'
 
 export function meta(_: Route.MetaArgs) {
@@ -18,9 +19,7 @@ export default function MorningSignalTodo() {
     <Shell>
       <TodoHeader onLock={unlocked ? () => lock.mutate() : undefined} />
       {session.isPending ? null : unlocked ? (
-        <section className="todo-view">
-          <h2 className="todo-sh">남은 일</h2>
-        </section>
+        <TodoList onOpen={() => {}} />
       ) : (
         <PinGate
           lockedUntil={session.data?.lockedUntil ?? null}
