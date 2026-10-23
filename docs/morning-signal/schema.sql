@@ -21,3 +21,5 @@ create table if not exists public.ms_summaries (
 alter table public.ms_feeds enable row level security;
 alter table public.ms_summaries enable row level security;
 -- 정책을 두지 않는다: 서비스 롤 키(서버)만 접근한다.
+-- 서비스 롤 권한을 명시한다(이미 있으면 그대로다 — 여러 번 실행해도 된다).
+grant select, insert, update on public.ms_feeds, public.ms_summaries to service_role;

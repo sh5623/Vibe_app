@@ -94,7 +94,7 @@
 
 같은 프로젝트(`SUPABASE_URL`·`SUPABASE_SERVICE_ROLE_KEY`, `/ahram`과 공용)에 두 테이블을 만든다.
 - 두 테이블 모두 **RLS를 켜고 정책은 두지 않는다.** 이렇게 하면 서비스 롤 키(서버)만 읽고 쓸 수 있고, anon 키로는 접근할 수 없다.
-- SQL은 `docs/morning-signal/schema.sql`에 둔다. 사용자가 Supabase SQL Editor에서 한 번 실행한다.
+- SQL은 `docs/morning-signal/schema.sql`에 둔다. 사용자가 Supabase SQL Editor에서 한 번 실행한다. 서비스 롤 권한(`grant select, insert, update … to service_role`)도 명시한다. 여러 번 실행해도 된다.
 
 **`ms_feeds`**: 테마별 하루 1행. 기본키는 `(date, theme)`이다.
 
@@ -138,6 +138,7 @@
 
 **`GET /api/morning-signal`**: 공개, 인증 없음.
 - 데이터가 있는 모든 날짜를 오름차순으로 돌려준다. 행이 하나라도 있으면 데이터가 있는 날짜로 본다.
+- PostgREST 응답 행 상한(Supabase 기본 `max_rows` 1000)에 잘리지 않게 `limit=1000`·`offset`으로 페이지가 1000행보다 적게 올 때까지 끝까지 읽는다. 정렬은 `ms_feeds`가 `date, theme`, `ms_summaries`가 `date` 오름차순이다(전순서라 페이지가 겹치지 않는다).
 - 날짜마다 다음 값을 담는다: `date`, `weekday`, `counts{ai,world,gh}`, `status{ai,world,gh}`, `fe{high,picks}`, `tops[]`, `headline|null`, `highlight|null`, `updatedAt`.
 - `updatedAt`은 그 날짜 행들의 `updated_at` 중 가장 늦은 값이다.
 - 이 응답이 기존 Artifact DB의 `days` 문서 역할을 한다. 날짜 이동, 달력의 점, KPI 델타와 스파크라인이 여기서 나온다.
@@ -146,11 +147,13 @@
 - 그날의 요약 한 건(위와 같은 형태)과 `feeds{ai?,world?,gh?}`를 돌려준다.
 - 각 feed는 `date`, `theme`, `generatedAt`, `model`, `status`, `note?`, `items`를 담는다. 기존 `feeds/{날짜}--{테마}` 문서와 같은 형태다.
 - 데이터가 없는 날짜는 404를 돌려준다.
+- `date`가 `YYYY-MM-DD` 형식이 아니거나 달력에 없는 날(`2026-02-30`)이면 400 `INVALID_DATE`다.
 
 **`POST /api/morning-signal`**: 루틴 전용.
 - 헤더 `Authorization: Bearer <MS_INGEST_TOKEN>`이 필요하다.
   - 토큰이 없거나 틀리면 401이다. 비교는 상수 시간으로 한다.
-  - 서버 환경변수가 비어 있으면 503이다(`/ahram`과 같은 방식).
+  - 서버 환경변수가 비어 있으면 503이다(`/ahram`과 같은 방식). Supabase 값(`SUPABASE_URL`·`SUPABASE_SERVICE_ROLE_KEY`)이 없으면 `SUPABASE_UNAVAILABLE`, `MS_INGEST_TOKEN`이 없으면 `INGEST_NOT_CONFIGURED`다.
+  - 본문이 JSON이 아니면 400 `INVALID_JSON`이다.
 - `kind: "feed"`
   - 본문: `date`, `theme`, `generatedAt`, `model`, `status`, `note?`, `items[]`.
   - `(date, theme)` 행을 **통째로 덮어쓰고**, 그때 §5.2 집계를 다시 계산한다.
@@ -170,6 +173,9 @@
       - 숫자 자리에 `"2,213"`·`"+2,213"` 같은 숫자 문자열이 오면 숫자로 바꾼다. 대상은 `rank`·`starsTodayNum`이다.
       - 문자열 자리(`stars`·`starsToday`)에 숫자가 오면 문자열로 바꾼다.
       - `null` 자리에 빈 문자열이 오면 `null`로 바꾼다.
+      - 선택 필드(`note`·`tags`·`highlight`)에 `null`이 오면 키가 없는 것으로 본다.
+    - `generatedAt`은 오프셋(`Z` 또는 `+09:00`)이 있는 ISO 8601 시각이어야 한다. `timestamptz` 열에 들어가므로 Postgres 거부(503) 대신 400 `INVALID_PAYLOAD`로 알린다.
+    - `date`는 달력에 있는 날이어야 한다(`2026-02-30`은 400 `INVALID_PAYLOAD`).
 - **날짜 규칙 (제 판단).**
   - `date`는 **서버 시계 기준 KST 오늘**이면서 **평일**일 때만 받는다.
   - 아니면 400과 `{ error: "DATE_NOT_ACCEPTED", expectedDate }`를 돌려준다.
@@ -179,6 +185,7 @@
   - 그래서 요일 계산은 월~금만 다룬다.
 - 본문 상한은 256 KiB로 한다. GitHub 25개 항목이 약 15 KB라 여유가 있다.
 - 성공하면 200과 `{ ok, date, theme?, itemCount? }`를 돌려준다.
+- Supabase가 오류를 돌려주면 503 `SUPABASE_UNAVAILABLE`이다. PostgREST 오류 본문(앞 500자)은 서버 로그에만 남기고 HTTP 응답에는 넣지 않는다.
 
 ### 5.4 비밀값
 
@@ -221,7 +228,7 @@ Vercel 환경변수(Production)는 세 개다. 앞의 두 개는 이미 `/ahram`
   - 목록의 `updatedAt`이 바뀐 날짜는 상세를 다시 받는다. 이는 레퍼런스의 `lastStamp` 동작과 같다(제 판단).
 - 빈 상태 문구는 이렇게 바꾼다.
   - 데이터가 전혀 없을 때: 「아직 저장된 뉴스가 없어요 / 평일 아침 8시에 첫 브리핑이 들어와요」.
-  - API 오류일 때: 「데이터를 불러오지 못했어요 / 잠시 뒤 새로고침해 주세요」.
+  - API 오류일 때: 「데이터를 불러오지 못했어요 / 잠시 뒤 새로고침해 주세요」. 보여 줄 데이터가 없을 때만 띄운다. 이미 그린 화면은 백그라운드 재조회가 실패해도 그대로 둔다(TanStack v5는 이때 `data`를 남긴 채 `isError`를 켠다).
   - 「claude.ai에서 열어 주세요」 상태는 없앤다.
 - 오늘의 한 줄(`headline`)이 아직 없을 때는 레퍼런스의 폴백 동작을 그대로 쓴다. 요약 루틴 실행 전이거나 실패한 경우다.
 
@@ -254,19 +261,20 @@ Vercel 환경변수(Production)는 세 개다. 앞의 두 개는 이미 `/ahram`
 - **바꾸는 것은 저장 단계뿐이다.**
   - 지금: `ToolSearch select:ArtifactData` → `ArtifactData set`
   - 바뀐 뒤:
-    1. JSON 문서를 파일(`feed.json`)로 쓴다.
-    2. Bash로 다음을 실행한다. 토큰은 네트워크 시크릿이 붙여 주므로 넣지 않는다. 폴백 구성이라 `$MS_INGEST_TOKEN`이 설정돼 있을 때만 `-H "Authorization: Bearer $MS_INGEST_TOKEN"`을 더한다.
+    1. JSON 문서를 절대 경로 파일(`/tmp/feed.json`)로 쓴다.
+    2. 보내기 전에 `python3 -m json.tool /tmp/feed.json > /dev/null`로 문법을 확인한다. 틀리면 문법만 고쳐 다시 확인한다.
+    3. Bash로 다음 한 줄을 실행한다. 토큰은 네트워크 시크릿이 붙여 준다. 폴백 구성이라 `MS_INGEST_TOKEN`이 설정돼 있을 때만 `${MS_INGEST_TOKEN:+…}`가 인증 헤더를 더하고, 값은 출력되지 않는다. 환경변수를 출력하지 않는다.
        ```
-       curl -sS -w '\n%{http_code}' -X POST "https://vibe-app-omega.vercel.app/api/morning-signal" \
-         -H "Content-Type: application/json" \
-         --data-binary @feed.json
+       curl -sS -w '\n%{http_code}' -X POST "https://vibe-app-omega.vercel.app/api/morning-signal" -H "Content-Type: application/json" ${MS_INGEST_TOKEN:+-H "Authorization: Bearer $MS_INGEST_TOKEN"} --data-binary @/tmp/feed.json
        ```
-    3. 최종 출력 첫 줄에 결과를 적는다. 성공하면 `SAVED <theme> items=N`, 실패하면 `SAVE_FAILED <HTTP 코드> <응답 원문>`.
+    4. 최종 출력 첫 줄에 결과를 적는다. 성공하면 `SAVED <theme> items=N`(N은 응답의 `itemCount`), 실패하면 `SAVE_FAILED <HTTP 코드> <응답 원문>`.
   - 문서 형태는 기존 feeds 문서에 `"kind": "feed"`만 더한 것이다.
   - 0건이어도 반드시 보낸다. 그래야 화면에 「0건」이 뜬다.
 - 프롬프트에서 Artifact URL, ArtifactData, 슬랙 언급을 모두 뺀다.
 - 실패 시 재시도 규칙 (제 판단)
-  - 5xx나 네트워크 오류는 짧게 1~2회 재시도한다.
+  - 503(`INGEST_NOT_CONFIGURED`·`SUPABASE_UNAVAILABLE`)은 서버 설정 문제다. 최대 1회만 다시 보내고 보고한다.
+  - 그 밖의 5xx나 네트워크 오류는 짧게 1~2회 재시도한다.
+  - 400 `INVALID_JSON`은 JSON 문법만 고쳐(내용은 그대로) 1회 다시 보낸다.
   - 400 필드 오류는 응답에 적힌 필드의 **형식만** 고쳐 1회 다시 보낸다.
     - 내용(사실·수치·URL)은 바꾸지 않는다.
     - 고칠 수 없는 항목은 그 항목만 빼고 보낸다. 뺀 항목의 제목은 최종 출력에 적는다.
@@ -285,7 +293,7 @@ Vercel 환경변수(Production)는 세 개다. 앞의 두 개는 이미 `/ahram`
   1. 0단계로 날짜를 확정한다(KST).
   2. `curl "https://vibe-app-omega.vercel.app/api/morning-signal?date=TODAY"`로 그날 feeds를 받는다.
   3. headline·highlight를 쓴다.
-  4. `{ "kind": "summary", "date", "headline", "highlight" }`를 POST한다.
+  4. `{ "kind": "summary", "date", "headline", "highlight" }`를 `/tmp/summary.json`으로 쓰고 문법을 확인한 뒤 POST한다(저장 방식·재시도 규칙은 뉴스 루틴과 같다).
   5. 결과를 보고한다(`SUMMARIZED TODAY` / `SUMMARY_FAILED …`).
 - 그날 데이터가 없어 404가 나오면(세 테마 모두 수집 실패) headline을 「오늘은 뉴스를 가져오지 못했어요」로 두고 highlight 없이 POST한다.
 
@@ -302,11 +310,12 @@ Vercel 환경변수(Production)는 세 개다. 앞의 두 개는 이미 `/ahram`
    - Cloud environment: 2에서 만든 환경
    - Connectors: 전부 끈다. 기본값이 전부 포함이므로 직접 꺼야 한다.
    - 허용 도구를 고르는 칸은 없다. 실행은 auto mode다.
-4. 시험 운행: **평일에** 작업을 하나씩 Run now로 실행한다 → 최종 출력이 `SAVED`인지 확인한다 → 페이지에서 확인한다. 주말에 돌리면 서버가 `DATE_NOT_ACCEPTED`로 거부하는데, 이는 정상이다. 첫 실행에서 `command -v curl` 결과도 확인한다(문서의 기본 설치 도구 표에 curl이 없다).
+4. 시험 운행: **평일에** 작업을 하나씩 Run now로 실행한다 → 최종 출력이 `SAVED`인지 확인한다 → 페이지에서 확인한다. 주말에 돌리면 서버가 `DATE_NOT_ACCEPTED`로 거부하는데, 이는 정상이다. 첫 실행에서 `command -v curl python3` 결과도 확인한다(문서의 기본 설치 도구 표에 curl이 없다. python3는 JSON 문법 확인에 쓴다).
 5. 문제가 생겼을 때 보는 곳
    - 401이면 토큰(시크릿)이 맞지 않는다.
    - `403 host_not_allowed`면 시크릿 호스트나 허용 목록이 빠졌다.
-   - 400이면 필드 오류 응답을 확인한다.
+   - 400이면 필드 오류 응답을 확인한다(`INVALID_JSON`이면 JSON 문법 오류다).
+   - 503 `INGEST_NOT_CONFIGURED`면 Vercel에 `MS_INGEST_TOKEN`이 없다. 503 `SUPABASE_UNAVAILABLE`면 Supabase 설정·테이블 문제이거나 장애다.
 
 **확인 결과 (2026-10-23, 공식 문서)**
 - 출처: `https://code.claude.com/docs/en/routines.md` · `https://code.claude.com/docs/en/cloud-environments.md`

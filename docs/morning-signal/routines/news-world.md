@@ -90,17 +90,20 @@ WebSearch 도구로 'TODAY/YESTERDAY 기준 최근 24~48시간 내'의 한국·�
    - "category": "시사·국제" | "경제" | "상식·교양" 중 하나(3단계 분류)
    - "url": 2-1단계에서 확인한 바로 그 출처 URL
    - "grade": 검증 등급 "A" 또는 "B"
-3. Write 도구로 위 문서를 현재 디렉터리의 `feed.json`으로 씁니다.
-4. Bash로 아래 명령을 실행해 전송합니다. 응답 마지막 줄이 HTTP 코드입니다.
-   curl -sS -w '\n%{http_code}' -X POST "https://vibe-app-omega.vercel.app/api/morning-signal" -H "Content-Type: application/json" --data-binary @feed.json
-   환경변수 `MS_INGEST_TOKEN`이 설정돼 있으면(폴백 구성) 같은 명령에 `-H "Authorization: Bearer $MS_INGEST_TOKEN"`을 더합니다. 설정돼 있지 않으면 붙이지 않습니다(네트워크 시크릿이 토큰을 붙입니다). 토큰 값을 출력하거나 파일에 쓰지 마세요.
-5. 결과에 따라 처리합니다.
-   - 200: 응답 `{"ok":true,...}`이면 성공입니다.
-   - 5xx나 네트워크 오류: 짧게 기다렸다가 1~2회 다시 보냅니다.
+3. Write 도구로 위 문서를 절대 경로 `/tmp/feed.json`에 씁니다. 제목·요약 안의 큰따옴표(")는 `\"`로, 줄바꿈은 `\n`으로 이스케이프하고, 마지막 항목·키 뒤에는 쉼표를 두지 않습니다.
+4. 보내기 전에 Bash로 `python3 -m json.tool /tmp/feed.json > /dev/null`을 실행해 JSON 문법을 확인합니다. 오류가 나오면 문법(이스케이프·쉼표·괄호)만 고쳐 다시 쓰고, 통과할 때까지 같은 확인을 반복합니다. 내용(사실·수치·URL)은 바꾸지 않습니다.
+5. Bash로 아래 명령을 한 줄 그대로 실행해 전송합니다. 응답 마지막 줄이 HTTP 코드입니다.
+   curl -sS -w '\n%{http_code}' -X POST "https://vibe-app-omega.vercel.app/api/morning-signal" -H "Content-Type: application/json" ${MS_INGEST_TOKEN:+-H "Authorization: Bearer $MS_INGEST_TOKEN"} --data-binary @/tmp/feed.json
+   `${MS_INGEST_TOKEN:+…}` 부분은 환경변수 `MS_INGEST_TOKEN`이 있을 때(폴백 구성)만 인증 헤더를 붙이고, 없으면 아무것도 붙이지 않습니다(네트워크 시크릿이 토큰을 붙입니다). 이 부분을 고치거나 풀어 쓰지 말고 그대로 실행합니다. 토큰 값과 환경변수는 출력하지 않습니다(`echo`·`env`·`printenv`·`set -x`·`curl -v` 금지). 파일에도 쓰지 않습니다.
+6. 결과에 따라 처리합니다.
+   - 200: 응답 `{"ok":true,...,"itemCount":N}`이면 성공입니다. N은 응답의 `itemCount` 값입니다(직접 센 수를 쓰지 않습니다).
+   - 503 `INGEST_NOT_CONFIGURED`(서버에 토큰 설정이 없음) · 503 `SUPABASE_UNAVAILABLE`(서버 저장소 설정·장애): 서버 설정 문제입니다. 최대 1회만 다시 보내고, 그래도 503이면 보고합니다.
+   - 그 밖의 5xx나 네트워크 오류: 짧게 기다렸다가 1~2회 다시 보냅니다.
+   - 400 `INVALID_JSON`: JSON 문법만 고쳐(내용은 바꾸지 않습니다) 4번 확인을 다시 통과시킨 뒤 1회 다시 보냅니다.
    - 400 `INVALID_PAYLOAD`: 응답의 issues(path·message)에 적힌 필드의 형식만 고쳐 1회 다시 보냅니다. 내용(사실·수치·URL)은 바꾸지 않습니다. 고칠 수 없는 항목은 그 항목만 빼고 보내고, 뺀 항목의 제목을 최종 출력에 적습니다.
    - 400 `DATE_NOT_ACCEPTED`: 응답의 `expectedDate`와 0단계에서 확정한 TODAY를 비교합니다. 같은데 거부됐다면 주말 실행이므로 그대로 보고하고 끝냅니다. 다르면 0단계를 다시 확인합니다.
    - 401 `UNAUTHORIZED`: 재시도하지 않고 보고합니다.
    - 413 `PAYLOAD_TOO_LARGE`: 재시도하지 않고 보고합니다.
-6. 최종 출력 첫 줄: 저장에 성공하면 `SAVED world items=N`, 실패하면 `SAVE_FAILED <HTTP 코드> <응답 원문>`. 이어서 저장한 항목 제목을 한 줄씩 적습니다.
+7. 최종 출력 첫 줄: 저장에 성공하면 `SAVED world items=N`(N은 응답의 `itemCount`), 실패하면 `SAVE_FAILED <HTTP 코드> <응답 원문>`. 이어서 저장한 항목 제목을 한 줄씩 적습니다.
 ★ 검증된 항목이 0건이어도 status "empty" 문서를 반드시 전송합니다(대시보드가 '0건'으로 표시합니다). 절대 추정·기억으로 항목을 채우지 마세요. 전송 대상은 항상 위 주소의 world 문서입니다.
 ````

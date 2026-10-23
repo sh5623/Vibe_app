@@ -35,7 +35,7 @@ Morning Signal 웹 버전에 매일 아침 뉴스를 넣는 클라우드 루틴(
 
 - Network access를 Custom으로 바꾸고 Allowed domains에 `vibe-app-omega.vercel.app`을 넣는다. **Also include default list of common package managers**를 체크한다(체크하지 않으면 Trusted 목록이 빠진다).
 - Environment variables에 `MS_INGEST_TOKEN`을 넣는다. 환경변수는 평문으로 저장되므로 시크릿이 되지 않을 때만 쓴다.
-- 프롬프트는 `MS_INGEST_TOKEN`이 있으면 `Authorization: Bearer` 헤더를 더하고, 없으면 붙이지 않는다.
+- 프롬프트의 curl은 `${MS_INGEST_TOKEN:+-H "Authorization: Bearer $MS_INGEST_TOKEN"}` 한 줄로 쓴다. `MS_INGEST_TOKEN`이 있으면 인증 헤더를 더하고, 없으면 아무것도 붙이지 않는다. 값은 출력되지 않는다.
 
 ## 3. 작업 4개 등록
 
@@ -60,7 +60,7 @@ Morning Signal 웹 버전에 매일 아침 뉴스를 넣는 클라우드 루틴(
 
 1. **평일에** 작업을 하나씩 Run now로 실행한다. 주말에 돌리면 서버가 `DATE_NOT_ACCEPTED`로 거부하는데, 이는 정상이다.
 2. 최종 출력 첫 줄이 `SAVED <theme> items=N`(요약은 `SUMMARIZED <날짜>`)인지 본다.
-3. 첫 실행에서 `command -v curl` 결과도 확인한다. 공식 문서의 기본 설치 도구 표에 curl이 없다.
+3. 첫 실행에서 `command -v curl python3` 결과도 확인한다. 공식 문서의 기본 설치 도구 표에 curl이 없다. python3는 보내기 전 JSON 문법 확인(`python3 -m json.tool`)에 쓴다.
 4. 페이지(`https://vibe-app-omega.vercel.app/morning-signal`)에서 결과를 확인한다.
 
 ## 5. 문제가 생겼을 때
@@ -69,9 +69,12 @@ Morning Signal 웹 버전에 매일 아침 뉴스를 넣는 클라우드 루틴(
 |---|---|
 | 401 `UNAUTHORIZED` | 토큰(시크릿 또는 `MS_INGEST_TOKEN`)이 Vercel 값과 맞지 않는다. |
 | 403 `host_not_allowed` | 시크릿의 호스트나 허용 도메인 목록에 `vibe-app-omega.vercel.app`이 빠졌다. |
+| 400 `INVALID_JSON` | 루틴이 쓴 JSON 파일에 문법 오류가 있다(따옴표 이스케이프·끝 쉼표 등). 프롬프트는 보내기 전에 `python3 -m json.tool`로 확인하고, 이 오류가 나면 문법만 고쳐 1회 다시 보낸다. |
 | 400 `INVALID_PAYLOAD` | 응답의 `issues`(path·message)에 적힌 필드를 확인한다. |
 | 400 `DATE_NOT_ACCEPTED` | 응답의 `expectedDate`가 오늘이면 주말 실행이다. 다르면 날짜 확정(0단계)이 틀렸다. |
 | 413 `PAYLOAD_TOO_LARGE` | 본문이 256 KiB를 넘었다. |
+| 503 `INGEST_NOT_CONFIGURED` | Vercel에 `MS_INGEST_TOKEN`이 없다. 루틴 쪽 문제가 아니다 — 환경변수를 추가하고 재배포한다. 루틴은 1회만 다시 보낸다. |
+| 503 `SUPABASE_UNAVAILABLE` | 서버의 Supabase 설정·테이블 문제이거나 일시 장애다. 루틴은 1회만 다시 보낸다. 원인은 Vercel 함수 로그에 남는다. |
 
 ## 확인 결과 (2026-10-23, 공식 문서)
 
