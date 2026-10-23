@@ -457,28 +457,35 @@ async function handleUnlock(req: VercelRequest, res: ServerResponse, cfg: Config
   const pin = (body as { pin?: unknown } | null)?.pin
   if (typeof pin !== 'string' || !PIN_RE.test(pin)) return json(res, 400, { error: 'INVALID_PIN' })
 
-  const now = Date.now()
-  const locked = activeLock(await readAuth(), now)
-  // 잠금 중에는 맞는 PIN 도 거절한다 — 그래야 무차별 대입이 막힌다
-  if (locked) return json(res, 429, { error: 'TOO_MANY', until: locked })
+  // 판정(잠겨 있나)과 기록(성공 초기화·실패 증가)을 DB 함수 한 번에 맡긴다 — 행 잠금으로 동시 시도가 한 줄로 서서,
+  // 다섯 번째 실패가 기록되기 전에 다른 요청들이 판정을 통과하는 우회가 없다. 잠금 중에는 맞는 PIN 도 거절된다.
+  const ok = timingSafeEqual(sha256(pin), sha256(cfg.pin))
+  const out = await sbJson<AttemptRow | AttemptRow[]>('/rest/v1/rpc/ms_todo_attempt', {
+    method: 'POST',
+    body: JSON.stringify({ ok }),
+  })
+  const r = Array.isArray(out) ? out[0] : out
+  if (!r) throw new Error('ms_todo_attempt returned no row')
 
-  if (timingSafeEqual(sha256(pin), sha256(cfg.pin))) {
-    await sb('/rest/v1/ms_todo_auth?id=eq.1', {
-      method: 'PATCH',
-      headers: { Prefer: 'return=minimal' },
-      body: JSON.stringify({ fails: 0, locked_until: null }),
-    })
+  const now = Date.now()
+  const until = activeLock({ fails: r.fail_count, locked_until: r.lock_until }, now)
+  if (!r.allowed) return json(res, 429, { error: 'TOO_MANY', until: until ?? r.lock_until })
+  if (ok) {
     res.setHeader(
       'Set-Cookie',
       `${COOKIE}=${signSession(now + SESSION_MS, cfg.secret, cfg.pin)}; ${COOKIE_ATTRS}`
     )
     return json(res, 200, { ok: true })
   }
-
-  const row = await sbJson<AuthRow>('/rest/v1/rpc/ms_todo_fail', { method: 'POST', body: '{}' })
-  const until = activeLock(row, now)
   if (until) return json(res, 429, { error: 'TOO_MANY', until })
-  return json(res, 401, { error: 'WRONG_PIN', left: Math.max(0, MAX_FAILS - row.fails) })
+  return json(res, 401, { error: 'WRONG_PIN', left: Math.max(0, MAX_FAILS - r.fail_count) })
+}
+
+/** ms_todo_attempt 결과 — allowed=false 면 잠금 중이라 이번 시도는 기록되지 않았다 */
+interface AttemptRow {
+  allowed: boolean
+  fail_count: number
+  lock_until: string | null
 }
 
 function handleLock(res: ServerResponse) {

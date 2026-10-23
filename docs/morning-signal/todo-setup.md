@@ -12,7 +12,7 @@
 - 확인:
   - Table Editor에 `ms_todos`·`ms_todo_auth`가 보이고 둘 다 RLS가 켜져 있다.
   - `ms_todo_auth`에 `id = 1`인 행이 하나 있다(`fails = 0`).
-  - Database → Functions에 `ms_todo_fail`이 있다.
+  - Database → Functions에 `ms_todo_attempt`가 있다(PIN 시도 판정·기록을 한 번에 하는 함수).
   - Storage에 버킷 `ms-todo`가 있다. **Public이 꺼져 있고**, 파일 크기 제한 10MB, 허용 형식 `image/*`·`application/pdf`다.
 - 여러 번 실행해도 된다. 다만 버킷이 이미 있으면 설정을 덮어쓰지 않는다(`on conflict do nothing`). 버킷을 손으로 다르게 만들었다면 Storage 화면에서 위 값으로 맞춘다.
 

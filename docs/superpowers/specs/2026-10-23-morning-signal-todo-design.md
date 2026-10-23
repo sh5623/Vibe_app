@@ -126,7 +126,7 @@ grant select, insert, update, delete on public.ms_todos, public.ms_todo_auth to 
 insert into storage.buckets (id, name, public) values ('ms-todo', 'ms-todo', false) on conflict (id) do nothing;
 ```
 
-- 틀린 횟수 올리기와 잠금 걸기는 동시 요청에도 어긋나지 않게 **한 번의 원자적 연산**으로 한다(RPC 함수를 SQL 파일에 함께 두는 방식 권장 — 함수 모양은 빌더 몫).
+- **「잠겨 있나」 판정과 성공·실패 기록을 DB 함수 `ms_todo_attempt(ok)` 한 번**(행 잠금 `for update`)으로 한다. 판정과 기록을 다른 요청으로 나누면, 동시에 보낸 수천 개의 시도가 다섯 번째 실패가 기록되기 전에 모두 판정을 통과한다(최종 리뷰에서 발견한 우회). 서버는 PIN을 직접 비교해 결과만 넘긴다.
 
 - 상태 값은 DB에서 `todo`·`in_progress`·`done`, 화면 표기는 `TODO`·`IN PROGRESS`·`DONE`이다.
 - Storage 버킷: `ms-todo`, **비공개**, 버킷 자체에 `file_size_limit = 10485760`·`allowed_mime_types = {image/*, application/pdf}`를 건다(서명 업로드 주소는 크기를 강제하지 않으므로 버킷이 마지막 방어선이다). 경로는 `todos/{업로드마다 새 uuid}/{안전한 파일명}`이다 — 할 일 id와 무관하게 만들어서, 만들기 전에 올려도 옮길 필요가 없다.

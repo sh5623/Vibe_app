@@ -109,7 +109,7 @@ describe('handler — lock', () => {
   let fetchMock: ReturnType<typeof vi.fn>
   let calls: Call[]
   let authRow: { fails: number; locked_until: string | null }
-  let rpcRow: { fails: number; locked_until: string | null }
+  let attempt: { allowed: boolean; fail_count: number; lock_until: string | null }
 
   beforeEach(() => {
     vi.useFakeTimers()
@@ -120,11 +120,11 @@ describe('handler — lock', () => {
     process.env.MS_TODO_SECRET = SECRET
     calls = []
     authRow = { fails: 0, locked_until: null }
-    rpcRow = { fails: 1, locked_until: null }
+    attempt = { allowed: true, fail_count: 1, lock_until: null }
     fetchMock = vi.fn(async (url: string, init?: RequestInit) => {
       const method = init?.method ?? 'GET'
       calls.push({ url, method, body: init?.body ? JSON.parse(String(init.body)) : undefined })
-      if (url.includes('/rpc/ms_todo_fail')) return okJson(rpcRow)
+      if (url.includes('/rpc/ms_todo_attempt')) return okJson([attempt])
       if (url.includes('/ms_todo_auth') && method === 'GET') return okJson([authRow])
       return okJson([])
     })
@@ -173,26 +173,35 @@ describe('handler — lock', () => {
     const token = cookie.slice('ms_todo='.length).split(';')[0]
     expect(verifySession(token, NOW + 86_399_000, SECRET, '1234')).toBe(true)
     expect(verifySession(token, NOW + 86_401_000, SECRET, '1234')).toBe(false)
-    const patch = calls.find((c) => c.method === 'PATCH')
-    expect(patch?.url).toBe(`${REST}/ms_todo_auth?id=eq.1`)
-    expect(patch?.body).toEqual({ fails: 0, locked_until: null })
+    expect(calls).toEqual([{ url: `${REST}/rpc/ms_todo_attempt`, method: 'POST', body: { ok: true } }])
+  })
+
+  it('unlock decides and records in one RPC — a lock taken by a concurrent attempt wins', async () => {
+    // 앞서 읽을 때는 잠금이 없었지만(authRow), 기록하는 순간 다른 요청이 잠갔다(attempt)
+    authRow = { fails: 4, locked_until: null }
+    attempt = { allowed: false, fail_count: 0, lock_until: '2026-10-23T00:10:00+00:00' }
+    const { res, body } = await call(
+      makeReq('POST', { query: { op: 'unlock' }, body: { pin: '1234' } })
+    )
+    expect(res.statusCode).toBe(429)
+    expect(body).toEqual({ error: 'TOO_MANY', until: '2026-10-23T00:10:00.000Z' })
+    expect(res.headers['Set-Cookie']).toBeUndefined()
+    expect(calls.filter((c) => c.method !== 'GET')).toHaveLength(1)
   })
 
   it('unlock with wrong pin returns left', async () => {
-    rpcRow = { fails: 2, locked_until: null }
+    attempt = { allowed: true, fail_count: 2, lock_until: null }
     const { res, body } = await call(
       makeReq('POST', { query: { op: 'unlock' }, body: { pin: '0000' } })
     )
     expect(res.statusCode).toBe(401)
     expect(body).toEqual({ error: 'WRONG_PIN', left: 3 })
-    expect(calls.some((c) => c.method === 'POST' && c.url === `${REST}/rpc/ms_todo_fail`)).toBe(
-      true
-    )
+    expect(calls).toEqual([{ url: `${REST}/rpc/ms_todo_attempt`, method: 'POST', body: { ok: false } }])
     expect(res.headers['Set-Cookie']).toBeUndefined()
   })
 
   it('fifth failure locks', async () => {
-    rpcRow = { fails: 0, locked_until: '2026-10-23T00:10:00+00:00' }
+    attempt = { allowed: true, fail_count: 0, lock_until: '2026-10-23T00:10:00+00:00' }
     const { res, body } = await call(
       makeReq('POST', { query: { op: 'unlock' }, body: { pin: '0000' } })
     )
@@ -201,13 +210,13 @@ describe('handler — lock', () => {
   })
 
   it('right pin is refused while locked', async () => {
-    authRow = { fails: 0, locked_until: '2026-10-23T00:05:00Z' }
+    attempt = { allowed: false, fail_count: 0, lock_until: '2026-10-23T00:05:00Z' }
     const { res, body } = await call(
       makeReq('POST', { query: { op: 'unlock' }, body: { pin: '1234' } })
     )
     expect(res.statusCode).toBe(429)
     expect(body).toEqual({ error: 'TOO_MANY', until: '2026-10-23T00:05:00.000Z' })
-    expect(calls.some((c) => c.method !== 'GET')).toBe(false)
+    expect(calls.filter((c) => c.method !== 'GET')).toHaveLength(1)
     expect(res.headers['Set-Cookie']).toBeUndefined()
   })
 
