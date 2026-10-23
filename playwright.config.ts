@@ -6,6 +6,7 @@ export default defineConfig({
   testMatch: '**/*.e2e.ts',
   use: {
     baseURL: 'http://localhost:5179',
+    trace: 'retain-on-failure',
   },
   webServer: {
     command: 'pnpm dev --port 5179',
