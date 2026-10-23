@@ -7,7 +7,7 @@
 | 경로 | 이름 | 설명 |
 |------|------|------|
 | `/` | Home | 모든 페이지로 이동하는 카드형 허브 |
-| `/fe-rail` | fe-rail Landing | Claude Code 플러그인 소개 랜딩 — 한/EN 토글, framer-motion 애니메이션, 최근 변경(v1.17.0 → v1.18.0) 섹션 |
+| `/fe-rail` | fe-rail Landing | Claude Code 플러그인 소개 랜딩 — 한/EN 토글, framer-motion 애니메이션, 최근 변경(v1.17.0 → v1.19.0) 섹션 |
 | `/self-improvement` | self-improvement Landing | 자가개선 플러그인 소개 랜딩 — 3원칙, 문서 층 모델, 6단계 루프, 사고에서 나온 규칙, FAQ |
 | `/parallel-worktree` | parallel-worktree Landing | 병렬 워크트리 스킬 소개 랜딩 — 컨텍스트 비용 곡선, 세션 vs 워크트리 비교, 스윔레인 사이클, 조용한 실패 6가지, FAQ |
 | `/e2e-rail` | e2e-rail Landing | 변경 기준 Playwright E2E 플러그인 소개 랜딩 — 선택 시뮬레이터, 지문·verify 종료 코드, 섀도 모드, 락·워커·샤드, 한계, FAQ |

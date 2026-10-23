@@ -46,7 +46,7 @@ const TEXT = {
     changes: {
       label: 'Changelog',
       title: '최근 변경',
-      desc: 'v1.17.0과 v1.18.0은 2026년 9월 교차 레포 리뷰에서 재현된 지적을 고친 릴리스입니다.',
+      desc: 'v1.19.0은 빌드·E2E를 커밋 직전 1회로 옮긴 릴리스이고, v1.17.0과 v1.18.0은 2026년 9월 교차 레포 리뷰에서 재현된 지적을 고친 릴리스입니다.',
     },
     install: {
       label: 'Install',
@@ -92,7 +92,7 @@ const TEXT = {
     changes: {
       label: 'Changelog',
       title: "What's New",
-      desc: 'v1.17.0 and v1.18.0 fix findings that a September 2026 cross-repo review reproduced.',
+      desc: 'v1.19.0 moves build and E2E to a single run right before the commit; v1.17.0 and v1.18.0 fix findings that a September 2026 cross-repo review reproduced.',
     },
     install: {
       label: 'Install',
@@ -140,7 +140,7 @@ const SKILLS: Record<
       icon: '⚡',
       name: 'fe-start',
       title: '원스톱 자동화',
-      desc: 'spec → build → review → PR 전 과정을 하나의 명령으로 실행합니다. 사람 개입은 두 번뿐이고, 검증 결과(명령·exit code·리비전)는 객체로 PR 본문까지 전달됩니다.',
+      desc: 'spec → build → review → PR 전 과정을 하나의 명령으로 실행합니다. 사람 개입은 두 번뿐이고, 빌드·E2E는 "커밋할까요?" 승인 뒤 커밋 직전에 한 번 돌며, 검증 결과(명령·exit code·리비전)는 객체로 PR 본문까지 전달됩니다.',
       cmd: '/fe-rail:fe-start feature.md',
     },
     {
@@ -182,7 +182,7 @@ const SKILLS: Record<
       icon: '⚡',
       name: 'fe-start',
       title: 'One-Shot Automation',
-      desc: 'Runs the entire spec → build → review → PR pipeline in a single command. Human intervention occurs only twice, and the verification result (command · exit code · revision) travels as an object all the way into the PR body.',
+      desc: 'Runs the entire spec → build → review → PR pipeline in a single command. Human intervention occurs only twice, build and E2E run once after you approve the commit, right before it, and the verification result (command · exit code · revision) travels as an object all the way into the PR body.',
       cmd: '/fe-rail:fe-start feature.md',
     },
     {
@@ -325,8 +325,15 @@ const WORKFLOW: Record<Lang, Array<{ label: string; desc: string }>> = {
     { label: 'feature.md 작성', desc: '요구사항을 구조화된 스펙 파일로 변환' },
     { label: '/fe-rail:fe-start 실행', desc: '단 하나의 명령으로 전체 파이프라인 시작' },
     { label: '"구현할까요?" 승인', desc: '계획 확인 후 구현 시작' },
-    { label: '자동 구현 + 4축 리뷰', desc: '코드 작성, tsc/lint 검증, 코드 리뷰' },
-    { label: '"커밋할까요?" 승인', desc: '최종 확인 후 커밋 & PR 자동 생성' },
+    { label: '자동 구현 + 4축 리뷰', desc: '코드 작성, tsc/lint/단위 테스트 검증, 코드 리뷰' },
+    {
+      label: '"커밋할까요?" 승인',
+      desc: '로컬에서 확인 — 수정 요청은 몇 번이든, 빌드·E2E는 아직 돌지 않음',
+    },
+    {
+      label: '커밋 직전 빌드·E2E 1회',
+      desc: 'base 동기화(fetch → FF/rebase) 후 그 트리에서 한 번 — 통과하면 커밋 & PR 자동 생성',
+    },
   ],
   en: [
     { label: 'Write feature.md', desc: 'Convert requirements into a structured spec file' },
@@ -334,17 +341,29 @@ const WORKFLOW: Record<Lang, Array<{ label: string; desc: string }>> = {
     { label: 'Approve "Shall I implement?"', desc: 'Approve the plan and begin implementation' },
     {
       label: 'Auto implementation + review',
-      desc: 'Code generation, tsc/lint validation, code review',
+      desc: 'Code generation, tsc/lint/unit test validation, code review',
     },
     {
       label: 'Approve "Shall I commit?"',
-      desc: 'Final confirmation, then commit & auto PR creation',
+      desc: 'Check it locally and ask for fixes as often as you like; build and E2E have not run yet',
+    },
+    {
+      label: 'Build + E2E once, before the commit',
+      desc: 'Sync with the base (fetch, then fast-forward or rebase), run once on that tree, then commit & auto PR creation',
     },
   ],
 }
 
 const CHANGES: Record<Lang, Array<{ label: string; desc: string }>> = {
   ko: [
+    {
+      label: 'v1.19.0: 빌드·E2E는 커밋 직전 1회',
+      desc: '"커밋할까요?" 앞에서 돌던 빌드·E2E를 승인 뒤 커밋 직전으로 옮겼습니다. 그 앞에서 돈 결과는 수정 요청이나 상류 커밋 하나에 버려졌기 때문입니다(실측: 전체 E2E 3회, 약 40분 무효). 이제 base에 동기화한 트리에서 한 번만 돌고, 프로젝트가 CLAUDE.md·AGENTS.md에 푸시 전 게이트를 선언해 두면 그 명령을 씁니다.',
+    },
+    {
+      label: 'v1.19.0: 커밋 직전 base 동기화',
+      desc: 'fe-git-operator 동기화 모드가 fetch 후 rebase --autostash로 착지 브랜치에 맞추고, 충돌이면 자동 해소 없이 멈춥니다. autostash 재적용 충돌은 rc=0으로 끝나므로 충돌은 --diff-filter=U로 판정합니다(회귀 eval 118 → 122).',
+    },
     {
       label: 'v1.18.0: 프레임워크 규칙이 실제로 에이전트에 닿음',
       desc: 'docs/framework-rules.md는 레포 CLAUDE.md의 @import로만 참조돼 소비자 세션에서 아무도 읽지 않았습니다. 이제 스킬이 해당 절만 읽고 위임하는 에이전트에 절대경로를 넘기며, claude plugin validate --strict가 경고 0으로 통과합니다.',
@@ -367,6 +386,14 @@ const CHANGES: Record<Lang, Array<{ label: string; desc: string }>> = {
     },
   ],
   en: [
+    {
+      label: 'v1.19.0: build and E2E run once, right before the commit',
+      desc: 'Build and E2E used to run before "Shall I commit?", where one requested fix or one new upstream commit threw the result away (measured: three full E2E runs, about 40 minutes, wasted). They now run once, after you approve, on a tree synced with the base; if your project declares a pre-push gate in CLAUDE.md or AGENTS.md, that command is used instead.',
+    },
+    {
+      label: 'v1.19.0: base sync before the commit',
+      desc: 'fe-git-operator sync mode fetches and runs rebase --autostash onto the landing branch, and stops on a conflict without resolving it. A conflict while re-applying the autostash still exits 0, so conflicts are detected with --diff-filter=U (regression eval 118 → 122).',
+    },
     {
       label: 'v1.18.0: framework rules actually reach the agents',
       desc: 'docs/framework-rules.md was only @imported by the repo CLAUDE.md, which consumer sessions never load. Skills now read the relevant section and pass the absolute path to every delegated agent; claude plugin validate --strict passes with zero warnings.',
