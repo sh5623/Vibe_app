@@ -1,5 +1,7 @@
 # Morning Signal 루틴 설정 안내 (다른 계정용)
 
+> 먼저 [`../README.md`](../README.md)의 1–6단계를 끝내세요.
+
 Morning Signal 웹 버전에 매일 아침 뉴스를 넣는 클라우드 루틴(claude.ai의 「Scheduled tasks」) 네 개를 다른 Claude 계정에 만드는 방법이다. 이 저장소는 공개라서 **실제 토큰 값은 어디에도 적지 않는다.**
 
 | 파일 | 내용 |
