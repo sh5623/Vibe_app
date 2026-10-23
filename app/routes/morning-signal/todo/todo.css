@@ -792,6 +792,19 @@
 .ms .todo-tail p {
   margin: 0;
 }
+.ms .todo-retry {
+  all: unset;
+  padding: 8px 16px;
+  border-radius: 999px;
+  border: 1px solid var(--td-line);
+  font: 600 12.5px var(--f);
+  color: var(--td-b1);
+  cursor: pointer;
+}
+.ms .todo-retry:focus-visible {
+  outline: 2px solid var(--td-b1);
+  outline-offset: 2px;
+}
 .ms .todo-loader {
   display: block;
   margin: 16px auto;

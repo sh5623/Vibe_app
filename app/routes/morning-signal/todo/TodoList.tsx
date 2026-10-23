@@ -133,10 +133,11 @@ export default function TodoList({ onOpen, newId, onError }: TodoListProps) {
   const [entering, setEntering] = useState<Set<string>>(new Set())
   const tailRef = useRef<HTMLDivElement>(null)
 
-  const { hasNextPage, isFetchingNextPage, fetchNextPage } = list
+  const { hasNextPage, isFetchingNextPage, fetchNextPage, isFetchNextPageError } = list
+  // 다음 페이지가 실패하면 관찰을 멈춘다 — 새 관찰자는 붙자마자 「보임」을 알려서, 그대로 두면 실패한 요청을 끝없이 다시 보낸다
   useEffect(() => {
     const el = tailRef.current
-    if (!el || !hasNextPage) return
+    if (!el || !hasNextPage || isFetchNextPageError) return
     const io = new IntersectionObserver(
       (es) => {
         if (es[0]?.isIntersecting && !isFetchingNextPage) void fetchNextPage()
@@ -145,7 +146,7 @@ export default function TodoList({ onOpen, newId, onError }: TodoListProps) {
     )
     io.observe(el)
     return () => io.disconnect()
-  }, [hasNextPage, isFetchingNextPage, fetchNextPage])
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage, isFetchNextPageError])
 
   const today = kstToday(new Date())
   const pages = list.data?.pages ?? []
@@ -310,7 +311,13 @@ export default function TodoList({ onOpen, newId, onError }: TodoListProps) {
       })}
 
       <div className="todo-tail" ref={tailRef}>
-        {hasNextPage || isFetchingNextPage ? (
+        {isFetchingNextPage ? (
+          <span className="todo-loader" role="status" aria-label="더 불러오는 중" />
+        ) : isFetchNextPageError ? (
+          <button type="button" className="todo-retry" onClick={() => void fetchNextPage()}>
+            다시 불러오기
+          </button>
+        ) : hasNextPage ? (
           <span className="todo-loader" role="status" aria-label="더 불러오는 중" />
         ) : items.length > 0 ? (
           <p>처음 기록까지 다 봤어요</p>

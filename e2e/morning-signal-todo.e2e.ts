@@ -471,3 +471,24 @@ test('delete asks inside sheet', async ({ page }) => {
   await expect(page.locator('.trow').filter({ hasText: '겨울 이불 세탁 맡기기' })).toHaveCount(0)
   expect(dialogs).toBe(0)
 })
+
+// ── 최종 리뷰 수정 ─────────────────────────────────────────────────────
+
+test('next page failure stops and offers retry', async ({ page }) => {
+  const state = await mockTodoApi(page, { unlocked: true, seed: makeTodos(25) })
+  let cursorCalls = 0
+  page.on('request', (r) => {
+    if (r.url().includes('op=list') && r.url().includes('cursor=')) cursorCalls += 1
+  })
+  await page.goto('/morning-signal/todo')
+  await expect(page.locator('.todo-day .trow')).toHaveCount(20)
+  state.failNext = { op: 'list', status: 503, error: 'SUPABASE_UNAVAILABLE' }
+  await page.locator('.todo-tail').scrollIntoViewIfNeeded()
+  const retry = page.getByRole('button', { name: '다시 불러오기' })
+  await expect(retry).toBeVisible()
+  await page.waitForTimeout(1500)
+  expect(cursorCalls).toBe(1)
+  await retry.click()
+  await expect(page.locator('.todo-day .trow')).toHaveCount(25)
+  expect(cursorCalls).toBe(2)
+})
