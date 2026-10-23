@@ -154,6 +154,19 @@ test('kpis show counts, deltas and failure chips', async ({ page }) => {
   await expect(page.locator('[data-kpi="gh"] .odo')).toHaveAttribute('data-value', '0')
 })
 
+test('sparkline end dot stays round at phone width', async ({ page }) => {
+  // 선은 가로로만 늘어나는 SVG 라 폭이 넓은 모바일 1열에서 끝점이 타원으로 납작해졌다
+  await page.setViewportSize({ width: 375, height: 800 })
+  await mockApi(page, 'normal')
+  await page.goto('/morning-signal')
+  const dot = page.locator('[data-kpi="ai"] .spark-dot')
+  await expect(dot).toBeVisible()
+  const box = await dot.boundingBox()
+  expect(box).not.toBeNull()
+  // 맥박 애니메이션 중에도 가로·세로 비율은 같다
+  expect(Math.abs((box?.width ?? 0) - (box?.height ?? 1))).toBeLessThan(0.5)
+})
+
 test('headline renders mark and tops', async ({ page }) => {
   const errors: string[] = []
   page.on('console', (m) => {

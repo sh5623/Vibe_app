@@ -19,7 +19,7 @@ test('news header has view switch to TO-DO', async ({ page }) => {
   await mockTodoApi(page)
   await page.goto('/morning-signal')
   const nav = page.getByRole('navigation', { name: '보기 전환' })
-  await expect(nav.getByRole('link', { name: '뉴스' })).toHaveAttribute('aria-current', 'page')
+  await expect(nav.getByRole('link', { name: 'News' })).toHaveAttribute('aria-current', 'page')
   await nav.getByRole('link', { name: 'TO-DO' }).click()
   await expect(page).toHaveURL(/\/morning-signal\/todo$/)
   await expect(page.getByText('본인 확인')).toBeVisible()

@@ -222,7 +222,7 @@ function Brand({ stamp }: { stamp?: string }) {
  */
 export function ViewSwitch({ view }: { view: 'news' | 'todo' }) {
   const links = [
-    { key: 'news', label: '뉴스', to: '/morning-signal' },
+    { key: 'news', label: 'News', to: '/morning-signal' },
     { key: 'todo', label: 'TO-DO', to: '/morning-signal/todo' },
   ] as const
   return (

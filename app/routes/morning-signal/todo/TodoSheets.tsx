@@ -426,7 +426,14 @@ export function DetailSheet({ id, onClose, notify }: DetailSheetProps) {
       ) : mode === 'edit' ? (
         <EditForm key={t.id} t={t} notify={notify} onDone={() => setMode('view')} />
       ) : (
-        <DetailView t={t} mode={mode} setMode={setMode} onClose={onClose} notify={notify} />
+        <DetailView
+          t={t}
+          mode={mode}
+          setMode={setMode}
+          onClose={onClose}
+          notify={notify}
+          filesPending={detail.isPlaceholderData}
+        />
       )}
     </Sheet>
   )
@@ -438,9 +445,11 @@ interface DetailViewProps {
   setMode: (m: 'view' | 'edit' | 'confirm') => void
   onClose: () => void
   notify: Notify
+  /** 목록 데이터로 먼저 그린 상태 — 첨부 서명 주소가 아직 없다 */
+  filesPending: boolean
 }
 
-function DetailView({ t, mode, setMode, onClose, notify }: DetailViewProps) {
+function DetailView({ t, mode, setMode, onClose, notify, filesPending }: DetailViewProps) {
   const update = useUpdateTodo()
   const del = useDeleteTodo()
   const due = dueText(t)
@@ -488,23 +497,27 @@ function DetailView({ t, mode, setMode, onClose, notify }: DetailViewProps) {
           <div>
             <dt>첨부</dt>
             <dd>
-              <div className="todo-thumbs">
-                {t.attachments.map((a) => (
-                  <a
-                    key={a.path}
-                    className="todo-file done"
-                    href={a.url}
-                    target="_blank"
-                    rel="noreferrer"
-                  >
-                    {isImage(a.type) && a.url ? (
-                      <img src={a.url} alt={a.name} />
-                    ) : (
-                      <em>📄 {a.name}</em>
-                    )}
-                  </a>
-                ))}
-              </div>
+              {filesPending ? (
+                <span className="todo-wait">불러오는 중…</span>
+              ) : (
+                <div className="todo-thumbs">
+                  {t.attachments.map((a) => (
+                    <a
+                      key={a.path}
+                      className="todo-file done"
+                      href={a.url}
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      {isImage(a.type) && a.url ? (
+                        <img src={a.url} alt={a.name} />
+                      ) : (
+                        <em>📄 {a.name}</em>
+                      )}
+                    </a>
+                  ))}
+                </div>
+              )}
             </dd>
           </div>
         )}
@@ -537,7 +550,12 @@ function DetailView({ t, mode, setMode, onClose, notify }: DetailViewProps) {
           <button type="button" className="todo-btn" onClick={() => setMode('confirm')}>
             삭제
           </button>
-          <button type="button" className="todo-btn primary" onClick={() => setMode('edit')}>
+          <button
+            type="button"
+            className="todo-btn primary"
+            disabled={filesPending && t.attachments.length > 0}
+            onClick={() => setMode('edit')}
+          >
             수정
           </button>
         </div>
