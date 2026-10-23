@@ -36,12 +36,22 @@
 
 | 날짜 | 무엇에 물렸나 (≤120자 한 줄) | 안착 |
 | --- | --- | --- |
+| 2026-10-23 | route CSS 커스텀 클래스 `.ring`·`.static`이 Tailwind 4 유틸리티와 같은 이름이라 덧씌워짐(PIN 자물쇠에 사각 테두리) | `package.json` `check:tw-names`(도구) |
 | 2026-10-23 | 포트폴리오 카드 4장의 버전·«118건 eval» 이 릴리스마다 낡음 → 릴리스마다 바뀌는 값은 꼭 필요할 때만(카드엔 금지) | `CLAUDE.md` §Project Overview |
 | 2026-10-10 | CLAUDE.md·README가 SSR이라 적었으나 실제 `ssr: false`(SPA) — 서브에이전트 4개가 SSR HTML 검증에 실패·SSR 우회 코드 설계 | `CLAUDE.md` §Stack·§React Router 7·§상태 관리 · `README.md` |
 | 2026-09-05 | 라우트 페이지 PR 2건(#35·#37)이 README·CLAUDE.md 라우트 표·트리를 빠뜨림 → 표 갱신을 같은 커밋 규칙으로 | `CLAUDE.md` §Project Overview |
 | 2026-08-11 | self-improvement 시스템 부트스트랩 — 문서 지형 탐지·라우팅 표 작성 | 이 파일 |
 
 ## §로그 (최신이 위 · 블록 1개 = 작업 단위 1개 · 본문 최대 15블록)
+
+### 2026-10-23 — Morning Signal TO-DO 구현 중 Tailwind 이름 충돌을 도구로 막음
+
+- **계기**: TO-DO PIN 화면(`app/routes/morning-signal/todo/PinGate.tsx`)의 자물쇠 링에 시안에 없는 검은 사각 테두리가 나왔다. 원인은 route 전용 CSS의 커스텀 클래스 `ring`이었다. Tailwind 4가 소스(TSX)를 스캔하다 `className="ring"` 토큰을 보고 같은 이름의 유틸리티(`box-shadow` 링)를 만들어 덧씌웠다. 같은 화면의 `col static`도 Tailwind `static`(position)과 겹쳤다(커스텀 선택자 특이도가 높아 겉보기는 우연히 무사했다).
+- **증거**: 375px 캡처(구현 워크트리 `.superpowers/sdd/…/shots/light.png`)에서 사각 테두리가 보였고, `ring`→`pin-ring`, `static`→`still`로 이름만 바꾸자 사라졌다. 재발 지점은 route 전용 CSS 2개다 — `app/routes/morning-signal/morning-signal.css`(레퍼런스 이식, 짧은 클래스명 다수), `app/routes/morning-signal/todo/todo.css`.
+- **변경**: 신설(도구) — `package.json`에 `check:tw-names`를 추가했다. `app/**/*.css`(`globals.css` 제외)에서 Tailwind 유틸리티 이름(`ring`·`static`·`fixed`·`hidden`·`flex`·`grid`·`border`·`shadow`·`transition` 등 단독 토큰)을 커스텀 클래스 선택자로 쓰면 실패한다. `check:tw`가 이것을 이어 실행하므로 `pnpm check`에 배선된다. 문서 규약은 쓰지 않았다(도구가 강제한다).
+- **검증**: PoC — 사고 당시 선택자(`.ms .pin .ring`·`.ms .pin .col.static`)를 담은 임시 CSS를 `app/`에 넣으면 두 줄을 짚으며 실패, 빼면 통과. 현재 route CSS 2개는 0건(`.grid-bg`처럼 하이픈이 붙은 이름은 걸리지 않는다).
+- **로컬 처리(게이트 탈락)**: TanStack v5에서 데이터 없이 실패한 쿼리를 두 번째 컴포넌트가 구독하면, 마운트 시 재조회로 status가 `pending`으로 돌아간다. 그러면 `isPending`으로 분기하는 부모가 자식을 내렸다 올리기를 반복한다(세션 503 수십 회 반복 실측). 레포 안 다른 재발 지점을 실명으로 대지 못해 전역화하지 않았다 — `PinGate.tsx` 머리 주석에만 둔다.
+- **커밋·PR**: `feat/morning-signal-todo` 브랜치(미푸시)
 
 ### 2026-10-23 — 포트폴리오 카드의 릴리스 수치 제거 중 「릴리스마다 낡는 값」 규약화
 
