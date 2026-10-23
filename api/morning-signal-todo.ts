@@ -563,11 +563,10 @@ async function handleUploadUrl(req: VercelRequest, res: ServerResponse) {
   if (parsed.data.size > MAX_FILE_BYTES) return json(res, 400, { error: 'FILE_TOO_LARGE' })
   // 업로드마다 새 uuid — 할 일 id 와 무관해서 만들기 전에 올려도 옮길 필요가 없다
   const path = `todos/${randomUUID()}/${safeFileName(parsed.data.name)}`
+  // 본문이 비면 Storage(Fastify)가 JSON 파서에서 400으로 거절한다 — supabase-js 처럼 {} 를 보낸다
   const { url } = await sbJson<{ url: string }>(
     `/storage/v1/object/upload/sign/${BUCKET}/${path}`,
-    {
-      method: 'POST',
-    }
+    { method: 'POST', body: '{}' }
   )
   return json(res, 200, { path, uploadUrl: `${process.env.SUPABASE_URL ?? ''}/storage/v1${url}` })
 }
