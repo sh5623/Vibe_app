@@ -104,6 +104,36 @@ test('error state after retries', async ({ page }) => {
   await expect(page.getByText('잠시 뒤 새로고침해 주세요.')).toBeVisible()
 })
 
+test('background refetch failure keeps the dashboard instead of the error card', async ({
+  page,
+}) => {
+  // staleTime(60s)을 넘기려면 시계를 앞으로 돌려야 한다 — install 뒤에도 시간은 그대로 흐른다
+  await page.clock.install()
+  await mockApi(page, 'normal')
+  await page.goto('/morning-signal')
+  await expect(page.locator('.content')).toBeVisible()
+  await expect(page.locator('[data-kpi="total"] .odo')).toHaveAttribute('data-value', '24')
+
+  // 이제부터 API가 500을 돌려준다. 목록·상세 둘 다 재시도(3번)까지 모두 실패해야 isError가 된다.
+  let failures = 0
+  page.on('response', (r) => {
+    if (r.url().includes('/api/morning-signal') && r.status() === 500) failures += 1
+  })
+  await page.unrouteAll({ behavior: 'wait' })
+  await mockApi(page, 'error')
+  await page.clock.fastForward('02:00')
+  await page.evaluate(() => window.dispatchEvent(new Event('visibilitychange')))
+
+  // 목록 1+3회 · 상세 1+3회
+  await expect.poll(() => failures, { timeout: 20_000 }).toBeGreaterThanOrEqual(8)
+  // 마지막 실패가 상태(isError)로 반영되어 다시 그려질 틈을 준다
+  await page.waitForTimeout(500)
+  await expect(page.getByText('데이터를 불러오지 못했어요')).toHaveCount(0)
+  await expect(page.locator('.content')).toBeVisible()
+  await expect(page.locator('[data-kpi="total"] .odo')).toHaveAttribute('data-value', '24')
+  await expect(dateBtn(page).locator('.t')).toHaveText('Mon, Oct 19')
+})
+
 test('kpis show counts, deltas and failure chips', async ({ page }) => {
   await mockApi(page, 'normal')
   await page.goto('/morning-signal')

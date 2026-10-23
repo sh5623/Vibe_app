@@ -63,7 +63,10 @@ export default function MorningSignal() {
   // 날짜를 옮기는 동안은 직전 날짜의 상세가 placeholder 로 남는다 — 화면은 view.day.date 기준으로 그린다
   const view = dayQ.data
 
-  const state = daysQ.isError || dayQ.isError ? ERROR : days?.length === 0 ? EMPTY : null
+  // TanStack v5 는 백그라운드 재조회가 실패해도 data 를 남긴 채 isError 를 켠다.
+  // 보여 줄 데이터가 없을 때만 오류 카드를 띄우고, 이미 그린 화면은 그대로 둔다.
+  const failed = (daysQ.isError && !days) || (dayQ.isError && !view)
+  const state = failed ? ERROR : days?.length === 0 ? EMPTY : null
   const stamp = view ? stampText(view.day, view.feeds) : '불러오는 중'
 
   return (
