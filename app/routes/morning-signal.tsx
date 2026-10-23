@@ -2,7 +2,9 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router'
 import { useMsDay, useMsDays } from '@/hooks/use-morning-signal'
 import type { Route } from './+types/morning-signal'
+import Bento from './morning-signal/Bento'
 import Header from './morning-signal/Header'
+import Kpis from './morning-signal/Kpis'
 import { pickInitialDate, stampText } from './morning-signal/model'
 import './morning-signal/morning-signal.css'
 
@@ -80,12 +82,10 @@ export default function MorningSignal() {
             <span>{state.text}</span>
           </section>
         )}
-        {!state && view && (
+        {!state && days && view && (
           <div className="content">
-            {/* Task 4: KPI 4장 */}
-            <section className="kpis" />
-            {/* Task 4: 벤토(한 줄·도넛·카테고리바·BarList) */}
-            <section className="bento" />
+            <Kpis days={days} day={view.day} feeds={view.feeds} />
+            <Bento day={view.day} feeds={view.feeds} />
             {/* Task 5: 피드 탭 + 목록 */}
             <section className="feed" />
           </div>

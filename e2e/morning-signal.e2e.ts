@@ -103,3 +103,66 @@ test('error state after retries', async ({ page }) => {
   await expect(page.getByText('데이터를 불러오지 못했어요')).toBeVisible({ timeout: 15_000 })
   await expect(page.getByText('잠시 뒤 새로고침해 주세요.')).toBeVisible()
 })
+
+test('kpis show counts, deltas and failure chips', async ({ page }) => {
+  await mockApi(page, 'normal')
+  await page.goto('/morning-signal')
+  await expect(page.locator('[data-kpi="total"] .odo')).toHaveAttribute('data-value', '24')
+  await expect(page.locator('[data-kpi="gh"] .delta')).toHaveText('+1')
+  await expect(page.locator('[data-kpi="gh"] .delta')).toHaveAttribute('title', '10.16 대비')
+  await expect(page.locator('[data-kpi="ai"] .delta')).toHaveClass(/down/)
+  await expect(page.locator('[data-kpi="ai"] .kchip')).toBeHidden()
+
+  // missing: gh 행 없음 → 수집 실패, world 0건 → 0건
+  await page.unrouteAll({ behavior: 'wait' })
+  await mockApi(page, 'missing')
+  await page.reload()
+  await expect(page.locator('[data-kpi="gh"] .kchip')).toHaveText('수집 실패')
+  await expect(page.locator('[data-kpi="gh"] .kchip')).not.toHaveClass(/zero/)
+  await expect(page.locator('[data-kpi="world"] .kchip')).toHaveText('0건')
+  await expect(page.locator('[data-kpi="world"] .kchip')).toHaveClass(/zero/)
+  await expect(page.locator('[data-kpi="gh"] .odo')).toHaveAttribute('data-value', '0')
+})
+
+test('headline renders mark and tops', async ({ page }) => {
+  const errors: string[] = []
+  page.on('console', (m) => {
+    if (m.type() === 'error') errors.push(m.text())
+  })
+  page.on('pageerror', (e) => errors.push(e.message))
+  await mockApi(page, 'normal')
+  await page.goto('/morning-signal')
+  await expect(page.locator('.eyebrow')).toHaveText('10.19 월 · 오늘의 한 줄')
+  await expect(page.locator('h2.line mark')).toContainText('막는 기업이 늘고')
+  await expect(page.locator('.tops li')).toHaveCount(3)
+  await expect(page.locator('.tops li').first()).toContainText('AI')
+  await expect(page.locator('.barlist .row')).toHaveCount(5)
+  await expect(page.locator('.barlist .row.first')).toContainText('MadsLorentzen/ai-job-search')
+  await expect(page.locator('.pick span')).toHaveText([
+    'FE 주목 · anthropics/claude-plugins-official',
+    'FE 주목 · cursor/plugins',
+  ])
+
+  // 단어가 날아가는 중(220ms)에 처음 날짜로 돌아와도 out 상태로 굳지 않고 다시 지어진다
+  await page.getByRole('button', { name: '이전 날짜' }).click()
+  await expect(page.locator('.eyebrow')).toHaveText('10.16 금 · 오늘의 한 줄')
+  await page.getByRole('button', { name: '다음 날짜' }).click()
+  await expect(page.locator('.eyebrow')).toHaveText('10.19 월 · 오늘의 한 줄')
+  await expect(page.locator('h2.line .w.out')).toHaveCount(0)
+  await expect(page.locator('h2.line mark')).toContainText('막는 기업이 늘고')
+
+  // 헤드라인·tops 가 없는 날(10-15)로 옮기면 폴백 문구로 바뀐다
+  await page.goto('/morning-signal#2026-10-15')
+  await page.reload()
+  await expect(page.locator('h2.line.none')).toHaveText('오늘의 한 줄이 아직 없어요.')
+  await expect(page.locator('.tops li')).toHaveCount(0)
+  expect(errors).toEqual([])
+})
+
+test('bento empty texts when feeds missing', async ({ page }) => {
+  await mockApi(page, 'noai')
+  await page.goto('/morning-signal')
+  await expect(page.getByText('AI 뉴스를 가져오지 못했어요.')).toBeVisible()
+  await expect(page.getByText('GitHub 트렌딩을 가져오지 못했어요.')).toBeVisible()
+  await expect(page.getByText('검증된 시사·경제 뉴스가 없는 날이에요.')).toBeVisible()
+})
