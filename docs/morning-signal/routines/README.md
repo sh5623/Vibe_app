@@ -31,7 +31,7 @@ Morning Signal 웹 버전에 매일 아침 뉴스를 넣는 클라우드 루틴(
 
 **폴백: 환경변수**
 
-- Network access를 Custom으로 바꾸고 Allowed domains에 `vibe-app-omega.vercel.app`을 넣는다.
+- Network access를 Custom으로 바꾸고 Allowed domains에 `vibe-app-omega.vercel.app`을 넣는다. **Also include default list of common package managers**를 체크한다(체크하지 않으면 Trusted 목록이 빠진다).
 - Environment variables에 `MS_INGEST_TOKEN`을 넣는다. 환경변수는 평문으로 저장되므로 시크릿이 되지 않을 때만 쓴다.
 - 프롬프트는 `MS_INGEST_TOKEN`이 있으면 `Authorization: Bearer` 헤더를 더하고, 없으면 붙이지 않는다.
 

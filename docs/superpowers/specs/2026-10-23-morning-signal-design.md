@@ -194,7 +194,7 @@ Vercel 환경변수(Production)는 세 개다. 앞의 두 개는 이미 `/ahram`
 - 환경변수(Environment variables)는 쓰지 않는다. 문서에 따르면 환경변수는 평문으로 저장되고 그 환경을 쓰는 누구나 읽을 수 있다.
 - API 주소 `https://vibe-app-omega.vercel.app`은 공개 값이므로 루틴 프롬프트에 그대로 적는다.
 - **폴백**: 그 계정 플랜에서 네트워크 시크릿을 쓸 수 없으면 두 단계로 대신한다.
-  1. 환경의 Network access를 **Custom**으로 바꾸고 Allowed domains에 `vibe-app-omega.vercel.app`을 넣는다.
+  1. 환경의 Network access를 **Custom**으로 바꾸고 Allowed domains에 `vibe-app-omega.vercel.app`을 넣는다. **Also include default list of common package managers**를 체크한다(체크하지 않으면 Trusted 목록이 빠진다).
   2. Environment variables에 `MS_INGEST_TOKEN=<값>`을 넣는다. 그러면 루틴이 `-H "Authorization: Bearer $MS_INGEST_TOKEN"`을 직접 붙인다.
 
 레포와 문서에는 실제 값을 쓰지 않는다.
@@ -293,7 +293,7 @@ Vercel 환경변수(Production)는 세 개다. 앞의 두 개는 이미 `/ahram`
 1. 사전 준비: Supabase SQL 실행(`docs/morning-signal/schema.sql`), Vercel에 `MS_INGEST_TOKEN` 추가, 재배포.
 2. 다른 계정의 claude.ai 클라우드 환경 설정. 경로는 claude.ai/code/routines → 작업 Edit → Advanced settings → General → Cloud environment 옆 설정 아이콘 → Edit cloud environment.
    - **Network secret**을 추가한다: 호스트 `vibe-app-omega.vercel.app`, Secret type은 Bearer, 값은 토큰. 저장한 뒤에는 값을 다시 볼 수 없으므로, 바꾸려면 지우고 다시 등록한다.
-   - 폴백(§5.4): Network access를 Custom으로 바꾸고 Allowed domains에 그 호스트를 넣는다. Environment variables에는 `MS_INGEST_TOKEN`을 넣는다.
+   - 폴백(§5.4): Network access를 Custom으로 바꾸고 Allowed domains에 그 호스트를 넣고, **Also include default list of common package managers**를 체크한다(체크하지 않으면 Trusted 목록이 빠진다). Environment variables에는 `MS_INGEST_TOKEN`을 넣는다.
 3. 작업 4개를 등록한다. 경로는 New task → Set up manually다. 작업마다 다음을 정한다.
    - Name
    - Prompt: 해당 md 파일의 「프롬프트」 본문을 붙여넣는다.
