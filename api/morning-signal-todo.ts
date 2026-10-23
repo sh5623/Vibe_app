@@ -1,5 +1,6 @@
 import { createHash, createHmac, timingSafeEqual } from 'node:crypto'
 import type { IncomingMessage, ServerResponse } from 'node:http'
+import { z } from 'zod'
 
 // Morning Signal TO-DO API — 설계 docs/superpowers/specs/2026-10-23-morning-signal-todo-design.md §5.
 // 자기완결 단일 파일이다(Vercel ESM 런타임 — 상대 import 금지). 헬퍼는 api/morning-signal.ts 에서 복사했다.
@@ -37,6 +38,164 @@ export interface Todo {
 export interface SessionResponse {
   unlocked: boolean
   lockedUntil: string | null
+}
+
+export interface ListResponse {
+  /** 첫 페이지에만 — 끝나지 않은 일 전부 */
+  pending?: Todo[]
+  items: Todo[]
+  nextCursor: string | null
+  /** 이 페이지에 나온 날짜들의 하루 전체 집계 */
+  dayCounts: Record<string, { done: number; total: number }>
+}
+
+/** DB 행(snake_case) */
+interface TodoRow {
+  id: string
+  title: string
+  body: string | null
+  link: string | null
+  due_date: string | null
+  due_time: string | null
+  status: TodoStatus
+  attachments: Attachment[] | null
+  created_date: string
+  created_at: string
+  updated_at: string
+  done_at: string | null
+}
+
+export const PAGE_SIZE = 20
+
+// ── 값 다듬기 ────────────────────────────────────────────────────────────
+
+const DATE_RE = /^(\d{4})-(\d{2})-(\d{2})$/
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+const KST_OFFSET_MS = 9 * 60 * 60 * 1000
+
+/** YYYY-MM-DD 형식이면서 실제 달력 날짜인가(2026-02-30·2026-13-01은 거부). */
+function isDateString(s: unknown): s is string {
+  if (typeof s !== 'string') return false
+  const m = DATE_RE.exec(s)
+  if (!m) return false
+  const y = Number(m[1])
+  const mo = Number(m[2])
+  const d = Number(m[3])
+  const t = new Date(Date.UTC(y, mo - 1, d))
+  return t.getUTCFullYear() === y && t.getUTCMonth() === mo - 1 && t.getUTCDate() === d
+}
+
+function kstToday(now: Date): string {
+  return new Date(now.getTime() + KST_OFFSET_MS).toISOString().slice(0, 10)
+}
+
+/** Supabase는 `+00:00`, 서버는 `Z`로 쓴다. 응답은 ISO Z로 맞춘다. */
+function normalizeStamp(v: string): string {
+  const t = new Date(v)
+  return Number.isNaN(t.getTime()) ? v : t.toISOString()
+}
+
+/** 링크는 http(s)만. 스킴이 없으면 https:// 를 붙인다. 받을 수 없으면 null. */
+export function normalizeLink(v: string): string | null {
+  const s = v.trim()
+  const withScheme = /^[a-z][a-z0-9+.-]*:/i.test(s) ? s : `https://${s}`
+  try {
+    const u = new URL(withScheme)
+    if (u.protocol !== 'http:' && u.protocol !== 'https:') return null
+    if (!u.hostname) return null
+    return u.href
+  } catch {
+    return null
+  }
+}
+
+/** 커서는 DB 원문 created_at(마이크로초 정밀도)을 그대로 담는다 — ISO 로 줄이면 같은 ms 안에서 겹치거나 빠진다. */
+export function encodeCursor(createdAt: string, id: string): string {
+  return Buffer.from(JSON.stringify({ c: createdAt, i: id })).toString('base64url')
+}
+
+export function decodeCursor(c: string): { createdAt: string; id: string } | null {
+  try {
+    const v = JSON.parse(Buffer.from(c, 'base64url').toString('utf8')) as {
+      c?: unknown
+      i?: unknown
+    }
+    if (typeof v.c !== 'string' || typeof v.i !== 'string') return null
+    if (Number.isNaN(new Date(v.c).getTime())) return null
+    return { createdAt: v.c, id: v.i }
+  } catch {
+    return null
+  }
+}
+
+function toTodo(r: TodoRow): Todo {
+  return {
+    id: r.id,
+    title: r.title,
+    body: r.body,
+    link: r.link,
+    dueDate: r.due_date,
+    dueTime: r.due_time ? r.due_time.slice(0, 5) : null,
+    status: r.status,
+    attachments: r.attachments ?? [],
+    createdDate: r.created_date,
+    createdAt: normalizeStamp(r.created_at),
+    updatedAt: normalizeStamp(r.updated_at),
+    doneAt: r.done_at ? normalizeStamp(r.done_at) : null,
+  }
+}
+
+// ── 검증 ────────────────────────────────────────────────────────────────
+
+const dateStr = z.string().refine(isDateString, 'must be a real YYYY-MM-DD date')
+const timeStr = z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/)
+const attachmentSchema = z.object({
+  path: z.string(),
+  name: z.string().min(1).max(200),
+  type: z.string(),
+  size: z.number().int().positive(),
+})
+const fields = {
+  title: z.string().trim().min(1).max(200),
+  body: z.string().max(4000).nullish(),
+  link: z.string().max(2000).nullish(),
+  dueDate: dateStr.nullish(),
+  dueTime: timeStr.nullish(),
+  attachments: z.array(attachmentSchema).max(5).optional(),
+}
+const createSchema = z
+  .object(fields)
+  .refine((v) => !v.dueTime || !!v.dueDate, { message: 'dueTime needs dueDate', path: ['dueTime'] })
+const updateSchema = z
+  .object({ ...fields, status: z.enum(['todo', 'in_progress', 'done']) })
+  .partial()
+  // 시간만 바꿀 수는 없다 — 클라이언트는 날짜와 시간을 함께 보낸다
+  .refine((v) => !v.dueTime || !!v.dueDate, { message: 'dueTime needs dueDate', path: ['dueTime'] })
+
+type Fields = z.infer<typeof updateSchema>
+
+class InvalidLinkError extends Error {}
+
+/** 화면 필드(camelCase) → DB 행 일부(snake_case). undefined 인 키는 건드리지 않는다. */
+function toRowPatch(v: Fields): Record<string, unknown> {
+  const out: Record<string, unknown> = {}
+  if (v.title !== undefined) out.title = v.title
+  if (v.body !== undefined) out.body = v.body ? v.body : null
+  if (v.link !== undefined) {
+    if (!v.link) out.link = null
+    else {
+      const link = normalizeLink(v.link)
+      if (!link) throw new InvalidLinkError()
+      out.link = link
+    }
+  }
+  if (v.dueDate !== undefined) {
+    out.due_date = v.dueDate ?? null
+    if (!v.dueDate) out.due_time = null
+  }
+  if (v.dueTime !== undefined && v.dueDate) out.due_time = v.dueTime ?? null
+  if (v.attachments !== undefined) out.attachments = v.attachments
+  return out
 }
 
 // ── 잠금(세션 쿠키) ──────────────────────────────────────────────────────
@@ -259,6 +418,140 @@ function handleLock(res: ServerResponse) {
   return json(res, 200, { ok: true })
 }
 
+// ── 할 일 ──────────────────────────────────────────────────────────────
+
+const TODOS = '/rest/v1/ms_todos'
+
+function idParam(req: VercelRequest, res: ServerResponse): string | undefined {
+  const id = getQueryParam(req, 'id')
+  if (!id || !UUID_RE.test(id)) {
+    json(res, 400, { error: 'INVALID_ID' })
+    return undefined
+  }
+  return id
+}
+
+async function handleList(req: VercelRequest, res: ServerResponse) {
+  const cursorParam = getQueryParam(req, 'cursor')
+  const cursor = cursorParam ? decodeCursor(cursorParam) : null
+  if (cursorParam && !cursor) return json(res, 400, { error: 'INVALID_CURSOR' })
+
+  let url = `${TODOS}?select=*&order=created_at.desc,id.desc&limit=${PAGE_SIZE + 1}`
+  if (cursor) {
+    const { createdAt: ts, id } = cursor
+    url += `&or=${encodeURIComponent(`(created_at.lt.${ts},and(created_at.eq.${ts},id.lt.${id}))`)}`
+  }
+  const [rows, pendingRows] = await Promise.all([
+    sbJson<TodoRow[]>(url),
+    cursor
+      ? Promise.resolve(null)
+      : sbJson<TodoRow[]>(`${TODOS}?select=*&status=neq.done&order=created_at.asc`),
+  ])
+  const page = rows.slice(0, PAGE_SIZE)
+  const last = page[page.length - 1]
+  const nextCursor = rows.length > PAGE_SIZE && last ? encodeCursor(last.created_at, last.id) : null
+
+  const dates = [...new Set(page.map((r) => r.created_date))]
+  const dayCounts: ListResponse['dayCounts'] = {}
+  if (dates.length) {
+    const counts = await sbJson<Array<{ created_date: string; status: TodoStatus }>>(
+      `${TODOS}?select=created_date,status&created_date=in.(${dates.join(',')})`
+    )
+    for (const c of counts) {
+      const d = dayCounts[c.created_date] ?? { done: 0, total: 0 }
+      d.total += 1
+      if (c.status === 'done') d.done += 1
+      dayCounts[c.created_date] = d
+    }
+  }
+  const body: ListResponse = { items: page.map(toTodo), nextCursor, dayCounts }
+  if (pendingRows) body.pending = pendingRows.map(toTodo)
+  return json(res, 200, body)
+}
+
+async function handleGet(req: VercelRequest, res: ServerResponse) {
+  const id = idParam(req, res)
+  if (!id) return
+  const rows = await sbJson<TodoRow[]>(`${TODOS}?id=eq.${id}&select=*`)
+  const r = rows[0]
+  if (!r) return json(res, 404, { error: 'NOT_FOUND' })
+  return json(res, 200, { todo: toTodo(r) })
+}
+
+async function handleCreate(req: VercelRequest, res: ServerResponse) {
+  const body = await readJson(req, res)
+  if (body === undefined) return
+  const parsed = createSchema.safeParse(body)
+  if (!parsed.success) return json(res, 400, { error: 'INVALID_PAYLOAD' })
+  let patch: Record<string, unknown>
+  try {
+    patch = toRowPatch(parsed.data)
+  } catch (error) {
+    if (error instanceof InvalidLinkError) return json(res, 400, { error: 'INVALID_LINK' })
+    throw error
+  }
+  const row = {
+    title: parsed.data.title,
+    body: null,
+    link: null,
+    due_date: null,
+    due_time: null,
+    attachments: [],
+    ...patch,
+    status: 'todo',
+    created_date: kstToday(new Date()),
+  }
+  const rows = await sbJson<TodoRow[]>(TODOS, {
+    method: 'POST',
+    headers: { Prefer: 'return=representation' },
+    body: JSON.stringify(row),
+  })
+  const r = rows[0]
+  if (!r) throw new Error('insert returned no row')
+  return json(res, 200, { todo: toTodo(r) })
+}
+
+async function handleUpdate(req: VercelRequest, res: ServerResponse) {
+  const id = idParam(req, res)
+  if (!id) return
+  const body = await readJson(req, res)
+  if (body === undefined) return
+  const parsed = updateSchema.safeParse(body)
+  if (!parsed.success) return json(res, 400, { error: 'INVALID_PAYLOAD' })
+  let patch: Record<string, unknown>
+  try {
+    patch = toRowPatch(parsed.data)
+  } catch (error) {
+    if (error instanceof InvalidLinkError) return json(res, 400, { error: 'INVALID_LINK' })
+    throw error
+  }
+  const now = new Date().toISOString()
+  if (parsed.data.status) {
+    patch.status = parsed.data.status
+    patch.done_at = parsed.data.status === 'done' ? now : null
+  }
+  patch.updated_at = now
+  const rows = await sbJson<TodoRow[]>(`${TODOS}?id=eq.${id}`, {
+    method: 'PATCH',
+    headers: { Prefer: 'return=representation' },
+    body: JSON.stringify(patch),
+  })
+  const r = rows[0]
+  if (!r) return json(res, 404, { error: 'NOT_FOUND' })
+  return json(res, 200, { todo: toTodo(r) })
+}
+
+async function handleDelete(req: VercelRequest, res: ServerResponse) {
+  const id = idParam(req, res)
+  if (!id) return
+  const rows = await sbJson<TodoRow[]>(`${TODOS}?id=eq.${id}`, {
+    method: 'DELETE',
+    headers: { Prefer: 'return=representation' },
+  })
+  if (!rows[0]) return json(res, 404, { error: 'NOT_FOUND' })
+  return json(res, 200, { ok: true })
+}
+
 // ── 핸들러 ──────────────────────────────────────────────────────────────
 
 type Op = (req: VercelRequest, res: ServerResponse, cfg: Config) => Promise<void> | void
@@ -270,8 +563,14 @@ const PUBLIC_OPS: Record<string, { method: string; run: Op }> = {
   lock: { method: 'POST', run: (_req, res) => handleLock(res) },
 }
 
-/** 세션이 있어야 하는 op — 다음 태스크들이 채운다 */
-const PRIVATE_OPS: Record<string, { method: string; run: Op }> = {}
+/** 세션이 있어야 하는 op */
+const PRIVATE_OPS: Record<string, { method: string; run: Op }> = {
+  list: { method: 'GET', run: handleList },
+  get: { method: 'GET', run: handleGet },
+  create: { method: 'POST', run: handleCreate },
+  update: { method: 'PATCH', run: handleUpdate },
+  delete: { method: 'DELETE', run: handleDelete },
+}
 
 export default async function handler(req: VercelRequest, res: ServerResponse) {
   res.setHeader('Content-Type', 'application/json')
