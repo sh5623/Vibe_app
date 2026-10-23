@@ -48,17 +48,17 @@
 ## 5. 배포 확인 (회사 와이파이 밖에서)
 
 ```bash
-curl -sS "https://vibe-app-omega.vercel.app/api/morning-signal-todo?op=session"
+curl -sS "https://seungho-apps.vercel.app/api/morning-signal-todo?op=session"
 ```
 
 - 기대 응답: `{"unlocked":false,"lockedUntil":null}` — 함수 배포·환경변수·Supabase 연결이 함께 확인된다.
 - 503 `TODO_NOT_CONFIGURED`면 3단계를 다시 본다(PIN이 숫자 4자리인지, 비밀값이 32자 이상인지).
 - 503 `SUPABASE_UNAVAILABLE`면 1단계(테이블)와 3단계(`SUPABASE_*`)를 다시 본다.
-- 뉴스 `https://vibe-app-omega.vercel.app/morning-signal`도 열어 본다. 헤더에 「뉴스 | TO-DO」 전환이 생긴 것 말고는 그대로여야 한다.
+- 뉴스 `https://seungho-apps.vercel.app/morning-signal`도 열어 본다. 헤더에 「뉴스 | TO-DO」 전환이 생긴 것 말고는 그대로여야 한다.
 
 ## 6. 휴대폰으로 시험하기 (필수)
 
-`https://vibe-app-omega.vercel.app/morning-signal/todo`를 휴대폰으로 연다.
+`https://seungho-apps.vercel.app/morning-signal/todo`를 휴대폰으로 연다.
 
 - [ ] PIN 화면이 뜨고, 칸을 누르면 숫자 키패드가 올라온다.
 - [ ] **틀린 PIN** 1번: 칸이 빨개지며 흔들리고 「PIN이 맞지 않아요. 다시 입력해 주세요.」가 나온다(안드로이드는 진동도). 잠시 뒤 칸이 비워진다.
@@ -116,3 +116,9 @@ pnpm test:e2e    # Playwright — 휴대폰 폭(375px), API·Storage를 메모�
 | 시안 | `docs/morning-signal/todo-mockups/` |
 | e2e·가짜 API | `e2e/morning-signal-todo.e2e.ts`, `e2e/fixtures/mock-todo-api.ts` |
 | 설계·계획 | `docs/superpowers/specs/2026-10-23-morning-signal-todo-design.md`, `docs/superpowers/plans/2026-10-23-morning-signal-todo.md` |
+
+## 9. 아침 TO-DO 알림 루틴(클라우드)
+
+- 「TODO 아침 브리핑 (평일)」 06:00 · 「(주말)」 09:00 KST. 서울 날씨와 이 페이지(`/morning-signal/todo`) 링크를 #todo 채널로 보낸다. 할 일 내용은 읽지 않고 링크로만 안내한다.
+- 컨테이너 시계는 UTC라 KST 아침에는 아직 전날이다. 프롬프트가 `TZ=Asia/Seoul date`로 오늘을 확정하고, 날씨 예보 날짜가 오늘과 일치할 때만 쓴다(예전 루틴은 UTC 날짜로 검색해 어제 날씨가 왔다).
+- 기본 환경에서는 yr.no가 열리지 않아 한국 뉴스 기사 검색으로 대체된다. 정확한 날씨가 필요하면 날씨 API 도메인을 허용한 전용 환경을 만든다.

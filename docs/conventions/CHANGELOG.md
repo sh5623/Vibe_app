@@ -36,6 +36,7 @@
 
 | 날짜 | 무엇에 물렸나 (≤120자 한 줄) | 안착 |
 | --- | --- | --- |
+| 2026-10-23 | 라이브 클라우드 루틴 프롬프트를 고치고 `docs/morning-signal/routines/` 사본을 안 고쳐 어긋남(요약 루틴 Slack 단계) | `docs/morning-signal/routines/README.md` §알려 둘 점 |
 | 2026-10-23 | route CSS 커스텀 클래스 `.ring`·`.static`이 Tailwind 4 유틸리티와 같은 이름이라 덧씌워짐(PIN 자물쇠에 사각 테두리) | `package.json` `check:tw-names`(도구) |
 | 2026-10-23 | 포트폴리오 카드 4장의 버전·«118건 eval» 이 릴리스마다 낡음 → 릴리스마다 바뀌는 값은 꼭 필요할 때만(카드엔 금지) | `CLAUDE.md` §Project Overview |
 | 2026-10-10 | CLAUDE.md·README가 SSR이라 적었으나 실제 `ssr: false`(SPA) — 서브에이전트 4개가 SSR HTML 검증에 실패·SSR 우회 코드 설계 | `CLAUDE.md` §Stack·§React Router 7·§상태 관리 · `README.md` |
@@ -43,6 +44,15 @@
 | 2026-08-11 | self-improvement 시스템 부트스트랩 — 문서 지형 탐지·라우팅 표 작성 | 이 파일 |
 
 ## §로그 (최신이 위 · 블록 1개 = 작업 단위 1개 · 본문 최대 15블록)
+
+### 2026-10-23 — Morning Signal 모바일 성능·표시 수정 중 「라이브 루틴 ↔ 사본」 어긋남 규약화
+
+- **계기**: 요약 루틴에 Slack 링크 알림 단계를 더하면서 라이브(클라우드)만 고쳤고 `docs/morning-signal/routines/summary.md` 사본은 그대로 남았다. 이 폴더는 라이브 프롬프트를 복사해 둔 문서라, 한쪽만 고치면 다음 사람이 낡은 사본으로 루틴을 다시 만든다.
+- **증거**: 이 작업 단위에서 요약·TO-DO·영어 브리핑 등 루틴 5개를 라이브로 만들거나 고쳤다. 사본이 있는 것은 뉴스 3개·요약 1개 = 4개(재발 지점 4곳). 요약 사본은 같은 작업에서 맞췄다.
+- **변경**: 신설 — `docs/morning-signal/routines/README.md` §알려 둘 점에 1문장(라이브 프롬프트를 고치면 사본도 같은 작업에서 고친다) + 클라우드 루틴 API가 기본 커넥터를 자동으로 붙이는 점. 도구로 강제할 수단이 없어(라이브는 claude.ai 쪽) 문서로 둔다.
+- **로컬 처리(게이트 탈락)**: SVG `preserveAspectRatio="none"` 안의 원이 모바일에서 타원으로 납작해지는 문제(KPI 스파크라인 끝점) — 레포 안 재발 지점을 하나만 확인해 전역화하지 않았다. `Kpis.tsx` `Spark` 주석과 e2e(`sparkline end dot stays round`)에만 둔다.
+- **검증**: `grep -n "5단계 — Slack" docs/morning-signal/routines/summary.md` → 1건. `pnpm typecheck`·`test`(176+)·`test:e2e`(morning-signal 2종) 통과.
+- **커밋·PR**: 브랜치 `fix/morning-signal-mobile-perf` → main 병합
 
 ### 2026-10-23 — Morning Signal TO-DO 구현 중 Tailwind 이름 충돌을 도구로 막음
 

@@ -25,7 +25,7 @@ Morning Signal 웹 버전에 매일 아침 뉴스를 넣는 클라우드 루틴(
 **1순위: 네트워크 시크릿**
 
 - Network secret을 추가한다.
-  - 호스트: `vibe-app-omega.vercel.app`
+  - 호스트: `seungho-apps.vercel.app`
   - Secret type: Bearer
   - 값: 1에서 만든 토큰
 - 저장한 뒤에는 값을 다시 볼 수 없다. 바꾸려면 지우고 다시 등록한다.
@@ -33,7 +33,7 @@ Morning Signal 웹 버전에 매일 아침 뉴스를 넣는 클라우드 루틴(
 
 **폴백: 환경변수**
 
-- Network access를 Custom으로 바꾸고 Allowed domains에 `vibe-app-omega.vercel.app`을 넣는다. **Also include default list of common package managers**를 체크한다(체크하지 않으면 Trusted 목록이 빠진다).
+- Network access를 Custom으로 바꾸고 Allowed domains에 `seungho-apps.vercel.app`을 넣는다. **Also include default list of common package managers**를 체크한다(체크하지 않으면 Trusted 목록이 빠진다).
 - Environment variables에 `MS_INGEST_TOKEN`을 넣는다. 환경변수는 평문으로 저장되므로 시크릿이 되지 않을 때만 쓴다.
 - 프롬프트의 curl은 `${MS_INGEST_TOKEN:+-H "Authorization: Bearer $MS_INGEST_TOKEN"}` 한 줄로 쓴다. `MS_INGEST_TOKEN`이 있으면 인증 헤더를 더하고, 없으면 아무것도 붙이지 않는다. 값은 출력되지 않는다.
 
@@ -61,14 +61,14 @@ Morning Signal 웹 버전에 매일 아침 뉴스를 넣는 클라우드 루틴(
 1. **평일에** 작업을 하나씩 Run now로 실행한다. 주말에 돌리면 서버가 `DATE_NOT_ACCEPTED`로 거부하는데, 이는 정상이다.
 2. 최종 출력 첫 줄이 `SAVED <theme> items=N`(요약은 `SUMMARIZED <날짜>`)인지 본다.
 3. 첫 실행에서 `command -v curl python3` 결과도 확인한다. 공식 문서의 기본 설치 도구 표에 curl이 없다. python3는 보내기 전 JSON 문법 확인(`python3 -m json.tool`)에 쓴다.
-4. 페이지(`https://vibe-app-omega.vercel.app/morning-signal`)에서 결과를 확인한다.
+4. 페이지(`https://seungho-apps.vercel.app/morning-signal`)에서 결과를 확인한다.
 
 ## 5. 문제가 생겼을 때
 
 | 증상 | 확인할 것 |
 |---|---|
 | 401 `UNAUTHORIZED` | 토큰(시크릿 또는 `MS_INGEST_TOKEN`)이 Vercel 값과 맞지 않는다. |
-| 403 `host_not_allowed` | 시크릿의 호스트나 허용 도메인 목록에 `vibe-app-omega.vercel.app`이 빠졌다. |
+| 403 `host_not_allowed` | 시크릿의 호스트나 허용 도메인 목록에 `seungho-apps.vercel.app`이 빠졌다. |
 | 400 `INVALID_JSON` | 루틴이 쓴 JSON 파일에 문법 오류가 있다(따옴표 이스케이프·끝 쉼표 등). 프롬프트는 보내기 전에 `python3 -m json.tool`로 확인하고, 이 오류가 나면 문법만 고쳐 1회 다시 보낸다. |
 | 400 `INVALID_PAYLOAD` | 응답의 `issues`(path·message)에 적힌 필드를 확인한다. |
 | 400 `DATE_NOT_ACCEPTED` | 응답의 `expectedDate`가 오늘이면 주말 실행이다. 다르면 날짜 확정(0단계)이 틀렸다. |
@@ -86,6 +86,9 @@ Morning Signal 웹 버전에 매일 아침 뉴스를 넣는 클라우드 루틴(
 - `TZ=Asia/Seoul date`는 기존 계정 루틴이 매일 같은 클라우드 환경에서 쓰고 있어 동작이 확인됐다.
 
 ## 알려 둘 점
+
+- 라이브 루틴의 프롬프트를 고치면 이 폴더의 사본도 같은 작업에서 같이 고친다(요약 루틴에 Slack 단계를 더하고 사본이 한동안 어긋나 있었다).
+- 클라우드 루틴 API는 `mcp_connections`를 비워 보내도 기본 커넥터(Slack·Vercel 등)를 자동으로 붙인다. 필요 없는 커넥터는 루틴 편집 화면에서 끈다. 요약 루틴은 Slack이 필요하다.
 
 - 프롬프트는 기존 계정 것을 2026-10-23에 복사한 사본이다. 기존 쪽이 바뀌어도 자동으로 따라가지 않는다. 각 파일 머리의 복사 원본으로 추적한다.
 - 같은 날 같은 테마를 다시 보내면 덮어쓴다.

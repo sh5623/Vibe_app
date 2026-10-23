@@ -93,7 +93,7 @@ WebSearch 도구로 'TODAY/YESTERDAY 기준 최근 24~48시간 내'의 한국·�
 3. Write 도구로 위 문서를 절대 경로 `/tmp/feed.json`에 씁니다. 제목·요약 안의 큰따옴표(")는 `\"`로, 줄바꿈은 `\n`으로 이스케이프하고, 마지막 항목·키 뒤에는 쉼표를 두지 않습니다.
 4. 보내기 전에 Bash로 `python3 -m json.tool /tmp/feed.json > /dev/null`을 실행해 JSON 문법을 확인합니다. 오류가 나오면 문법(이스케이프·쉼표·괄호)만 고쳐 다시 쓰고, 통과할 때까지 같은 확인을 반복합니다. 내용(사실·수치·URL)은 바꾸지 않습니다.
 5. Bash로 아래 명령을 한 줄 그대로 실행해 전송합니다. 응답 마지막 줄이 HTTP 코드입니다.
-   curl -sS -w '\n%{http_code}' -X POST "https://vibe-app-omega.vercel.app/api/morning-signal" -H "Content-Type: application/json" ${MS_INGEST_TOKEN:+-H "Authorization: Bearer $MS_INGEST_TOKEN"} --data-binary @/tmp/feed.json
+   curl -sS -w '\n%{http_code}' -X POST "https://seungho-apps.vercel.app/api/morning-signal" -H "Content-Type: application/json" ${MS_INGEST_TOKEN:+-H "Authorization: Bearer $MS_INGEST_TOKEN"} --data-binary @/tmp/feed.json
    `${MS_INGEST_TOKEN:+…}` 부분은 환경변수 `MS_INGEST_TOKEN`이 있을 때(폴백 구성)만 인증 헤더를 붙이고, 없으면 아무것도 붙이지 않습니다(네트워크 시크릿이 토큰을 붙입니다). 이 부분을 고치거나 풀어 쓰지 말고 그대로 실행합니다. 토큰 값과 환경변수는 출력하지 않습니다(`echo`·`env`·`printenv`·`set -x`·`curl -v` 금지). 파일에도 쓰지 않습니다.
 6. 결과에 따라 처리합니다.
    - 200: 응답 `{"ok":true,...,"itemCount":N}`이면 성공입니다. N은 응답의 `itemCount` 값입니다(직접 센 수를 쓰지 않습니다).
