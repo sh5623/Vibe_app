@@ -173,7 +173,9 @@ describe('handler — lock', () => {
     const token = cookie.slice('ms_todo='.length).split(';')[0]
     expect(verifySession(token, NOW + 86_399_000, SECRET, '1234')).toBe(true)
     expect(verifySession(token, NOW + 86_401_000, SECRET, '1234')).toBe(false)
-    expect(calls).toEqual([{ url: `${REST}/rpc/ms_todo_attempt`, method: 'POST', body: { ok: true } }])
+    expect(calls).toEqual([
+      { url: `${REST}/rpc/ms_todo_attempt`, method: 'POST', body: { ok: true } },
+    ])
   })
 
   it('unlock decides and records in one RPC — a lock taken by a concurrent attempt wins', async () => {
@@ -196,7 +198,9 @@ describe('handler — lock', () => {
     )
     expect(res.statusCode).toBe(401)
     expect(body).toEqual({ error: 'WRONG_PIN', left: 3 })
-    expect(calls).toEqual([{ url: `${REST}/rpc/ms_todo_attempt`, method: 'POST', body: { ok: false } }])
+    expect(calls).toEqual([
+      { url: `${REST}/rpc/ms_todo_attempt`, method: 'POST', body: { ok: false } },
+    ])
     expect(res.headers['Set-Cookie']).toBeUndefined()
   })
 
