@@ -16,8 +16,8 @@ import {
 // 목록 — 시안 docs/morning-signal/todo-mockups/todo-list.html (v2, 줄 목록).
 // 맨 위 「남은 일」(TODO·IN PROGRESS, 날짜 무관) + 추가한 날짜별 기록(무한 스크롤, 20개씩).
 
-/** DONE 이 된 줄이 「남은 일」에서 빠지기까지 — 체크 모션(~0.7s) + 접힘(0.36s) */
-const LEAVE_MS = 1120
+/** DONE 이 된 줄이 「남은 일」에서 빠지기까지 — 체크 모션(~0.45s) + 접힘(0.36s) + 여유 */
+const LEAVE_MS = 850
 const ENTER_MS = 900
 
 type Group = 'progress' | 'todo'

@@ -34,11 +34,11 @@ openssl rand -hex 32
 ## 5. 배포 확인 (회사 와이파이 밖에서)
 
 ```bash
-curl https://vibe-app-omega.vercel.app/api/morning-signal
+curl https://seungho-apps.vercel.app/api/morning-signal
 ```
 
 - 기대 응답(데이터가 없을 때): `{"days":[]}` (함수 배포와 Supabase 연결이 함께 확인된다)
-- 브라우저로 `https://vibe-app-omega.vercel.app/morning-signal`을 열면 (데이터가 없을 때) 「아직 저장된 뉴스가 없어요」가 보여야 한다.
+- 브라우저로 `https://seungho-apps.vercel.app/morning-signal`을 열면 (데이터가 없을 때) 「아직 저장된 뉴스가 없어요」가 보여야 한다.
 - 503 `SUPABASE_UNAVAILABLE`이면 1단계와 3단계를 다시 본다.
 
 ## 6. 쓰기 시험 (필수, 평일 08:30 전에)
@@ -50,7 +50,7 @@ curl https://vibe-app-omega.vercel.app/api/morning-signal
 - `date`는 서버 기준 KST 오늘이어야 한다. `<토큰>`과 `<오늘 날짜>`는 직접 채운다.
 
 ```bash
-curl -sS -w '\n%{http_code}' -X POST "https://vibe-app-omega.vercel.app/api/morning-signal" \
+curl -sS -w '\n%{http_code}' -X POST "https://seungho-apps.vercel.app/api/morning-signal" \
   -H "Authorization: Bearer <토큰>" \
   -H "Content-Type: application/json" \
   -d '{"kind":"summary","date":"<오늘 날짜>","headline":"시험 저장이에요"}'
@@ -64,7 +64,7 @@ curl -sS -w '\n%{http_code}' -X POST "https://vibe-app-omega.vercel.app/api/morn
 
 [`routines/README.md`](./routines/README.md)를 따른다.
 
-1. 클라우드 환경에 네트워크 시크릿(호스트 `vibe-app-omega.vercel.app`, Bearer)을 만든다.
+1. 클라우드 환경에 네트워크 시크릿(호스트 `seungho-apps.vercel.app`, Bearer)을 만든다.
 2. 작업 4개를 등록한다(AI 07:50 · 시사 07:55 · GitHub 08:00 · 요약 08:30, 평일 KST).
 3. 평일에 하나씩 Run now로 시험 운행한다.
 
@@ -82,7 +82,7 @@ curl -sS -w '\n%{http_code}' -X POST "https://vibe-app-omega.vercel.app/api/morn
 | 증상 | 원인 | 조치 |
 |---|---|---|
 | 401 `UNAUTHORIZED` | 보낸 토큰이 Vercel의 `MS_INGEST_TOKEN`과 다르다 | 시크릿(또는 환경변수)과 Vercel 값을 맞춘다. 재시도하지 않는다. |
-| 403 `host_not_allowed` | 루틴 환경의 시크릿 호스트나 허용 도메인에 `vibe-app-omega.vercel.app`이 없다 | [`routines/README.md`](./routines/README.md) 2단계를 다시 설정한다. |
+| 403 `host_not_allowed` | 루틴 환경의 시크릿 호스트나 허용 도메인에 `seungho-apps.vercel.app`이 없다 | [`routines/README.md`](./routines/README.md) 2단계를 다시 설정한다. |
 | 400 `INVALID_JSON` | 본문이 JSON 문법에 맞지 않는다(따옴표 이스케이프·끝 쉼표 등) | 문법만 고쳐 다시 보낸다. 루틴 프롬프트는 보내기 전에 `python3 -m json.tool`로 확인한다. |
 | 400 `INVALID_PAYLOAD` | 본문 형식이 스키마와 다르다 | 응답의 `issues`(path·message) 필드를 고친다. |
 | 400 `DATE_NOT_ACCEPTED` | `date`가 서버 KST 오늘이 아니거나 주말이다 | 응답의 `expectedDate`가 오늘이면 주말 실행이라 정상이다. 다르면 루틴의 날짜 확정을 점검한다. |
@@ -96,6 +96,8 @@ curl -sS -w '\n%{http_code}' -X POST "https://vibe-app-omega.vercel.app/api/morn
 - 읽기 API는 공개다. 링크를 아는 사람은 뉴스 JSON을 읽을 수 있다(뉴스만 있다).
 - 루틴 프롬프트는 기존 계정 것을 2026-10-23에 복사한 사본이다. 기존 쪽이 바뀌어도 자동으로 따라가지 않는다. 각 문서 머리의 복사 원본 표기로 추적한다.
 - 같은 날 같은 테마를 다시 보내면 덮어쓴다. 이력은 남지 않는다.
+- Vercel 함수는 `vercel.json`의 `regions`로 서울(`icn1`)에 고정했다. 지정하지 않으면 미국 동부(`iad1`)에서 실행돼, 서울에서 쓰는 화면이 호출마다 약 0.5초씩 느렸다(DB 호출 1회 약 0.25초 추가). Supabase 프로젝트 리전이 서울이 아니면 대시보드에서 확인하고 같은 지역으로 맞춘다.
+- 요약 루틴(08:30)은 저장이 끝나면 #hoh-news 채널에 링크를 한 건 보낸다(Slack 커넥터 필요).
 - 07:50~08:00 사이에 열면 아직 오지 않은 테마가 「수집 실패」로 보인다(레퍼런스와 같은 동작이다).
 
 ## 11. 로컬 개발·테스트

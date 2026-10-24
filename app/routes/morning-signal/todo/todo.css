@@ -628,7 +628,7 @@
 }
 .ms .trow.leaving {
   overflow: hidden;
-  animation: td-leave 0.36s cubic-bezier(0.7, 0, 0.3, 1) 0.7s forwards;
+  animation: td-leave 0.36s cubic-bezier(0.7, 0, 0.3, 1) 0.45s forwards;
 }
 @keyframes td-leave {
   from {
@@ -846,7 +846,7 @@
   background: var(--card);
   box-shadow: 0 -12px 40px -12px rgba(2, 6, 23, 0.35);
   transform: translate(-50%, 105%);
-  transition: transform 0.45s var(--ease);
+  transition: transform 0.32s var(--ease);
 }
 .ms .todo-sheet.on .todo-panel {
   transform: translate(-50%, 0);
@@ -980,6 +980,10 @@
 }
 
 /* 첨부 미리보기 */
+.ms .todo-wait {
+  color: var(--muted-fg);
+  font-size: 13px;
+}
 .ms .todo-thumbs {
   display: flex;
   flex-wrap: wrap;

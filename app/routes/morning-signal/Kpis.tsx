@@ -22,36 +22,39 @@ function Arrow() {
   )
 }
 
-/** 스파크라인 — 레퍼런스 sparkSvg. 부모가 key 로 다시 만들어 그릴 때마다 선이 새로 그어진다. */
+/**
+ * 스파크라인 — 레퍼런스 sparkSvg. 부모가 key 로 다시 만들어 그릴 때마다 선이 새로 그어진다.
+ * 선은 가로로만 늘어나는 SVG(preserveAspectRatio none)라, 끝점 원을 그 안에 그리면 모바일에서 타원으로 납작해진다.
+ * 그래서 끝점은 SVG 밖의 HTML 원으로 두고 위치만 비율로 맞춘다.
+ */
 function Spark({ vals, color, gid }: { vals: number[]; color: string; gid: string }) {
   const p = sparkPath(vals)
   const style: CssVars = { '--len': p.len }
+  const dot: CssVars = {
+    left: `${((p.end[0] / 220) * 100).toFixed(2)}%`,
+    top: `${p.end[1].toFixed(1)}px`,
+    background: color,
+  }
   return (
-    <svg
-      className="spark"
-      viewBox="0 0 220 36"
-      preserveAspectRatio="none"
-      style={style}
-      aria-hidden="true"
-    >
-      <defs>
-        <linearGradient id={gid} x1="0" x2="0" y1="0" y2="1">
-          <stop offset="0" stopColor={color} stopOpacity=".28" />
-          <stop offset="1" stopColor={color} stopOpacity="0" />
-        </linearGradient>
-      </defs>
-      <path className="a" d={p.area} fill={`url(#${gid})`} />
-      <path className="l" d={p.line} stroke={color} />
-      <circle
-        className="p"
-        cx={p.end[0].toFixed(1)}
-        cy={p.end[1].toFixed(1)}
-        r="3.2"
-        fill={color}
-        stroke="var(--card)"
-        strokeWidth="1.5"
-      />
-    </svg>
+    <div className="spark-wrap">
+      <svg
+        className="spark"
+        viewBox="0 0 220 36"
+        preserveAspectRatio="none"
+        style={style}
+        aria-hidden="true"
+      >
+        <defs>
+          <linearGradient id={gid} x1="0" x2="0" y1="0" y2="1">
+            <stop offset="0" stopColor={color} stopOpacity=".28" />
+            <stop offset="1" stopColor={color} stopOpacity="0" />
+          </linearGradient>
+        </defs>
+        <path className="a" d={p.area} fill={`url(#${gid})`} />
+        <path className="l" d={p.line} stroke={color} />
+      </svg>
+      <i className="spark-dot" style={dot} aria-hidden="true" />
+    </div>
   )
 }
 
