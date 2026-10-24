@@ -426,7 +426,7 @@
 .ms .cal .wk,
 .ms .cal .days {
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
+  grid-template-columns: repeat(7, 1fr);
   gap: 4px;
   text-align: center;
 }

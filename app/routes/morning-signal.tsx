@@ -9,7 +9,7 @@ import Kpis from './morning-signal/Kpis'
 import { pickInitialDate, stampText } from './morning-signal/model'
 import Shell from './morning-signal/Shell'
 
-const EMPTY = { title: '아직 저장된 뉴스가 없어요', text: '평일 아침 8시에 첫 브리핑이 들어와요.' }
+const EMPTY = { title: '아직 저장된 뉴스가 없어요', text: '매일 아침 8시에 첫 브리핑이 들어와요.' }
 const ERROR = { title: '데이터를 불러오지 못했어요', text: '잠시 뒤 새로고침해 주세요.' }
 
 export function meta(_: Route.MetaArgs) {

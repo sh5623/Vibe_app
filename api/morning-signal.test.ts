@@ -6,7 +6,6 @@ import handler, {
   type FeedRow,
   feedAggregates,
   type GhItem,
-  isWeekday,
   kstToday,
   parseIngest,
   weekdayKo,
@@ -162,10 +161,8 @@ describe('core', () => {
   })
 
   it('weekday helpers', () => {
-    expect(isWeekday('2026-10-23')).toBe(true)
-    expect(isWeekday('2026-10-24')).toBe(false)
-    expect(isWeekday('2026-10-25')).toBe(false)
     expect(weekdayKo('2026-10-19')).toBe('월')
+    expect(weekdayKo('2026-10-24')).toBe('토')
   })
 
   it('feedAggregates ai', () => {
@@ -419,14 +416,11 @@ describe('handler', () => {
     expect(fetchMock).not.toHaveBeenCalled()
   })
 
-  it('POST 400 DATE_NOT_ACCEPTED on saturday even if today', async () => {
+  it('POST 200 on saturday when the date is today (weekends are collected too)', async () => {
     vi.setSystemTime(new Date('2026-10-24T00:00:00Z'))
     const res = makeRes()
     await handler(makeReq('POST', { body: { ...ghBody, date: '2026-10-24' } }), res)
-    expect(res.statusCode).toBe(400)
-    const body = JSON.parse(res.body)
-    expect(body.error).toBe('DATE_NOT_ACCEPTED')
-    expect(body.expectedDate).toBe('2026-10-24')
+    expect(res.statusCode).toBe(200)
   })
 
   it('POST 400 INVALID_PAYLOAD for an impossible calendar date', async () => {

@@ -1,7 +1,7 @@
 # AI 뉴스 브리핑
 
 - 이름: AI 뉴스 브리핑
-- 스케줄: 07:50 (평일, KST)
+- 스케줄: 07:50 (매일, KST)
 - 모델: `claude-sonnet-5-5`
 - 커넥터: 없음 (전부 끈다)
 - 복사 원본: `second-brain/.wiki-automation/routines/news-ai.md (2026-10-23)`

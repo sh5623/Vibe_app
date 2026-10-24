@@ -92,7 +92,7 @@ test('empty state', async ({ page }) => {
   await mockApi(page, 'empty')
   await page.goto('/morning-signal')
   await expect(page.getByText('아직 저장된 뉴스가 없어요')).toBeVisible()
-  await expect(page.getByText('평일 아침 8시에 첫 브리핑이 들어와요.')).toBeVisible()
+  await expect(page.getByText('매일 아침 8시에 첫 브리핑이 들어와요.')).toBeVisible()
   await expect(page.locator('.content')).toHaveCount(0)
 })
 

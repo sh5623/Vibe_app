@@ -273,11 +273,6 @@ function dayIndex(date: string): number {
   return new Date(`${date}T00:00:00Z`).getUTCDay()
 }
 
-export function isWeekday(date: string): boolean {
-  const d = dayIndex(date)
-  return d >= 1 && d <= 5
-}
-
 export function weekdayKo(date: string): string {
   return WEEKDAYS[dayIndex(date)] ?? ''
 }
@@ -543,7 +538,7 @@ async function handlePost(req: VercelRequest, res: ServerResponse, base: string)
   const payload = parsed.value
 
   const expectedDate = kstToday(new Date())
-  if (payload.date !== expectedDate || !isWeekday(payload.date)) {
+  if (payload.date !== expectedDate) {
     return json(res, 400, { error: 'DATE_NOT_ACCEPTED', expectedDate })
   }
 

@@ -79,10 +79,10 @@ describe('pickInitialDate', () => {
 })
 
 describe('calendarCells', () => {
-  it('calendarCells skips weekends with weekday lead', () => {
+  it('calendarCells draws every day with a Monday-first lead', () => {
     const cells = calendarCells(2026, 10, new Set(['2026-10-19']), '2026-10-19')
-    // 10월 1일 = 목 → 선행 빈칸 3, 평일 22일
-    expect(cells).toHaveLength(25)
+    // 10월 1일 = 목 → 선행 빈칸 3, 31일 전부
+    expect(cells).toHaveLength(34)
     expect(cells.slice(0, 3).every((c) => c.date === null && c.day === null)).toBe(true)
     expect(cells[3]).toEqual({ date: '2026-10-01', day: 1, has: false, on: false })
     expect(cells.find((c) => c.date === '2026-10-19')).toEqual({
@@ -91,13 +91,19 @@ describe('calendarCells', () => {
       has: true,
       on: true,
     })
-    expect(cells.find((c) => c.date === '2026-10-17')).toBeUndefined()
+    expect(cells.find((c) => c.date === '2026-10-17')).toEqual({
+      date: '2026-10-17',
+      day: 17,
+      has: false,
+      on: false,
+    })
   })
 
-  it('drops the lead when the month starts on a weekend', () => {
-    // 2026-11-01 = 일 → (0+6)%7 = 6 > 4 → 선행 빈칸 0, 첫 칸은 11월 2일(월)
+  it('puts a Sunday start at the end of the first row', () => {
+    // 2026-11-01 = 일 → (0+6)%7 = 6 → 선행 빈칸 6
     const cells = calendarCells(2026, 11, new Set(), null)
-    expect(cells[0]).toEqual({ date: '2026-11-02', day: 2, has: false, on: false })
+    expect(cells.slice(0, 6).every((c) => c.date === null)).toBe(true)
+    expect(cells[6]).toEqual({ date: '2026-11-01', day: 1, has: false, on: false })
   })
 })
 
