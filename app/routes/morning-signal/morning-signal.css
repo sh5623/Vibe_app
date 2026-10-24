@@ -77,24 +77,26 @@
   width: 44vmax;
   height: 44vmax;
   border-radius: 50%;
-  filter: blur(100px);
+  /* filter: blur() 를 움직이는 층에 쓰면 iOS Safari 가 매 프레임 다시 흐려서 터치 반응이 몇 초씩 밀린다.
+     흐림은 방사형 그라데이션으로 대신하고, 움직임(transform)만 남긴다. */
+  background: radial-gradient(closest-side, var(--c), transparent);
   opacity: var(--glow);
   animation: ms-drift 26s ease-in-out infinite alternate;
 }
 .ms .aurora i:nth-child(1) {
-  background: var(--s-ai);
+  --c: var(--s-ai);
   left: 10%;
   top: 0;
 }
 .ms .aurora i:nth-child(2) {
-  background: var(--s-world);
+  --c: var(--s-world);
   right: 6%;
   top: 26%;
   animation-duration: 31s;
   animation-delay: -8s;
 }
 .ms .aurora i:nth-child(3) {
-  background: var(--s-gh);
+  --c: var(--s-gh);
   left: 34%;
   bottom: 2%;
   animation-duration: 37s;
