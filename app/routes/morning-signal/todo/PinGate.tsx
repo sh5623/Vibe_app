@@ -152,7 +152,7 @@ export default function PinGate({ lockedUntil: initialLock, configError }: PinGa
       play(
         slotRefs.current[i],
         [{ transform: 'scale(1)' }, { transform: 'scale(1.08)' }, { transform: 'scale(1)' }],
-        { duration: 300, easing: 'cubic-bezier(.34,1.56,.64,1)' }
+        { duration: 300, easing: 'cubic-bezier(.22,1,.36,1)' }
       )
     }, LAND_MS)
   }

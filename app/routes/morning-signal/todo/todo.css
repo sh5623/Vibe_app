@@ -131,14 +131,14 @@
   transition:
     background 0.35s,
     color 0.3s,
-    transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1),
+    transform 0.4s cubic-bezier(0.22, 1, 0.36, 1),
     box-shadow 0.4s;
 }
 .ms .pin .core svg {
   position: absolute;
   transition:
     opacity 0.25s,
-    transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    transform 0.4s cubic-bezier(0.22, 1, 0.36, 1);
 }
 .ms .pin .ic-check {
   opacity: 0;
@@ -308,7 +308,7 @@
   margin: -6px 0 0 -6px;
   border-radius: 50%;
   background: var(--ink);
-  animation: td-pop 0.32s cubic-bezier(0.34, 1.56, 0.64, 1);
+  animation: td-pop 0.32s cubic-bezier(0.22, 1, 0.36, 1);
 }
 @keyframes td-pop {
   0% {
@@ -342,7 +342,7 @@
   background: var(--td-slot);
   transition:
     opacity 0.2s,
-    transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    transform 0.3s cubic-bezier(0.22, 1, 0.36, 1);
 }
 .ms .pin .slot.filled .ph,
 .ms .pin .slot.active .ph {
@@ -437,7 +437,7 @@
   background: linear-gradient(150deg, #4ade80, var(--td-ok2));
   box-shadow: 0 10px 20px -10px rgba(22, 163, 74, 0.8);
   transition-delay: calc(var(--i) * 90ms);
-  animation: td-lift 0.42s cubic-bezier(0.34, 1.56, 0.64, 1) calc(var(--i) * 90ms);
+  animation: td-lift 0.42s cubic-bezier(0.22, 1, 0.36, 1) calc(var(--i) * 90ms);
 }
 .ms .pin .slot.ok .col span {
   color: #fff;
@@ -618,7 +618,7 @@
   background: var(--td-line);
 }
 .ms .trow.enter {
-  animation: td-enter 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+  animation: td-enter 0.5s cubic-bezier(0.22, 1, 0.36, 1);
 }
 @keyframes td-enter {
   from {
@@ -670,7 +670,7 @@
 .ms .si-disc {
   transform-origin: 10px 10px;
   transform: scale(0);
-  transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+  transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
 }
 .ms .si-chk {
   fill: none;
@@ -960,12 +960,47 @@
   margin-top: 8px;
   animation: td-enter 0.3s var(--ease);
 }
+.ms .todo-xf-f {
+  position: relative;
+  display: flex;
+  flex: 1;
+  min-width: 0;
+}
+.ms .todo-xf-ph {
+  position: absolute;
+  inset: 0 34px 0 11px;
+  display: flex;
+  align-items: center;
+  pointer-events: none;
+  font: 500 16px var(--f);
+  color: var(--muted-fg);
+}
+.ms .todo-xf-x {
+  all: unset;
+  box-sizing: border-box;
+  position: absolute;
+  top: 50%;
+  right: 4px;
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  transform: translateY(-50%);
+  border-radius: 50%;
+  font-size: 13px;
+  color: var(--muted-fg);
+  cursor: pointer;
+}
+.ms .todo-xf-x:focus-visible {
+  outline: 2px solid var(--td-b1);
+}
 .ms .todo-xf input {
   all: unset;
   box-sizing: border-box;
   flex: 1;
   min-width: 0;
-  padding: 9px 11px;
+  min-height: 40px;
+  padding: 9px 34px 9px 11px;
   border-radius: 10px;
   background: var(--td-tint);
   font: 500 16px var(--f);
@@ -1202,7 +1237,7 @@
   background: var(--td-b1);
   box-shadow: 0 12px 26px -10px rgba(99, 102, 241, 0.9);
   cursor: pointer;
-  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1);
 }
 .ms .todo-fab:active {
   transform: scale(0.9);
