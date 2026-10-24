@@ -1,7 +1,7 @@
 # 요약 루틴 (summary)
 
 - 이름: Morning Signal 요약
-- 스케줄: 08:30 (평일, KST)
+- 스케줄: 08:30 (매일, KST)
 - 모델: `claude-sonnet-5-5`
 - 커넥터: Slack만 필요하다(5단계 알림). 나머지는 끈다. 클라우드 루틴 API는 기본 커넥터를 자동으로 붙이므로 편집 화면에서 직접 끈다.
 - 복사 원본: `second-brain/.wiki-automation/routines/notify.md (2026-10-23)` 중 절대 규칙 1과 2단계 headline·highlight 규칙만 가져왔다. Slack 발송, 개발 줄, 집계 스크립트는 뺐다. 집계(건수·FE 수치·tops)는 서버가 계산한다.

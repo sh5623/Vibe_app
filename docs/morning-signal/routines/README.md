@@ -42,12 +42,12 @@ Morning Signal 웹 버전에 매일 아침 뉴스를 넣는 클라우드 루틴(
 경로: New task → Set up manually. 작업마다 다음을 정한다.
 
 - Prompt: 해당 md 파일의 「프롬프트」 펜스 안 본문 전체를 붙여넣는다.
-- Trigger: Schedule. 프리셋은 로컬 시각 기준이므로 평일 KST 시각에 맞춘다. Custom cron은 시간대가 문서에 없으므로, 쓴다면 저장한 뒤 표시되는 다음 실행 시각으로 확인한다.
+- Trigger: Schedule. 프리셋은 로컬 시각 기준이므로 KST 시각에 맞춘다. 매일 실행한다(주말 포함). Custom cron은 시간대가 문서에 없으므로, 쓴다면 저장한 뒤 표시되는 다음 실행 시각으로 확인한다.
 - Cloud environment: 2에서 만든 환경
 - Connectors: 전부 끈다. 기본값이 전부 포함이므로 직접 꺼야 한다.
 - 허용 도구를 고르는 칸은 없다. 실행은 auto mode다.
 
-| 이름 | 파일 | 시각(평일 KST) | 모델 | 커넥터 |
+| 이름 | 파일 | 시각(매일 KST) | 모델 | 커넥터 |
 |---|---|---|---|---|
 | AI 뉴스 브리핑 | [news-ai.md](./news-ai.md) | 07:50 | `claude-sonnet-5-5` | 끔 |
 | 시사·경제·상식 브리핑 | [news-world.md](./news-world.md) | 07:55 | `claude-sonnet-5-5` | 끔 |
@@ -58,7 +58,7 @@ Morning Signal 웹 버전에 매일 아침 뉴스를 넣는 클라우드 루틴(
 
 ## 4. 시험 운행
 
-1. **평일에** 작업을 하나씩 Run now로 실행한다. 주말에 돌리면 서버가 `DATE_NOT_ACCEPTED`로 거부하는데, 이는 정상이다.
+1. 작업을 하나씩 Run now로 실행한다.
 2. 최종 출력 첫 줄이 `SAVED <theme> items=N`(요약은 `SUMMARIZED <날짜>`)인지 본다.
 3. 첫 실행에서 `command -v curl python3` 결과도 확인한다. 공식 문서의 기본 설치 도구 표에 curl이 없다. python3는 보내기 전 JSON 문법 확인(`python3 -m json.tool`)에 쓴다.
 4. 페이지(`https://seungho-apps.vercel.app/morning-signal`)에서 결과를 확인한다.
@@ -71,7 +71,7 @@ Morning Signal 웹 버전에 매일 아침 뉴스를 넣는 클라우드 루틴(
 | 403 `host_not_allowed` | 시크릿의 호스트나 허용 도메인 목록에 `seungho-apps.vercel.app`이 빠졌다. |
 | 400 `INVALID_JSON` | 루틴이 쓴 JSON 파일에 문법 오류가 있다(따옴표 이스케이프·끝 쉼표 등). 프롬프트는 보내기 전에 `python3 -m json.tool`로 확인하고, 이 오류가 나면 문법만 고쳐 1회 다시 보낸다. |
 | 400 `INVALID_PAYLOAD` | 응답의 `issues`(path·message)에 적힌 필드를 확인한다. |
-| 400 `DATE_NOT_ACCEPTED` | 응답의 `expectedDate`가 오늘이면 주말 실행이다. 다르면 날짜 확정(0단계)이 틀렸다. |
+| 400 `DATE_NOT_ACCEPTED` | 날짜 확정(0단계)이 틀렸다. 응답의 `expectedDate`와 비교한다. 2026-10-24 이전 프롬프트의 「같은데 거부됐다면 주말 실행」 문장은 서버가 주말을 받기 전의 잔재라 지금은 해당하지 않는다. |
 | 413 `PAYLOAD_TOO_LARGE` | 본문이 256 KiB를 넘었다. |
 | 503 `INGEST_NOT_CONFIGURED` | Vercel에 `MS_INGEST_TOKEN`이 없다. 루틴 쪽 문제가 아니다 — 환경변수를 추가하고 재배포한다. 루틴은 1회만 다시 보낸다. |
 | 503 `SUPABASE_UNAVAILABLE` | 서버의 Supabase 설정·테이블 문제이거나 일시 장애다. 루틴은 1회만 다시 보낸다. 원인은 Vercel 함수 로그에 남는다. |

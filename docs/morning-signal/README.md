@@ -41,11 +41,11 @@ curl https://seungho-apps.vercel.app/api/morning-signal
 - 브라우저로 `https://seungho-apps.vercel.app/morning-signal`을 열면 (데이터가 없을 때) 「아직 저장된 뉴스가 없어요」가 보여야 한다.
 - 503 `SUPABASE_UNAVAILABLE`이면 1단계와 3단계를 다시 본다.
 
-## 6. 쓰기 시험 (필수, 평일 08:30 전에)
+## 6. 쓰기 시험 (필수, 08:30 전에)
 
 5단계의 GET은 토큰을 쓰지 않으므로, 3단계의 `MS_INGEST_TOKEN`은 이 시험으로만 확인된다. **반드시 한다.**
 
-- **평일 08:30 전에** 보낸다. 08:30에 요약 루틴이 같은 날짜 키로 덮어써서 시험 문장이 사라진다.
+- **08:30 전에** 보낸다. 08:30에 요약 루틴이 같은 날짜 키로 덮어써서 시험 문장이 사라진다.
 - 08:30 이후(또는 요약 루틴을 아직 등록하기 전)에 보내면, 다음 요약 실행 전까지 시험 문장이 그날의 「오늘의 한 줄」로 남는다. 요약 루틴을 Run now로 한 번 돌리면 바뀐다.
 - `date`는 서버 기준 KST 오늘이어야 한다. `<토큰>`과 `<오늘 날짜>`는 직접 채운다.
 
@@ -58,17 +58,17 @@ curl -sS -w '\n%{http_code}' -X POST "https://seungho-apps.vercel.app/api/mornin
 
 - 200 `{"ok":true,...}`이면 성공이다. 같은 날 요약 루틴이 같은 키로 **덮어쓴다.**
 - 503 `INGEST_NOT_CONFIGURED`이면 3단계의 `MS_INGEST_TOKEN`이 없다(추가한 뒤 재배포한다).
-- 주말에 보내면 400 `DATE_NOT_ACCEPTED`가 나온다. 정상이다. 평일에 다시 한다.
+- 날짜가 서버 KST 오늘과 다르면 400 `DATE_NOT_ACCEPTED`가 나온다. 오늘 날짜로 다시 보낸다.
 
 ## 7. 다른 계정에서 루틴 등록
 
 [`routines/README.md`](./routines/README.md)를 따른다.
 
 1. 클라우드 환경에 네트워크 시크릿(호스트 `seungho-apps.vercel.app`, Bearer)을 만든다.
-2. 작업 4개를 등록한다(AI 07:50 · 시사 07:55 · GitHub 08:00 · 요약 08:30, 평일 KST).
-3. 평일에 하나씩 Run now로 시험 운행한다.
+2. 작업 4개를 등록한다(AI 07:50 · 시사 07:55 · GitHub 08:00 · 요약 08:30, 매일 KST).
+3. 하나씩 Run now로 시험 운행한다.
 
-## 8. 첫 평일 아침 확인
+## 8. 첫 아침 확인
 
 08:30 이후 `/morning-signal`에서 본다.
 
@@ -85,7 +85,7 @@ curl -sS -w '\n%{http_code}' -X POST "https://seungho-apps.vercel.app/api/mornin
 | 403 `host_not_allowed` | 루틴 환경의 시크릿 호스트나 허용 도메인에 `seungho-apps.vercel.app`이 없다 | [`routines/README.md`](./routines/README.md) 2단계를 다시 설정한다. |
 | 400 `INVALID_JSON` | 본문이 JSON 문법에 맞지 않는다(따옴표 이스케이프·끝 쉼표 등) | 문법만 고쳐 다시 보낸다. 루틴 프롬프트는 보내기 전에 `python3 -m json.tool`로 확인한다. |
 | 400 `INVALID_PAYLOAD` | 본문 형식이 스키마와 다르다 | 응답의 `issues`(path·message) 필드를 고친다. |
-| 400 `DATE_NOT_ACCEPTED` | `date`가 서버 KST 오늘이 아니거나 주말이다 | 응답의 `expectedDate`가 오늘이면 주말 실행이라 정상이다. 다르면 루틴의 날짜 확정을 점검한다. |
+| 400 `DATE_NOT_ACCEPTED` | `date`가 서버 KST 오늘이 아니다 | 응답의 `expectedDate`와 루틴의 날짜 확정(0단계) 값을 비교해 점검한다. |
 | 503 `INGEST_NOT_CONFIGURED` | (POST만) Vercel에 `MS_INGEST_TOKEN`이 없다 | 3단계로 추가하고 재배포한다. 루틴은 1회만 다시 보내고 보고한다. |
 | 503 `SUPABASE_UNAVAILABLE` | `SUPABASE_URL`·`SUPABASE_SERVICE_ROLE_KEY`가 없다, 테이블이 없다, 또는 Supabase 오류다 | 1단계와 3단계를 확인하고 재배포한다. 원인은 Vercel 함수 로그(`[api/morning-signal] failed`)에 PostgREST 오류 본문으로 남는다. |
 | 회사망에서 페이지가 안 열린다 | ePrism이 `*.vercel.app`을 막는다(알려진 한계) | 휴대폰이나 집 네트워크에서 연다. |

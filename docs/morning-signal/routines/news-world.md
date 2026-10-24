@@ -1,7 +1,7 @@
 # 시사·경제·상식 브리핑
 
 - 이름: 시사·경제·상식 브리핑
-- 스케줄: 07:55 (평일, KST)
+- 스케줄: 07:55 (매일, KST)
 - 모델: `claude-sonnet-5-5`
 - 커넥터: 없음 (전부 끈다)
 - 복사 원본: `second-brain/.wiki-automation/routines/news-world.md (2026-10-23)`

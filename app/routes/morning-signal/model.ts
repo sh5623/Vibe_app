@@ -71,7 +71,7 @@ export interface CalCell {
   on: boolean
 }
 
-/** 레퍼런스 buildCal: 월~금만 그리고, 선행 빈칸 = (첫날 요일+6)%7 (주말 시작이면 0). */
+/** 월~일 7열 달력. 선행 빈칸 = (첫날 요일+6)%7. 주말에도 뉴스가 쌓이므로 모든 날을 그린다. */
 export function calendarCells(
   year: number,
   month: number,
@@ -79,13 +79,10 @@ export function calendarCells(
   cur: string | null
 ): CalCell[] {
   const cells: CalCell[] = []
-  let lead = (new Date(Date.UTC(year, month - 1, 1)).getUTCDay() + 6) % 7
-  if (lead > 4) lead = 0
+  const lead = (new Date(Date.UTC(year, month - 1, 1)).getUTCDay() + 6) % 7
   for (let i = 0; i < lead; i++) cells.push({ date: null, day: null, has: false, on: false })
   const last = new Date(Date.UTC(year, month, 0)).getUTCDate()
   for (let d = 1; d <= last; d++) {
-    const wd = new Date(Date.UTC(year, month - 1, d)).getUTCDay()
-    if (wd === 0 || wd === 6) continue
     const date = `${year}-${pad2(month)}-${pad2(d)}`
     cells.push({ date, day: d, has: have.has(date), on: date === cur })
   }
