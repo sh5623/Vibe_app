@@ -3,7 +3,7 @@
 - 이름: Morning Signal 요약
 - 스케줄: 08:30 (매일, KST)
 - 모델: `claude-sonnet-5-5`
-- 커넥터: Slack만 필요하다(5단계 알림). 나머지는 끈다. 클라우드 루틴 API는 기본 커넥터를 자동으로 붙이므로 편집 화면에서 직접 끈다.
+- Slack: 커넥터(사용자 계정으로 전송) 대신 Slack 앱(Morning Assistant) 봇 토큰으로 `chat.postMessage`를 호출한다. 토큰은 클라우드 환경의 네트워크 시크릿(호스트 `slack.com`, 경로 접두사 `/api/chat.postMessage`, Bearer)에 넣는다. 커넥터는 모두 꺼도 된다.
 - 복사 원본: `second-brain/.wiki-automation/routines/notify.md (2026-10-23)` 중 절대 규칙 1과 2단계 headline·highlight 규칙만 가져왔다. Slack 발송, 개발 줄, 집계 스크립트는 뺐다. 집계(건수·FE 수치·tops)는 서버가 계산한다.
 - 바꾼 곳: 세 군데에 더해 2026-10-23에 Slack 링크 알림(5단계)을 더했다. 나머지 규칙 문장은 원문 그대로다.
   - 75행의 「tops는 [] 로 둡니다」 구절을 뺐다(tops를 쓰지 않는다).
@@ -57,19 +57,22 @@ curl -sS -w '\n%{http_code}' "https://seungho-apps.vercel.app/api/morning-signal
 【4단계 — 저장 결과 판정】
 3단계가 200 `{"ok":true,...}`로 끝났을 때만 5단계로 갑니다. 그 밖의 결과(실패·주말 거부 포함)에서는 5단계를 건너뜁니다.
 
-【5단계 — Slack 링크 알림】
-1. ToolSearch로 `slack send message`를 검색해 Slack 메시지 전송 도구를 로드합니다.
-2. 채널 ID `C0BGTM2QZ33`(#hoh-news)에 메시지를 정확히 한 건 보냅니다. 형식은 아래와 같고, 마크다운과 줄바꿈을 그대로 씁니다. `{…}`는 실제 값으로 바꿉니다.
+【5단계 — Slack 링크 알림 (Morning Assistant 앱)】
+Slack 커넥터(MCP) 도구는 쓰지 않습니다. 앱 봇 토큰은 네트워크 시크릿이 curl 요청에 자동으로 붙이므로 토큰을 직접 다루지 않습니다.
+1. 아래 형식으로 메시지를 만듭니다. `{…}`는 실제 값으로 바꿉니다. 링크는 Slack 형식인 `<주소|표시할 글>`로 씁니다(`[글](주소)` 형식은 Slack에서 링크가 되지 않습니다).
 :rolled_up_newspaper: {TODAY를 한국어로 표기, 예: 2026년 10월 23일} Morning Signal
 
 {headline}
 
 • AI {day.counts.ai}건 · 시사·경제·상식 {day.counts.world}건 · GitHub 트렌딩 {day.counts.gh}건
 
-[오늘의 Morning Signal 열기](https://seungho-apps.vercel.app/morning-signal)
-3. 1단계 응답이 404이거나 counts 값이 없으면 건수 줄(•로 시작하는 줄)만 뺍니다. 메시지에는 위 형식 밖의 내용(뉴스 본문·기사 URL·토큰 등)을 넣지 않습니다.
-4. 전송이 실패하면 1회만 다시 시도합니다. Slack 전송 실패는 요약 저장 결과에 영향을 주지 않습니다.
+<https://seungho-apps.vercel.app/morning-signal|오늘의 Morning Signal 열기>
+   1단계 응답이 404이거나 counts 값이 없으면 건수 줄(•로 시작하는 줄)만 뺍니다. 메시지에는 위 형식 밖의 내용(뉴스 본문·기사 URL·토큰 등)을 넣지 않습니다.
+2. Write 도구로 절대 경로 `/tmp/slack.json`에 JSON 한 건을 씁니다: {"channel":"C0BGTM2QZ33","text":"…위 메시지 전체…"} 줄바꿈은 `\n`으로, 큰따옴표(")는 `\"`로 이스케이프하고, 마지막 키 뒤에는 쉼표를 두지 않습니다. 보내기 전에 Bash로 `python3 -m json.tool /tmp/slack.json > /dev/null`을 실행해 문법을 확인하고, 오류가 나오면 문법만 고쳐 다시 씁니다.
+3. Bash로 아래 명령을 한 줄 그대로 실행합니다. Authorization 헤더는 붙이지 않습니다(시크릿이 붙입니다). 토큰 값은 출력하지 않습니다(`echo`·`env`·`printenv`·`set -x`·`curl -v` 금지).
+   curl -sS -w '\n%{http_code}' -X POST "https://slack.com/api/chat.postMessage" -H "Content-Type: application/json; charset=utf-8" --data-binary @/tmp/slack.json
+4. 응답 본문의 `"ok"` 값으로 판정합니다. `"ok":false`이고 error가 `ratelimited`이거나 네트워크 오류면 짧게 기다렸다가 1회만 다시 보냅니다. 그 밖의 error(`not_in_channel`·`channel_not_found`·`not_authed`·`invalid_auth`·`missing_scope` 등)는 재시도하지 않습니다. Slack 전송 실패는 요약 저장 결과에 영향을 주지 않습니다.
 
 【6단계 — 보고】
-최종 출력 첫 줄: 저장에 성공하면 `SUMMARIZED TODAY`, 실패하면 `SUMMARY_FAILED <HTTP 코드> <응답 원문>`. 둘째 줄: headline. 셋째 줄: Slack 결과로 `SLACK_SENT`(전송 성공) · `SLACK_SKIPPED <사유>`(5단계를 건너뜀) · `SLACK_FAILED <오류 요약>` 중 하나.
+최종 출력 첫 줄: 저장에 성공하면 `SUMMARIZED TODAY`, 실패하면 `SUMMARY_FAILED <HTTP 코드> <응답 원문>`. 둘째 줄: headline. 셋째 줄: Slack 결과로 `SLACK_SENT`(ok:true) · `SLACK_SKIPPED <사유>`(5단계를 건너뜀) · `SLACK_FAILED <error 값>` 중 하나.
 ````
