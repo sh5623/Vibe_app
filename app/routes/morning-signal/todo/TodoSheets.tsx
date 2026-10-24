@@ -247,6 +247,64 @@ interface Draft {
 
 const emptyDraft: Draft = { title: '', body: '', link: '', date: '', time: '' }
 
+interface ClearableProps {
+  label: string
+  value: string
+  onChange: (e: ChangeEvent<HTMLInputElement>) => void
+  onClear?: () => void
+  type?: 'date' | 'time' | 'text'
+  placeholder?: string
+  disabled?: boolean
+}
+
+/** 값이 있으면 끝에 X(지우기)를 단다. iOS 의 date·time 은 비면 아무것도 안 그려 placeholder 를 겹쳐 보인다. */
+function ClearableInput({
+  label,
+  value,
+  onChange,
+  onClear,
+  type = 'text',
+  placeholder,
+  disabled,
+}: ClearableProps) {
+  const native = type !== 'text'
+  return (
+    <div className="todo-xf-f">
+      <input
+        type={type}
+        aria-label={label}
+        value={value}
+        onChange={onChange}
+        disabled={disabled}
+        {...(native
+          ? {}
+          : {
+              inputMode: 'url' as const,
+              autoCapitalize: 'off',
+              autoCorrect: 'off',
+              placeholder,
+              maxLength: 2000,
+            })}
+      />
+      {native && !value && placeholder && (
+        <span className="todo-xf-ph" aria-hidden="true">
+          {placeholder}
+        </span>
+      )}
+      {value && onClear && (
+        <button
+          type="button"
+          className="todo-xf-x"
+          aria-label={`${label} 지우기`}
+          onClick={onClear}
+        >
+          ✕
+        </button>
+      )}
+    </div>
+  )
+}
+
 function draftOf(t: Todo): Draft {
   return {
     title: t.title,
@@ -358,28 +416,33 @@ export function CreateSheet({ open, onClose, onCreated, notify }: CreateSheetPro
         </div>
         {show.date && (
           <div className="todo-xf">
-            <input type="date" aria-label="날짜" value={d.date} onChange={set('date')} />
-            <input
+            <ClearableInput
+              type="date"
+              label="날짜"
+              placeholder="날짜 선택"
+              value={d.date}
+              onChange={set('date')}
+              onClear={() => setD((x) => ({ ...x, date: '', time: '' }))}
+            />
+            <ClearableInput
               type="time"
-              aria-label="시간"
+              label="시간"
+              placeholder="시간 선택"
               value={d.time}
               onChange={set('time')}
+              onClear={() => setD((x) => ({ ...x, time: '' }))}
               disabled={!d.date}
             />
           </div>
         )}
         {show.link && (
           <div className="todo-xf">
-            <input
-              type="text"
-              inputMode="url"
-              autoCapitalize="off"
-              autoCorrect="off"
-              aria-label="링크"
+            <ClearableInput
+              label="링크"
               placeholder="https://"
-              maxLength={2000}
               value={d.link}
               onChange={set('link')}
+              onClear={() => setD((x) => ({ ...x, link: '' }))}
             />
           </div>
         )}
@@ -605,26 +668,31 @@ function EditForm({ t, notify, onDone }: { t: Todo; notify: Notify; onDone: () =
         onChange={set('body')}
       />
       <div className="todo-xf">
-        <input type="date" aria-label="날짜" value={d.date} onChange={set('date')} />
-        <input
+        <ClearableInput
+          type="date"
+          label="날짜"
+          placeholder="날짜 선택"
+          value={d.date}
+          onChange={set('date')}
+          onClear={() => setD((x) => ({ ...x, date: '', time: '' }))}
+        />
+        <ClearableInput
           type="time"
-          aria-label="시간"
+          label="시간"
+          placeholder="시간 선택"
           value={d.time}
           onChange={set('time')}
+          onClear={() => setD((x) => ({ ...x, time: '' }))}
           disabled={!d.date}
         />
       </div>
       <div className="todo-xf">
-        <input
-          type="text"
-          inputMode="url"
-          autoCapitalize="off"
-          autoCorrect="off"
-          aria-label="링크"
+        <ClearableInput
+          label="링크"
           placeholder="https://"
-          maxLength={2000}
           value={d.link}
           onChange={set('link')}
+          onClear={() => setD((x) => ({ ...x, link: '' }))}
         />
       </div>
       <FileList files={files.files} onRemove={files.remove} />
