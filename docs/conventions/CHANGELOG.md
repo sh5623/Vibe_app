@@ -37,6 +37,7 @@
 | 날짜 | 무엇에 물렸나 (≤120자 한 줄) | 안착 |
 | --- | --- | --- |
 | 2026-10-23 | 라이브 클라우드 루틴 프롬프트를 고치고 `docs/morning-signal/routines/` 사본을 안 고쳐 어긋남(요약 루틴 Slack 단계) | `docs/morning-signal/routines/README.md` §알려 둘 점 |
+| 2026-10-23 | 레포 안 Claude 워크트리(`.claude/worktrees/`)가 있으면 Biome이 중첩 루트로 멈추고 vitest가 테스트를 두 번 셈 | `biome.json`·`tsconfig.json`·`vite.config.ts` 제외(도구) |
 | 2026-10-23 | route CSS 커스텀 클래스 `.ring`·`.static`이 Tailwind 4 유틸리티와 같은 이름이라 덧씌워짐(PIN 자물쇠에 사각 테두리) | `package.json` `check:tw-names`(도구) |
 | 2026-10-23 | 포트폴리오 카드 4장의 버전·«118건 eval» 이 릴리스마다 낡음 → 릴리스마다 바뀌는 값은 꼭 필요할 때만(카드엔 금지) | `CLAUDE.md` §Project Overview |
 | 2026-10-10 | CLAUDE.md·README가 SSR이라 적었으나 실제 `ssr: false`(SPA) — 서브에이전트 4개가 SSR HTML 검증에 실패·SSR 우회 코드 설계 | `CLAUDE.md` §Stack·§React Router 7·§상태 관리 · `README.md` |
@@ -53,6 +54,14 @@
 - **로컬 처리(게이트 탈락)**: SVG `preserveAspectRatio="none"` 안의 원이 모바일에서 타원으로 납작해지는 문제(KPI 스파크라인 끝점) — 레포 안 재발 지점을 하나만 확인해 전역화하지 않았다. `Kpis.tsx` `Spark` 주석과 e2e(`sparkline end dot stays round`)에만 둔다.
 - **검증**: `grep -n "5단계 — Slack" docs/morning-signal/routines/summary.md` → 1건. `pnpm typecheck`·`test`(176+)·`test:e2e`(morning-signal 2종) 통과.
 - **커밋·PR**: 브랜치 `fix/morning-signal-mobile-perf` → main 병합
+
+### 2026-10-23 — TO-DO 머지 검증 중 레포 안 워크트리가 검사 도구를 오염
+
+- **계기**: `feat/morning-signal-todo`를 main에 머지한 뒤 main 체크아웃에서 검증하자, `pnpm check`가 `Found a nested root configuration`으로 멈추고 `pnpm test`가 338개(=169×2)를 셌다. 구현용 워크트리를 Claude Code 기본 위치인 레포 안 `.claude/worktrees/`에 두어서, 그 안의 `biome.json`과 테스트 파일까지 함께 스캔된 것이다. `tsconfig.json`의 `include: **/*.ts`도 같은 이유로 워크트리 파일까지 타입 검사한다.
+- **증거**: 임시 워크트리(`git worktree add --detach .claude/worktrees/poc HEAD`)로 재현 → 수정 전 `check=1`·`Tests 338`, 수정 후 `check=0`·`Tests 169`·`typecheck=0`. 재발 지점: 이번 TO-DO 워크트리, 앞선 morning-signal 워크트리 작업, parallel-worktree 스킬로 띄우는 모든 워크트리(EnterWorktree 기본 위치가 `.claude/worktrees/`).
+- **변경**: 신설(도구) — `biome.json` `files.includes`에 `!**/.claude`, `tsconfig.json` `exclude`에 `.claude`, `vite.config.ts`에 `test.exclude: [...configDefaults.exclude, '.claude/**']`. `.claude/`는 gitignore 대상이라 소스가 아니다.
+- **검증**: 위 재현 전후 비교. 워크트리를 지운 상태에서도 build·E2E 48·check 통과. 2026-10-25 origin/main(`2805f63`) 위에 다시 얹어 check·typecheck·test 재확인.
+- **커밋·PR**: main 직접 커밋(이 블록과 같은 커밋, push 안 함)
 
 ### 2026-10-23 — Morning Signal TO-DO 구현 중 Tailwind 이름 충돌을 도구로 막음
 
