@@ -22,4 +22,9 @@ describe('Markdown', () => {
   it('코드블록 안은 해석하지 않는다', () => {
     expect(html('```\n**a**\n```')).toContain('<code>**a**</code>')
   })
+
+  it('문단·인용의 둘째 줄 이후도 인라인 뒤 글자를 남긴다', () => {
+    expect(html('a\nb **x** c')).toContain('<p>a<br/>b <strong>x</strong> c</p>')
+    expect(html('> a\n> `y` z')).toContain('<code>y</code> z')
+  })
 })

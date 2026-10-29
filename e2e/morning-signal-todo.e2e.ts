@@ -378,6 +378,31 @@ test('create with date time link', async ({ page }) => {
   await expect(detail.getByRole('link', { name: 'https://culture.example.com/' })).toBeVisible()
 })
 
+test('memo continues list on Enter, previews and renders markdown', async ({ page }) => {
+  await mockTodoApi(page, { unlocked: true })
+  await page.goto('/morning-signal/todo')
+  const sheet = await openCreate(page)
+  await sheet.getByPlaceholder('할 일을 입력하세요').fill('마크다운 메모')
+  const memo = sheet.getByLabel('메모')
+  await expect(memo).toHaveAttribute('placeholder', '메모 (선택 · 마크다운 지원)')
+  await expect(sheet.locator('.todo-md-preview')).toHaveCount(0)
+  await memo.click()
+  await page.keyboard.type('- **우유**')
+  await page.keyboard.press('Enter')
+  await page.keyboard.type('빵')
+  await page.keyboard.press('Enter')
+  await page.keyboard.press('Enter') // 빈 글머리 줄에서 Enter — 목록을 끝낸다
+  await page.keyboard.type('메모 `a` 끝\n> 인용 **b** 뒤')
+  await expect(memo).toHaveValue('- **우유**\n- 빵\n메모 `a` 끝\n> 인용 **b** 뒤')
+  await expect(sheet.locator('.todo-md-preview li')).toHaveCount(2)
+  await sheet.getByRole('button', { name: '추가' }).click()
+  await page.locator('.todo-day .trow-tx').filter({ hasText: '마크다운 메모' }).click()
+  const note = page.getByRole('dialog', { name: '할 일 상세' }).locator('.todo-md')
+  await expect(note.locator('li strong')).toHaveText('우유')
+  await expect(note.locator('p').first()).toHaveText('메모 a 끝')
+  await expect(note.locator('blockquote')).toHaveText('인용 b 뒤')
+})
+
 test('create with attachment uploads via signed URL', async ({ page }) => {
   const state = await mockTodoApi(page, { unlocked: true })
   await page.goto('/morning-signal/todo')
