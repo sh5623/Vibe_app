@@ -15,6 +15,7 @@ import {
   useUpdateTodo,
 } from '@/hooks/use-morning-signal-todo'
 import type { Attachment, Todo, TodoStatus } from '../../../../api/morning-signal-todo'
+import { Markdown } from './Markdown'
 import { dueText, STATUS_LABEL } from './todo-model'
 
 // 아래에서 올라오는 시트들 — 시안 todo-list.html 의 .sheet·.opt·.segs.
@@ -387,7 +388,7 @@ export function CreateSheet({ open, onClose, onCreated, notify }: CreateSheetPro
         <textarea
           className="todo-new-b"
           aria-label="메모"
-          placeholder="메모 (선택)"
+          placeholder="메모 (선택 · 마크다운 지원)"
           maxLength={4000}
           value={d.body}
           onChange={set('body')}
@@ -589,7 +590,7 @@ function DetailView({ t, mode, setMode, onClose, notify, filesPending }: DetailV
           <dd>{dueText({ dueDate: t.createdDate, dueTime: null })}</dd>
         </div>
       </dl>
-      {t.body && <p className="todo-note">{t.body}</p>}
+      {t.body && <Markdown text={t.body} />}
 
       {mode === 'confirm' ? (
         <div className="todo-confirm" role="alert">
@@ -662,7 +663,7 @@ function EditForm({ t, notify, onDone }: { t: Todo; notify: Notify; onDone: () =
       <textarea
         className="todo-new-b"
         aria-label="메모"
-        placeholder="메모 (선택)"
+        placeholder="메모 (선택 · 마크다운 지원)"
         maxLength={4000}
         value={d.body}
         onChange={set('body')}
