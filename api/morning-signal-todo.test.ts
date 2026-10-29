@@ -340,10 +340,19 @@ describe('helpers — Task 2', () => {
   })
 
   it('cursor round-trip', () => {
-    const c = encodeCursor('2026-10-23T01:00:00.123456+00:00', 'u1')
-    expect(decodeCursor(c)).toEqual({ createdAt: '2026-10-23T01:00:00.123456+00:00', id: 'u1' })
+    const id = '00000000-0000-4000-8000-000000000001'
+    const c = encodeCursor('2026-10-23T01:00:00.123456+00:00', id)
+    expect(decodeCursor(c)).toEqual({ createdAt: '2026-10-23T01:00:00.123456+00:00', id })
     expect(decodeCursor('@@')).toBeNull()
     expect(decodeCursor(Buffer.from('{"a":1}').toString('base64url'))).toBeNull()
+  })
+
+  it('cursor rejects values that could reshape the PostgREST or= filter', () => {
+    const ts = '2026-10-23T01:00:00.123456+00:00'
+    expect(decodeCursor(encodeCursor(ts, 'x),id.not.is.null'))).toBeNull()
+    expect(
+      decodeCursor(encodeCursor(`${ts},id.gt.0`, '00000000-0000-4000-8000-000000000001'))
+    ).toBeNull()
   })
 })
 

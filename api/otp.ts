@@ -1,3 +1,4 @@
+import { createHash, timingSafeEqual } from 'node:crypto'
 import type { IncomingMessage, ServerResponse } from 'node:http'
 
 const MAX_BODY_BYTES = 4096
@@ -57,6 +58,49 @@ function json(res: ServerResponse, status: number, body: unknown) {
   res.end(JSON.stringify(body))
 }
 
+function sameSecret(a: string, b: string): boolean {
+  const h = (v: string) => createHash('sha256').update(v).digest()
+  return timingSafeEqual(h(a), h(b))
+}
+
+/** pin_attempt 결과 — allowed=false 면 잠금 중이라 이번 시도는 기록되지 않았다 */
+interface AttemptRow {
+  allowed: boolean
+  fail_count: number
+  lock_until: string | null
+}
+
+/**
+ * PIN 시도 한 번을 DB 에 기록한다(docs/security/pin-attempts.sql). 4자리 PIN 은 제한이 없으면
+ * 몇 분 안에 전부 시도할 수 있다. 함수가 아직 없으면(SQL 미적용) null — 제한 없이 지나가고 로그만 남긴다.
+ */
+async function recordAttempt(ok: boolean): Promise<AttemptRow | null> {
+  const base = process.env.SUPABASE_URL
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY
+  if (!base || !key) {
+    console.warn(
+      '[api/otp] SUPABASE_URL·SUPABASE_SERVICE_ROLE_KEY 가 없어 PIN 시도 제한이 꺼져 있다'
+    )
+    return null
+  }
+  const res = await fetch(`${base}/rest/v1/rpc/pin_attempt`, {
+    method: 'POST',
+    headers: { apikey: key, Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ p_scope: 'otp', ok }),
+  })
+  if (res.status === 404) {
+    console.warn(
+      '[api/otp] pin_attempt 함수가 없다 — docs/security/pin-attempts.sql 을 실행해야 시도 제한이 켜진다'
+    )
+    return null
+  }
+  if (!res.ok) throw new Error(`pin_attempt failed: ${res.status}`)
+  const out = (await res.json()) as AttemptRow | AttemptRow[]
+  const row = Array.isArray(out) ? out[0] : out
+  if (!row) throw new Error('pin_attempt returned no row')
+  return row
+}
+
 export default async function handler(req: IncomingMessage, res: ServerResponse) {
   res.setHeader('Content-Type', 'application/json')
 
@@ -88,17 +132,34 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
   const allowedPin = process.env.ALLOWED_PIN
 
   // Guard: env vars must be set and non-empty, and must match as strings
-  if (
-    !allowedEmail ||
-    !allowedPin ||
-    typeof email !== 'string' ||
-    typeof pin !== 'string' ||
-    email !== allowedEmail ||
-    pin !== allowedPin
-  ) {
+  if (!allowedEmail || !allowedPin || typeof email !== 'string' || typeof pin !== 'string') {
+    return json(res, 401, { error: 'INVALID_CREDENTIALS' })
+  }
+  const ok = sameSecret(email, allowedEmail) && sameSecret(pin, allowedPin)
+
+  let attempt: AttemptRow | null
+  try {
+    attempt = await recordAttempt(ok)
+  } catch (error) {
+    console.error('[api/otp] attempt limiter failed', error)
+    return json(res, 503, { error: 'UNAVAILABLE' })
+  }
+  if (attempt && !attempt.allowed)
+    return json(res, 429, { error: 'TOO_MANY', until: attempt.lock_until })
+  if (!ok) {
+    if (attempt?.lock_until) return json(res, 429, { error: 'TOO_MANY', until: attempt.lock_until })
     return json(res, 401, { error: 'INVALID_CREDENTIALS' })
   }
 
+  try {
+    return await sendLatestCode(res)
+  } catch (error) {
+    console.error('[api/otp] Gmail request failed', error)
+    return json(res, 503, { error: 'UNAVAILABLE' })
+  }
+}
+
+async function sendLatestCode(res: ServerResponse) {
   const { google } = await import('googleapis')
 
   const oauth2Client = new google.auth.OAuth2(

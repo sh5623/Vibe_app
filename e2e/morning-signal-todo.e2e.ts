@@ -120,7 +120,7 @@ test('paste uses first four digits', async ({ page }) => {
 test('locked shows countdown', async ({ page }) => {
   await mockTodoApi(page, { locked: true })
   await page.goto('/morning-signal/todo')
-  await expect(page.getByText('10분 뒤에 다시 시도해 주세요')).toBeVisible()
+  await expect(page.getByText('잠시 뒤에 다시 시도해 주세요')).toBeVisible()
   await expect(page.getByText(/\d+:\d{2} 남음/)).toBeVisible()
   await expect(pinInput(page)).toBeDisabled()
 })
@@ -134,7 +134,7 @@ test('fifth wrong PIN locks', async ({ page }) => {
     await pinInput(page).pressSequentially('0000')
     if (i < 4) await expect(page.getByText('PIN이 맞지 않아요. 다시 입력해 주세요.')).toBeVisible()
   }
-  await expect(page.getByText('10분 뒤에 다시 시도해 주세요')).toBeVisible({ timeout: 4000 })
+  await expect(page.getByText('잠시 뒤에 다시 시도해 주세요')).toBeVisible({ timeout: 4000 })
   await expect(pinInput(page)).toBeDisabled()
 })
 

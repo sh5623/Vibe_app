@@ -13,8 +13,9 @@
   - Table Editor에 `ms_todos`·`ms_todo_auth`가 보이고 둘 다 RLS가 켜져 있다.
   - `ms_todo_auth`에 `id = 1`인 행이 하나 있다(`fails = 0`).
   - Database → Functions에 `ms_todo_attempt`가 있다(PIN 시도 판정·기록을 한 번에 하는 함수).
-  - Storage에 버킷 `ms-todo`가 있다. **Public이 꺼져 있고**, 파일 크기 제한 10MB, 허용 형식 `image/*`·`application/pdf`다.
-- 여러 번 실행해도 된다. 다만 버킷이 이미 있으면 설정을 덮어쓰지 않는다(`on conflict do nothing`). 버킷을 손으로 다르게 만들었다면 Storage 화면에서 위 값으로 맞춘다.
+  - Storage에 버킷 `ms-todo`가 있다. **Public이 꺼져 있고**, 파일 크기 제한 10MB, 허용 형식은 사진(png·jpeg·gif·webp·avif·heic·heif)과 `application/pdf`다(SVG 제외).
+- 여러 번 실행해도 된다. 버킷이 이미 있으면 허용 형식만 위 목록으로 다시 맞춘다.
+- **2026-10-30 갱신분**(잠금 시간이 두 배씩 늘어나는 `lock_count`, 버킷 허용 형식 좁히기)은 이미 설치한 프로젝트에서도 이 파일을 한 번 더 실행해야 적용된다.
 
 ## 2. PIN과 비밀값 정하기
 
@@ -82,7 +83,7 @@ curl -sS "https://seungho-apps.vercel.app/api/morning-signal-todo?op=session"
 | 증상 | 원인 | 조치 |
 |---|---|---|
 | 들어갈 때마다 PIN을 묻는다 | 잠금 유지는 **하루(24시간)**가 정상이다. 그보다 자주 묻는다면 쿠키가 저장되지 않는다(사파리 「모든 쿠키 차단」, 개인정보 보호 브라우징) | 사파리 설정 → 「모든 쿠키 차단」을 끈다. 일반 탭에서 연다. |
-| 「10분 뒤에 다시 시도해 주세요」 | 5번 연속으로 틀렸다 | 기다린다. 급하면 Supabase SQL Editor에서 `update public.ms_todo_auth set fails = 0, locked_until = null where id = 1;` |
+| 「잠시 뒤에 다시 시도해 주세요」 | 5번 연속으로 틀렸다. 잠글 때마다 10분 → 20분 → 40분 … 최대 24시간으로 늘어난다 | 기다린다. 급하면 Supabase SQL Editor에서 `update public.ms_todo_auth set fails = 0, lock_count = 0, locked_until = null where id = 1;` |
 | 「PIN이 아직 설정되지 않았어요」 | `MS_TODO_PIN`·`MS_TODO_SECRET`이 없거나 형식이 틀렸다 | 3단계를 확인하고 재배포한다. |
 | 첨부를 고르면 「저장하지 못했어요」 | 버킷이 없거나 이름이 다르다, 또는 Storage 오류 | 1단계 Storage(`ms-todo`)를 확인한다. 원인은 Vercel 함수 로그 `[api/morning-signal-todo] failed`에 남는다. |
 | 「사진이나 PDF만, 파일당 10MB까지…」 | 다른 형식(SVG·동영상 등)이거나 10MB를 넘는다 | 사진·PDF로 10MB 이하만 올린다. |
@@ -92,8 +93,8 @@ curl -sS "https://seungho-apps.vercel.app/api/morning-signal-todo?op=session"
 
 ## 9. 알려진 한계
 
-- 잠금 시도 제한은 사용자 한 명 기준의 **전역** 카운터다. 누군가 일부러 5번 틀리면 나도 10분 동안 못 들어간다.
-- PIN 4자리는 강한 보안이 아니다. 시도 제한으로 무차별 대입만 막는다. 비밀번호·계좌 같은 민감한 정보는 적지 않는다.
+- 잠금 시도 제한은 사용자 한 명 기준의 **전역** 카운터다. 누군가 일부러 계속 틀리면 나도 잠긴다(잠금은 회차마다 두 배, 최대 24시간 — 위 표의 SQL로 푼다).
+- PIN 4자리는 강한 보안이 아니다. 잠금 시간이 두 배씩 늘어 무차별 대입을 사실상 막지만, 비밀번호·계좌 같은 민감한 정보는 적지 않는다.
 - 업로드만 하고 「추가」 없이 시트를 닫은 사진은 Storage에 남을 수 있다(정리는 이번 범위 밖).
 - 알림·반복 일정·공유는 없다.
 

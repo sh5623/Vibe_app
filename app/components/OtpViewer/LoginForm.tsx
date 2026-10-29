@@ -11,8 +11,10 @@ interface LoginFormProps {
 
 const ERROR_MESSAGE: Record<OtpErrorCode, string> = {
   INVALID_CREDENTIALS: '이메일 또는 PIN이 올바르지 않습니다.',
+  TOO_MANY: '시도가 너무 많아 잠시 잠겼습니다. 나중에 다시 시도해 주세요.',
   NO_MAIL_FOUND: '조건에 맞는 메일을 찾을 수 없습니다.',
   PARSE_FAILED: '메일에서 인증번호를 찾지 못했습니다.',
+  UNAVAILABLE: '지금은 인증번호를 가져올 수 없습니다. 잠시 뒤 다시 시도해 주세요.',
 }
 
 const shakeVariants = {
