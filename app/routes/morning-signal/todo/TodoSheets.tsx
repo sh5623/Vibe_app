@@ -15,7 +15,7 @@ import {
   useUpdateTodo,
 } from '@/hooks/use-morning-signal-todo'
 import type { Attachment, Todo, TodoStatus } from '../../../../api/morning-signal-todo'
-import { Markdown } from './Markdown'
+import { Markdown, MemoField } from './Markdown'
 import { dueText, STATUS_LABEL } from './todo-model'
 
 // 아래에서 올라오는 시트들 — 시안 todo-list.html 의 .sheet·.opt·.segs.
@@ -277,6 +277,7 @@ function ClearableInput({
         value={value}
         onChange={onChange}
         disabled={disabled}
+        data-empty={native && !value ? 'true' : undefined}
         {...(native
           ? {}
           : {
@@ -385,13 +386,10 @@ export function CreateSheet({ open, onClose, onCreated, notify }: CreateSheetPro
           onChange={set('title')}
           data-autofocus
         />
-        <textarea
-          className="todo-new-b"
-          aria-label="메모"
-          placeholder="메모 (선택 · 마크다운 지원)"
-          maxLength={4000}
+        <MemoField
           value={d.body}
-          onChange={set('body')}
+          maxLength={4000}
+          onChange={(body) => setD((x) => ({ ...x, body }))}
         />
         <div className="todo-pills">
           <button
@@ -660,13 +658,10 @@ function EditForm({ t, notify, onDone }: { t: Todo; notify: Notify; onDone: () =
         onChange={set('title')}
         data-autofocus
       />
-      <textarea
-        className="todo-new-b"
-        aria-label="메모"
-        placeholder="메모 (선택 · 마크다운 지원)"
-        maxLength={4000}
+      <MemoField
         value={d.body}
-        onChange={set('body')}
+        maxLength={4000}
+        onChange={(body) => setD((x) => ({ ...x, body }))}
       />
       <div className="todo-xf">
         <ClearableInput
