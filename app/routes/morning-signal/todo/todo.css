@@ -975,6 +975,13 @@
   font: 500 16px var(--f);
   color: var(--muted-fg);
 }
+.ms .todo-xf-f:focus-within .todo-xf-ph {
+  display: none;
+}
+/* 데스크톱 크롬은 빈 date·time 도 「연도. 월. 일.」 칸을 그려 placeholder 와 겹친다 — 비고 포커스가 없을 땐 숨긴다 */
+.ms .todo-xf input[data-empty="true"]:not(:focus)::-webkit-datetime-edit {
+  opacity: 0;
+}
 .ms .todo-xf-x {
   all: unset;
   box-sizing: border-box;
@@ -1292,6 +1299,13 @@
 .ms .todo-md ol {
   padding-left: 20px;
 }
+/* Tailwind preflight 가 ul·ol 의 글머리를 지운다 */
+.ms .todo-md ul {
+  list-style: disc;
+}
+.ms .todo-md ol {
+  list-style: decimal;
+}
 .ms .todo-md li.md-task {
   list-style: none;
   margin-left: -20px;
@@ -1324,4 +1338,21 @@
 .ms .todo-md a {
   color: var(--td-b1);
   overflow-wrap: anywhere;
+}
+.ms .todo-md-preview {
+  margin-top: 6px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  background: var(--td-tint);
+}
+.ms .todo-md-preview > span {
+  display: block;
+  margin-bottom: 4px;
+  font: 600 11px var(--f);
+  letter-spacing: 0.06em;
+  color: var(--muted-fg);
+}
+.ms .todo-md-preview .todo-note {
+  margin: 0;
+  color: var(--ink);
 }

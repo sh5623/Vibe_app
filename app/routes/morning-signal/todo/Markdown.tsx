@@ -1,4 +1,5 @@
-import type { ReactNode } from 'react'
+import { type KeyboardEvent, type ReactNode, useRef } from 'react'
+import { continueList } from './todo-model'
 
 // 메모용 최소 마크다운 렌더러 — React 노드만 만들고 HTML 은 주입하지 않는다.
 // 지원: # 제목 · - / 1. 목록 · - [ ] 체크 · > 인용 · ``` 코드블록 · **굵게** *기울임* ~~취소~~ `코드` [링크](https://…)
@@ -108,4 +109,51 @@ export function Markdown({ text }: { text: string }) {
     }
   }
   return <div className="todo-note todo-md">{blocks}</div>
+}
+
+const HAS_MD = /^\s*(?:[-*>]|\d+[.)]|#{1,3})\s|```|\*\*|`|\[[^\]]+\]\(/m
+
+/** 메모 입력칸 — 목록 줄에서 Enter 로 글머리를 이어 주고, 마크다운이 섞이면 아래에 모양을 바로 보여 준다. */
+export function MemoField({
+  value,
+  onChange,
+  maxLength,
+}: {
+  value: string
+  onChange: (v: string) => void
+  maxLength: number
+}) {
+  const ref = useRef<HTMLTextAreaElement>(null)
+
+  const onKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
+    const el = e.currentTarget
+    if (e.key !== 'Enter' || e.shiftKey || e.nativeEvent.isComposing) return
+    if (el.selectionStart !== el.selectionEnd) return
+    const next = continueList(value, el.selectionStart)
+    if (!next) return
+    e.preventDefault()
+    onChange(next.text)
+    requestAnimationFrame(() => ref.current?.setSelectionRange(next.caret, next.caret))
+  }
+
+  return (
+    <>
+      <textarea
+        ref={ref}
+        className="todo-new-b"
+        aria-label="메모"
+        placeholder="메모 (선택 · 마크다운 지원)"
+        maxLength={maxLength}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        onKeyDown={onKeyDown}
+      />
+      {HAS_MD.test(value) && (
+        <div className="todo-md-preview">
+          <span>미리보기</span>
+          <Markdown text={value} />
+        </div>
+      )}
+    </>
+  )
 }

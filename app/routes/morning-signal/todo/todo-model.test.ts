@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import type { Todo } from '../../../../api/morning-signal-todo'
 import {
+  continueList,
   dayHeading,
   dueText,
   groupByCreatedDate,
@@ -84,5 +85,21 @@ describe('todo-model', () => {
   it('kstToday', () => {
     expect(kstToday(new Date('2026-10-22T15:30:00Z'))).toBe('2026-10-23')
     expect(kstToday(new Date('2026-10-22T14:59:00Z'))).toBe('2026-10-22')
+  })
+})
+
+describe('continueList', () => {
+  it('글머리·번호·체크를 이어 준다', () => {
+    expect(continueList('- 우유', 4)).toEqual({ text: '- 우유\n- ', caret: 7 })
+    expect(continueList('1. a', 4)).toEqual({ text: '1. a\n2. ', caret: 8 })
+    expect(continueList('- [ ] a', 7)?.text).toBe('- [ ] a\n- [ ] ')
+  })
+
+  it('빈 글머리 줄이면 목록을 끝낸다', () => {
+    expect(continueList('- a\n- ', 6)).toEqual({ text: '- a\n', caret: 4 })
+  })
+
+  it('목록이 아니면 null', () => {
+    expect(continueList('그냥 글', 4)).toBeNull()
   })
 })

@@ -83,3 +83,25 @@ export function isDueSoon(t: Todo, today: string): boolean {
   if (t.status === 'done' || !t.dueDate) return false
   return daysBetween(t.dueDate, today) <= DUE_SOON_DAYS
 }
+
+const LIST_LINE = /^(\s*)(?:([-*])|(\d+)([.)]))\s+(.*)$/
+const TASK_BODY = /^\[( |x|X)\]\s+(.*)$/
+
+/** 목록 줄에서 Enter 를 누르면 다음 줄에 같은 글머리를 이어 준다. 빈 글머리 줄에서 누르면 목록을 끝낸다. 목록 줄이 아니면 null. */
+export function continueList(text: string, caret: number): { text: string; caret: number } | null {
+  const start = text.lastIndexOf('\n', caret - 1) + 1
+  const m = LIST_LINE.exec(text.slice(start, caret))
+  if (!m) return null
+  const indent = m[1] ?? ''
+  const rest = m[5] ?? ''
+  const task = TASK_BODY.exec(rest)
+  if ((task ? (task[2] ?? '') : rest).trim() === '') {
+    return { text: text.slice(0, start) + text.slice(caret), caret: start }
+  }
+  const bullet = m[2] ?? `${Number(m[3]) + 1}${m[4]}`
+  const insert = `\n${indent}${bullet} ${task ? '[ ] ' : ''}`
+  return {
+    text: text.slice(0, caret) + insert + text.slice(caret),
+    caret: caret + insert.length,
+  }
+}
