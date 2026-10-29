@@ -71,6 +71,7 @@ export const PAGE_SIZE = 20
 
 const DATE_RE = /^(\d{4})-(\d{2})-(\d{2})$/
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+const TIMESTAMP_RE = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{1,6})?(Z|[+-]\d{2}:\d{2})$/
 const KST_OFFSET_MS = 9 * 60 * 60 * 1000
 
 /** YYYY-MM-DD 형식이면서 실제 달력 날짜인가(2026-02-30·2026-13-01은 거부). */
@@ -121,6 +122,8 @@ export function decodeCursor(c: string): { createdAt: string; id: string } | nul
       i?: unknown
     }
     if (typeof v.c !== 'string' || typeof v.i !== 'string') return null
+    // 두 값 모두 PostgREST `or=` 필터 안에 들어간다 — 형식이 다르면 `)`·`,` 로 필터 구조를 바꿀 수 있다
+    if (!UUID_RE.test(v.i) || !TIMESTAMP_RE.test(v.c)) return null
     if (Number.isNaN(new Date(v.c).getTime())) return null
     return { createdAt: v.c, id: v.i }
   } catch {
@@ -174,9 +177,19 @@ export function isAttachmentPath(p: string): boolean {
   return ATTACHMENT_PATH_RE.test(p)
 }
 
-/** 사진·PDF 만. SVG 는 스크립트를 품을 수 있어 뺀다. */
+/** 사진·PDF 만 — 버킷 allowed_mime_types(docs/morning-signal/todo-schema.sql)와 같은 목록. SVG 는 스크립트를 품을 수 있어 뺀다. */
+const ALLOWED_TYPES = new Set([
+  'image/png',
+  'image/jpeg',
+  'image/gif',
+  'image/webp',
+  'image/avif',
+  'image/heic',
+  'image/heif',
+  'application/pdf',
+])
 function isAllowedType(t: string): boolean {
-  return (t.startsWith('image/') && t !== 'image/svg+xml') || t === 'application/pdf'
+  return ALLOWED_TYPES.has(t)
 }
 
 /** Storage 객체 삭제. 실패해도 요청은 성공으로 둔다(서버 로그만) — 할 일 자체는 이미 바뀌었다. */

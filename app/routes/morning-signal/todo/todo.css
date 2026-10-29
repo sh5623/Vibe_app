@@ -1279,11 +1279,9 @@
 .ms .todo-md {
   white-space: normal;
 }
-.ms .todo-md > * {
-  margin: 0 0 8px;
-}
-.ms .todo-md > :last-child {
-  margin-bottom: 0;
+/* 블록 사이 간격 — 바깥 여백은 Tailwind preflight 가 0 으로 둔다 */
+.ms .todo-md > :not(:last-child) {
+  margin-bottom: 8px;
 }
 .ms .todo-md .md-h {
   font-weight: 700;

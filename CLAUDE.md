@@ -26,8 +26,7 @@
 
 ```bash
 pnpm dev          # 개발 서버 (SPA, localhost:5173)
-pnpm build        # 프로덕션 빌드
-pnpm start        # ⚠️ 동작 안 함 — SPA 빌드라 build/server 가 없다(배포는 Vercel 정적 + api/ 함수)
+pnpm build        # 프로덕션 빌드 — build/client 만 만든다(배포는 Vercel 정적 + api/ 함수 · start 스크립트 없음)
 pnpm check        # biome check --write + Tailwind v3 grep
 pnpm typecheck    # react-router typegen && tsc --noEmit
 pnpm test         # vitest run
@@ -99,6 +98,7 @@ app/                         # RR7 appDirectory (source root)
 └── assets/                  # 정적 이미지
 e2e/                         # Playwright
 docs/morning-signal/         # schema.sql · todo-schema.sql · todo-setup.md · todo-mockups/
+docs/security/               # pin-attempts.sql — /api/otp PIN 시도 제한(Supabase에서 실행해야 켜진다)
 ```
 
 ## 🔴 React Router 7 — 프레임워크 모드 · SPA (`ssr: false`)

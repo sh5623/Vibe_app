@@ -6,7 +6,6 @@
   "scripts": {
     "dev": "react-router dev",
     "build": "react-router build",
-    "start": "react-router-serve ./build/server/index.js",
     "check": "biome check --write . && pnpm run check:tw",
     "check:tw": "! grep -rE 'bg-gradient-to-|flex-shrink-0|flex-grow-0|@tailwind base|@tailwind components|@tailwind utilities' app/ --include='*.tsx' --include='*.ts' --include='*.css' 2>/dev/null && pnpm run check:tw-names",
     "check:tw-names": "! grep -rnE '\\.(ring|static|fixed|absolute|relative|sticky|hidden|block|inline|flex|grid|table|contents|container|truncate|border|shadow|rounded|outline|transform|transition|visible|invisible|isolate|grow|shrink|italic|underline|uppercase|lowercase|capitalize|collapse|filter|blur|invert|sr-only)([^-a-zA-Z0-9_]|$)' app/ --include='*.css' --exclude='globals.css'",
@@ -16,25 +15,24 @@
     "test:e2e": "playwright test"
   },
   "dependencies": {
-    "@react-router/node": "^7.18.0",
-    "@react-router/serve": "^7.18.0",
+    "@react-router/node": "^7.18.5",
     "@tanstack/react-query": "^5.101.0",
     "framer-motion": "^12.40.0",
     "googleapis": "^173.0.0",
+    "isbot": "^5",
     "lucide-react": "^0.576.0",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
-    "react-router": "^7.18.0",
+    "react-router": "^7.18.5",
     "recharts": "^3.8.1",
-    "yahoo-finance2": "^3.15.3",
-    "zod": "^4.4.3",
-    "zustand": "^5.0.14",
-    "isbot": "^5"
+    "yahoo-finance2": "^3.15.4",
+    "zod": "^4.6.7",
+    "zustand": "^5.0.14"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.5.0",
     "@playwright/test": "^1.61.0",
-    "@react-router/dev": "^7.18.0",
+    "@react-router/dev": "^7.18.5",
     "@tailwindcss/vite": "^4.3.1",
     "@testing-library/react": "^16.3.2",
     "@testing-library/user-event": "^14.6.1",

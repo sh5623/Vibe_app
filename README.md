@@ -52,8 +52,7 @@ pnpm dev
 
 ```bash
 pnpm dev          # 개발 서버 (SPA, localhost:5173)
-pnpm build        # 프로덕션 빌드
-pnpm start        # 프로덕션 서버
+pnpm build        # 프로덕션 빌드 (build/client 정적 파일 — 배포는 Vercel 정적 + api/ 함수)
 pnpm check        # biome check --write + Tailwind v3 문법 감지
 pnpm typecheck    # react-router typegen && tsc --noEmit
 pnpm test         # vitest run

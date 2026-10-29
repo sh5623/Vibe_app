@@ -3,7 +3,18 @@ import { useState } from 'react'
 import { LoginForm } from './LoginForm'
 import { ResultCard } from './ResultCard'
 
-export type OtpErrorCode = 'INVALID_CREDENTIALS' | 'NO_MAIL_FOUND' | 'PARSE_FAILED'
+const OTP_ERROR_CODES = [
+  'INVALID_CREDENTIALS',
+  'TOO_MANY',
+  'NO_MAIL_FOUND',
+  'PARSE_FAILED',
+  'UNAVAILABLE',
+] as const
+export type OtpErrorCode = (typeof OTP_ERROR_CODES)[number]
+
+function toErrorCode(v: unknown): OtpErrorCode {
+  return OTP_ERROR_CODES.find((c) => c === v) ?? 'UNAVAILABLE'
+}
 
 export interface OtpSuccessResponse {
   code: string
@@ -24,9 +35,9 @@ function useOtpViewer() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, pin }),
       })
-      const data = (await res.json()) as OtpSuccessResponse | { error: OtpErrorCode }
+      const data = (await res.json()) as OtpSuccessResponse | { error?: unknown }
       if (!res.ok) {
-        setError((data as { error: OtpErrorCode }).error)
+        setError(toErrorCode((data as { error?: unknown }).error))
       } else {
         setResult(data as OtpSuccessResponse)
       }

@@ -58,9 +58,13 @@ function rollSeq(d: string): string[] {
   return [0, 1, 2].map(() => String((n + 3 + Math.floor(Math.random() * 6)) % 10)).concat(d)
 }
 
+/** 잠금은 잠글 때마다 두 배로 길어진다(10분 → … → 24시간) — 1시간이 넘으면 시:분:초로 쓴다 */
 function remaining(until: string, now: number): string {
   const s = Math.max(0, Math.ceil((Date.parse(until) - now) / 1000))
-  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')} 남음`
+  const pad = (n: number) => String(n).padStart(2, '0')
+  const h = Math.floor(s / 3600)
+  const m = Math.floor((s % 3600) / 60)
+  return `${h ? `${h}:${pad(m)}` : m}:${pad(s % 60)} 남음`
 }
 
 /** 글자마다 흐림이 걷히며 나타난다(텍스트가 바뀌면 key 가 바뀌어 다시 재생) */
@@ -390,7 +394,7 @@ export default function PinGate({ lockedUntil: initialLock, configError }: PinGa
           'PIN이 아직 설정되지 않았어요'
         ) : locked && lockedUntil ? (
           <>
-            10분 뒤에 다시 시도해 주세요 · <b>{remaining(lockedUntil, now)}</b>
+            잠시 뒤에 다시 시도해 주세요 · <b>{remaining(lockedUntil, now)}</b>
           </>
         ) : (
           <Chars text={desc} />

@@ -51,6 +51,17 @@ function getParam(req: VercelRequest, key: string, fallback: string): string {
 }
 
 const ALLOWED_RANGES = new Set(['1mo', '6mo', '1y'])
+const RANGE_MONTHS: Record<string, number> = { '1mo': 1, '6mo': 6, '1y': 12 }
+
+/** n개월 전 같은 날(그 달에 없는 날이면 말일). `setMonth` 만 쓰면 3/31 의 한 달 전이 3/3 으로 넘친다. */
+export function monthsAgo(now: Date, n: number): Date {
+  const d = new Date(now)
+  d.setUTCDate(1)
+  d.setUTCMonth(d.getUTCMonth() - n)
+  const lastDay = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, 0)).getUTCDate()
+  d.setUTCDate(Math.min(now.getUTCDate(), lastDay))
+  return d
+}
 
 export default async function handler(req: VercelRequest, res: ServerResponse) {
   res.setHeader('Content-Type', 'application/json')
@@ -99,14 +110,7 @@ export default async function handler(req: VercelRequest, res: ServerResponse) {
     const quote = (await yahooFinance.quote(targetSymbol)) as YFQuote
 
     const now = new Date()
-    const past = new Date()
-    if (range === '1mo') {
-      past.setMonth(now.getMonth() - 1)
-    } else if (range === '1y') {
-      past.setFullYear(now.getFullYear() - 1)
-    } else {
-      past.setMonth(now.getMonth() - 6)
-    }
+    const past = monthsAgo(now, RANGE_MONTHS[range] ?? 6)
 
     const period1 = past.toISOString().split('T')[0] ?? ''
     const period2 = now.toISOString().split('T')[0] ?? ''
