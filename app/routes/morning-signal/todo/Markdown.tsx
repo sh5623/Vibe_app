@@ -1,4 +1,4 @@
-import { type KeyboardEvent, type ReactNode, useRef } from 'react'
+import { type KeyboardEvent, type ReactNode, useLayoutEffect, useRef } from 'react'
 import { continueList } from './todo-model'
 
 // 메모용 최소 마크다운 렌더러 — React 노드만 만들고 HTML 은 주입하지 않는다.
@@ -23,7 +23,7 @@ function inline(text: string, base = 0): ReactNode[] {
           {m[5]}
         </a>
       )
-    last = at + m[0].length
+    last = m.index + m[0].length // base 는 key 에만 쓴다 — 자르는 위치는 이 줄 안의 오프셋이다
   }
   if (last < text.length) out.push(text.slice(last))
   return out
@@ -65,7 +65,7 @@ export function Markdown({ text }: { text: string }) {
         </pre>
       )
     } else if (/^#{1,3}\s/.test(line)) {
-      const level = line.indexOf(' ')
+      const level = line.search(/\s/)
       blocks.push(
         <p key={key} className={`md-h md-h${level}`}>
           {inline(line.slice(level + 1))}
@@ -124,16 +124,26 @@ export function MemoField({
   maxLength: number
 }) {
   const ref = useRef<HTMLTextAreaElement>(null)
+  // 글머리를 넣은 값이 화면에 반영된 직후 커서를 옮긴다 — requestAnimationFrame 으로 미루면
+  // 그 사이 빠르게 친 글자 뒤에서 커서가 옛 위치로 되돌아가 글자가 엉뚱한 자리에 들어간다
+  const pending = useRef<{ text: string; caret: number } | null>(null)
+  useLayoutEffect(() => {
+    const p = pending.current
+    if (!p || p.text !== value) return
+    pending.current = null
+    ref.current?.setSelectionRange(p.caret, p.caret)
+  }, [value])
 
   const onKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
     const el = e.currentTarget
-    if (e.key !== 'Enter' || e.shiftKey || e.nativeEvent.isComposing) return
+    // Safari 는 한글 조합을 끝내는 Enter 에서 isComposing 이 false 이고 keyCode 만 229 다
+    if (e.key !== 'Enter' || e.shiftKey || e.nativeEvent.isComposing || e.keyCode === 229) return
     if (el.selectionStart !== el.selectionEnd) return
     const next = continueList(value, el.selectionStart)
     if (!next) return
     e.preventDefault()
+    pending.current = next
     onChange(next.text)
-    requestAnimationFrame(() => ref.current?.setSelectionRange(next.caret, next.caret))
   }
 
   return (

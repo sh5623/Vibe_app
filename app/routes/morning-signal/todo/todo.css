@@ -1315,8 +1315,10 @@
   opacity: 0.6;
 }
 .ms .todo-md blockquote {
-  padding-left: 10px;
-  border-left: 3px solid var(--muted-fg);
+  padding: 6px 10px;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--muted-fg) 8%, transparent);
+  color: var(--muted-fg);
 }
 .ms .todo-md code {
   padding: 1px 5px;
