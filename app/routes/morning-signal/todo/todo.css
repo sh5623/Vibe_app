@@ -911,11 +911,16 @@
   all: unset;
   box-sizing: border-box;
   width: 100%;
-  min-height: 44px;
+  /* 빈 칸도 6줄 · 내용만큼 늘어나고(MemoField) 화면 절반을 넘으면 안에서 스크롤한다 */
+  min-height: 9em;
+  max-height: 50vh;
+  overflow-y: auto;
   /* iOS Safari 는 16px 미만 입력칸에 포커스하면 화면을 확대한다 — 입력칸은 전부 16px 이상 */
   font: 400 16px / 1.5 var(--f);
   color: var(--muted-fg);
   white-space: pre-wrap;
+  /* all: unset 이 textarea 기본 줄바꿈까지 지워 긴 URL 에서 가로 스크롤이 생겼다(2026-11-02) */
+  overflow-wrap: anywhere;
 }
 .ms .todo-new-t::placeholder,
 .ms .todo-new-b::placeholder {

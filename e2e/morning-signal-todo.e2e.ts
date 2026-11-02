@@ -403,6 +403,66 @@ test('memo continues list on Enter, previews and renders markdown', async ({ pag
   await expect(note.locator('blockquote')).toHaveText('인용 b 뒤')
 })
 
+test('memo field is tall, wraps long URLs and grows with content', async ({ page }) => {
+  await mockTodoApi(page, { unlocked: true })
+  await page.goto('/morning-signal/todo')
+  const sheet = await openCreate(page)
+  const memo = sheet.getByLabel('메모')
+  const box = () =>
+    memo.evaluate((el) => ({
+      h: el.getBoundingClientRect().height,
+      sw: el.scrollWidth,
+      cw: el.clientWidth,
+      wrap: getComputedStyle(el).overflowWrap,
+    }))
+  const empty = await box()
+  expect(empty.h).toBeGreaterThanOrEqual(140) // 빈 칸도 6줄
+  expect(empty.wrap).toBe('anywhere')
+  await memo.fill(
+    '[BFM-2137](https://serveone-wan8818.slack.com/archives/C0BS72UPPKK/p1793597787432000?thread_ts=1793597787.432000&cid=C0BS72UPPKK)'
+  )
+  const url = await box()
+  expect(url.sw).toBeLessThanOrEqual(url.cw + 1) // 긴 URL 도 줄을 바꿔 가로 스크롤이 없다
+  await memo.fill(Array.from({ length: 12 }, (_, i) => `- 줄 ${i}`).join('\n'))
+  expect((await box()).h).toBeGreaterThan(250) // 내용만큼 늘어난다
+})
+
+test('memo list Enter waits for the line-break input (iOS Korean IME)', async ({ page }) => {
+  await mockTodoApi(page, { unlocked: true })
+  await page.goto('/morning-signal/todo')
+  const sheet = await openCreate(page)
+  const memo = sheet.getByLabel('메모')
+  await memo.fill('- 리스트')
+  // iOS 한글 키보드는 조합 중인 글자를 안은 채 Enter keydown(keyCode 13 · isComposing false)을 보낸다.
+  // keydown 에서 막고 값을 바꾸면 그 조합 글자가 새 줄로 따라온다 — keydown 은 건드리지 않아야 한다
+  const r = await memo.evaluate((el: HTMLTextAreaElement) => {
+    el.focus()
+    el.setSelectionRange(el.value.length, el.value.length)
+    const ev = new KeyboardEvent('keydown', {
+      key: 'Enter',
+      keyCode: 13,
+      bubbles: true,
+      cancelable: true,
+    })
+    el.dispatchEvent(ev)
+    return { prevented: ev.defaultPrevented, value: el.value }
+  })
+  expect(r).toEqual({ prevented: false, value: '- 리스트' })
+  // 실제 Enter(줄바꿈 입력)는 글머리를 잇고 Shift+Enter 는 그냥 줄을 바꾼다
+  await page.keyboard.press('Enter')
+  await page.keyboard.type('둘')
+  await page.keyboard.press('Shift+Enter')
+  await page.keyboard.type('셋')
+  await expect(memo).toHaveValue('- 리스트\n- 둘\n셋')
+  // 글머리는 브라우저 편집 기록을 거쳐 들어간다 — 되돌리기 한 번에 글머리만 사라진다
+  await memo.fill('- 가')
+  await memo.press('End')
+  await page.keyboard.press('Enter')
+  await expect(memo).toHaveValue('- 가\n- ')
+  await page.keyboard.press('ControlOrMeta+z')
+  await expect(memo).toHaveValue('- 가')
+})
+
 test('create with attachment uploads via signed URL', async ({ page }) => {
   const state = await mockTodoApi(page, { unlocked: true })
   await page.goto('/morning-signal/todo')
