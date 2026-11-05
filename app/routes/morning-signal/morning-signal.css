@@ -143,20 +143,9 @@
   backdrop-filter: blur(12px);
 }
 
-/* 헤더 */
-.ms .top {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-}
-.ms .brand {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  min-width: 0;
-}
+/* 로고(레일·휴대폰 제목 줄 공용) */
 .ms .logo {
+  position: relative;
   width: 36px;
   height: 36px;
   border-radius: 10px;
@@ -173,22 +162,22 @@
   align-items: end;
   height: 16px;
 }
-.ms .logo i {
+.ms .logo span i {
   width: 3px;
   border-radius: 2px;
   transform-origin: bottom;
   animation: ms-eq 1.6s ease-in-out infinite;
 }
-.ms .logo i:nth-child(1) {
+.ms .logo span i:nth-child(1) {
   background: var(--s-ai);
   height: 40%;
 }
-.ms .logo i:nth-child(2) {
+.ms .logo span i:nth-child(2) {
   background: var(--s-world);
   height: 100%;
   animation-delay: -0.4s;
 }
-.ms .logo i:nth-child(3) {
+.ms .logo span i:nth-child(3) {
   background: var(--s-gh);
   height: 65%;
   animation-delay: -0.8s;
@@ -198,19 +187,6 @@
     transform: scaleY(0.45);
   }
 }
-.ms .brand h1 {
-  margin: 0;
-  font: 700 19px / 1.1 var(--f);
-  letter-spacing: -0.02em;
-}
-.ms .brand p {
-  margin: 2px 0 0;
-  font: 500 12px / 1.2 var(--fm);
-  color: var(--muted-fg);
-  display: flex;
-  align-items: center;
-  gap: 7px;
-}
 .ms .live {
   width: 7px;
   height: 7px;
@@ -219,6 +195,14 @@
   box-shadow: 0 0 0 0 var(--ok);
   animation: ms-ping 2s infinite;
   flex: none;
+}
+.ms .logo .live {
+  position: absolute;
+  right: -3px;
+  top: -3px;
+  width: 10px;
+  height: 10px;
+  border: 2px solid var(--card);
 }
 @keyframes ms-ping {
   70% {
@@ -348,24 +332,6 @@
 .ms .datenav .cur .t {
   display: inline-block;
 }
-.ms .datenav .cur .t.in-l {
-  animation: ms-tInL 0.45s var(--ease);
-}
-.ms .datenav .cur .t.in-r {
-  animation: ms-tInR 0.45s var(--ease);
-}
-@keyframes ms-tInL {
-  from {
-    opacity: 0;
-    transform: translateX(-14px);
-  }
-}
-@keyframes ms-tInR {
-  from {
-    opacity: 0;
-    transform: translateX(14px);
-  }
-}
 .ms .datenav .cur em {
   font: 600 11px / 1 var(--fm);
   font-style: normal;
@@ -377,9 +343,8 @@
 .ms .cal {
   position: absolute;
   top: calc(100% + 8px);
-  left: 50%;
+  right: 0;
   width: 288px;
-  margin-left: -144px;
   padding: 14px;
   z-index: 30;
   display: grid;
@@ -1259,57 +1224,7 @@
   text-decoration: underline;
 }
 
-/* 헤더 가운데 묶음 — 보기 전환(.vsw) + 날짜 이동(뉴스) 또는 자물쇠(TO-DO) */
-.ms .mid {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  min-width: 0;
-}
-
-/* 보기 전환 — 레퍼런스 .vsw(dashboard/morning-signal.html 230–235행). 링크라서 a 에 건다 */
-.ms .vsw {
-  display: flex;
-  gap: 2px;
-  padding: 4px;
-  border-radius: 12px;
-  background: var(--card);
-  border: 1px solid var(--border);
-  box-shadow: var(--shadow);
-  flex: none;
-}
-.ms .vsw a {
-  all: unset;
-  cursor: pointer;
-  height: 32px;
-  padding: 0 14px;
-  border-radius: 8px;
-  display: grid;
-  place-items: center;
-  font: 600 13px / 1 var(--f);
-  color: var(--muted-fg);
-  transition:
-    background 0.2s,
-    color 0.2s,
-    transform 0.2s var(--ease);
-}
-.ms .vsw a:hover:not(.on) {
-  background: var(--muted);
-  color: var(--ink);
-}
-.ms .vsw a:active {
-  transform: scale(0.94);
-}
-.ms .vsw a.on {
-  background: var(--primary);
-  color: var(--on-primary);
-}
-.ms .vsw a:focus-visible {
-  outline: 2px solid var(--primary);
-  outline-offset: 2px;
-}
-
-/* TO-DO 헤더의 다시 잠그기 */
+/* TO-DO 다시 잠그기(레일 아래 · 휴대폰 제목 줄) */
 .ms .lockbtn {
   all: unset;
   cursor: pointer;
@@ -1333,6 +1248,399 @@
   outline-offset: 2px;
 }
 
+/* ── 왼쪽 레일(768px 이상) · 휴대폰 하단 탭 바(768px 미만) · 본문 제목 줄 — 2026-11-05 사이드 레일 설계 §5.2·§5.3·§6.1 ──
+   레일은 늘 56px로 접혀 있고, 마우스를 0.12초 머물거나 키보드로 들어가면 220px로 본문 위에 겹쳐 펼친다(Nav.tsx useRailOpen).
+   폭이 아니라 clip-path 로 드러낸다(레이아웃 불변). 링크 자체는 40×40 이라 접힌 상태에서도 아이콘으로 다 눌린다. */
+.ms {
+  --rail: 56px;
+  --rail-x: 220px;
+}
+.ms .rail {
+  position: fixed;
+  z-index: 40;
+  inset: 0 auto 0 0;
+  width: var(--rail);
+  transition: filter 0.2s;
+}
+.ms .rail.open {
+  filter: drop-shadow(14px 0 22px rgba(15, 23, 42, 0.16));
+}
+:root[data-ms-theme="dark"] .ms .rail.open {
+  filter: drop-shadow(14px 0 26px rgba(0, 0, 0, 0.55));
+}
+.ms .rail::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: calc(var(--rail) - 1px);
+  width: 1px;
+  background: var(--border);
+  transition: opacity 0.2s;
+}
+.ms .rail.open::after {
+  opacity: 0;
+}
+.ms .rail-in {
+  width: var(--rail-x);
+  height: 100%;
+  padding: 16px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  white-space: nowrap;
+  background: color-mix(in srgb, var(--card) 94%, transparent);
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+  border-right: 1px solid var(--border);
+  clip-path: inset(0 calc(var(--rail-x) - var(--rail)) 0 0);
+  transition: clip-path 0.2s var(--ease);
+}
+.ms .rail.open .rail-in {
+  clip-path: inset(0 0 0 0);
+  transition-duration: 0.3s;
+  background: var(--card);
+}
+.ms .rlb {
+  opacity: 0;
+  transform: translateX(-6px);
+  transition:
+    opacity 0.15s,
+    transform 0.15s;
+}
+.ms .rail.open .rlb {
+  opacity: 1;
+  transform: none;
+  transition:
+    opacity 0.25s var(--ease) calc(0.04s + var(--i, 0) * 30ms),
+    transform 0.3s var(--ease) calc(0.04s + var(--i, 0) * 30ms);
+}
+.ms .rbrand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding-left: 2px;
+  height: 40px;
+}
+.ms .rbrand b {
+  font: 700 15px / 1 var(--f);
+  letter-spacing: -0.02em;
+  color: var(--ink);
+}
+.ms .rnav {
+  position: relative;
+  display: grid;
+  gap: 4px;
+}
+.ms .rind {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: calc(var(--rail-x) - 16px);
+  height: 40px;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--primary) 12%, transparent);
+  box-shadow: inset 3px 0 0 var(--primary);
+  transition: transform 0.25s var(--ease);
+  pointer-events: none;
+}
+.ms .rnav a {
+  all: unset;
+  box-sizing: border-box;
+  position: relative;
+  cursor: pointer;
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  color: var(--muted-fg);
+  border-radius: 10px;
+  transition:
+    color 0.2s,
+    transform 0.2s var(--ease);
+}
+/* 펼쳤을 때 줄 전체가 눌리고 호버된다(접힌 상태에선 clip 밖이라 안 눌린다) */
+.ms .rnav a::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: calc(var(--rail-x) - 16px);
+  height: 40px;
+  border-radius: 10px;
+  transition: background 0.2s;
+}
+.ms .rnav a:hover:not(.on)::before {
+  background: var(--muted);
+}
+.ms .rnav a:hover {
+  color: var(--ink);
+}
+.ms .rnav a:active {
+  transform: scale(0.94);
+}
+.ms .rnav a.on {
+  color: var(--primary);
+}
+.ms .rnav a:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: -2px;
+}
+.ms .rnav a svg {
+  position: relative;
+}
+.ms .rnav a .rlb:not(.rcnt) {
+  position: absolute;
+  left: 48px;
+  top: 0;
+  font: 600 13px / 40px var(--f);
+  letter-spacing: 0.02em;
+}
+.ms .rcnt {
+  position: absolute;
+  left: calc(var(--rail-x) - 16px - 10px);
+  top: 11px;
+  translate: -100% 0;
+  font: 600 11px / 1 var(--fm);
+  font-style: normal;
+  padding: 4px 7px;
+  border-radius: 6px;
+  background: var(--muted);
+  color: var(--muted-fg);
+  pointer-events: none;
+}
+.ms .rnav a.on .rcnt {
+  background: color-mix(in srgb, var(--primary) 16%, transparent);
+  color: var(--primary);
+}
+.ms .rfoot {
+  margin-top: auto;
+  display: grid;
+  gap: 8px;
+  justify-items: start;
+}
+
+/* 본문 제목 줄(예전 헤더 자리) */
+.ms .ptitle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px 16px;
+  flex-wrap: wrap;
+}
+.ms .pt-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+.ms .pt-l {
+  min-width: 0;
+}
+.ms .ptitle h1 {
+  margin: 0;
+  font: 700 22px / 1.15 var(--f);
+  letter-spacing: -0.02em;
+}
+.ms .psub {
+  margin: 4px 0 0;
+  font: 500 12px / 1.2 var(--fm);
+  color: var(--muted-fg);
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.ms .pt-logo,
+.ms .pt-tools {
+  display: none;
+}
+
+/* 하단 탭 바(휴대폰) */
+.ms .tabbar {
+  display: none;
+}
+
+/* 보기 전환은 본문만 0.2초 겹쳐 바꾼다(React Router viewTransition 링크). 테마 전환 중에는 이름을 떼어 원형 효과가 본문까지 덮게 한다 */
+.ms .wrap {
+  view-transition-name: msmain;
+}
+/* 레일·탭 바는 따로 이름을 붙여 본문 스냅숏에서 빼고, 겹침 없이 바로 바꾼다 */
+.ms .rail {
+  view-transition-name: msrail;
+}
+.ms .tabbar {
+  view-transition-name: mstab;
+}
+html.vt-theme .ms .wrap,
+html.vt-theme .ms .rail,
+html.vt-theme .ms .tabbar {
+  view-transition-name: none;
+}
+
+/* biome-ignore lint/correctness/noUnknownTypeSelector: msmain 은 view-transition-name 이다(타입 선택자가 아니다) */
+::view-transition-old(msmain) {
+  animation: ms-vt-out 0.14s ease-in both;
+}
+/* biome-ignore lint/correctness/noUnknownTypeSelector: msmain 은 view-transition-name 이다(타입 선택자가 아니다) */
+::view-transition-new(msmain) {
+  animation: ms-vt-in 0.2s var(--ease) both;
+}
+@keyframes ms-vt-out {
+  to {
+    opacity: 0;
+  }
+}
+@keyframes ms-vt-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+}
+
+@media (min-width: 768px) {
+  .ms {
+    padding-left: var(--rail);
+  }
+}
+@media (max-width: 767.98px) {
+  .ms .rail {
+    display: none;
+  }
+  .ms .ptitle .pt-row {
+    flex: 1 1 100%;
+  }
+  .ms .pt-logo {
+    display: block;
+  }
+  .ms .pt-l {
+    flex: 1;
+  }
+  .ms .pt-tools {
+    display: flex;
+    gap: 8px;
+  }
+  .ms .ptitle h1 {
+    font-size: 19px;
+  }
+  .ms .tabbar {
+    display: block;
+    position: fixed;
+    z-index: 40;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: color-mix(in srgb, var(--card) 94%, transparent);
+    -webkit-backdrop-filter: blur(14px);
+    backdrop-filter: blur(14px);
+    border-top: 1px solid var(--border);
+    padding: 6px max(12px, env(safe-area-inset-right, 0px))
+      calc(6px + env(safe-area-inset-bottom, 0px)) max(12px, env(safe-area-inset-left, 0px));
+  }
+  .ms .tabbar nav {
+    position: relative;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+  .ms .tind {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 50%;
+    height: 100%;
+    border-radius: 12px;
+    background: color-mix(in srgb, var(--primary) 12%, transparent);
+    transition: transform 0.25s var(--ease);
+    pointer-events: none;
+  }
+  .ms .tabbar a {
+    all: unset;
+    position: relative;
+    cursor: pointer;
+    min-height: 52px;
+    display: grid;
+    justify-items: center;
+    align-content: center;
+    gap: 3px;
+    font: 600 11px / 1 var(--f);
+    color: var(--muted-fg);
+    -webkit-tap-highlight-color: transparent;
+    transition:
+      color 0.2s,
+      transform 0.12s;
+  }
+  .ms .tabbar a:active {
+    transform: scale(0.94);
+  }
+  .ms .tabbar a.on {
+    color: var(--primary);
+  }
+  .ms .tabbar a:focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: -2px;
+    border-radius: 12px;
+  }
+  /* 탭 바에 마지막 내용이 가리지 않게 */
+  .ms .wrap {
+    padding-bottom: calc(64px + 64px + env(safe-area-inset-bottom, 0px));
+  }
+}
+
+/* 목록 빨간 칩(FE 높음·FE 주목) 전류 — 도넛 카드 전류의 작은 판.
+   칩마다 캔버스를 띄우지 않고 Shell 의 SVG 필터 #ms-zap 하나를 함께 쓴다(아티팩트판 fx.css 와 같은 값) */
+.ms .ms-defs {
+  position: absolute;
+  width: 0;
+  height: 0;
+  overflow: hidden;
+}
+.ms .list .item .chip.h {
+  position: relative;
+  isolation: isolate;
+}
+.ms .list .item .chip.h::after {
+  content: "";
+  position: absolute;
+  inset: -3px;
+  border: 1.5px solid var(--hi);
+  border-radius: 8px;
+  pointer-events: none;
+  filter: url(#ms-zap) drop-shadow(0 0 3px var(--hi));
+}
+@media (prefers-reduced-motion: reduce) {
+  .ms .list .item .chip.h::after {
+    filter: none;
+    box-shadow: 0 0 6px color-mix(in srgb, var(--hi) 55%, transparent);
+  }
+}
+
+/* FE 높음 경고 전류 테두리 — 감싼 래퍼가 벤토 칸을 대신 차지하고 카드는 그 칸을 꽉 채운다.
+   캔버스가 카드 밖 64px까지 번지므로 벤토에서 가로로만 잘라 가로 스크롤을 막는다 */
+.ms .bento .ms-electric {
+  display: grid;
+  border-radius: 16px;
+  min-width: 0;
+}
+.ms .bento {
+  overflow-x: clip;
+}
+
+/* 신호 수신 중(react-bits LatticeLoader) */
+.ms .ms-loading {
+  display: flex;
+  justify-content: center;
+  padding: 72px 0;
+}
+.ms .lattice-loader {
+  color: var(--primary);
+}
+.ms .lattice-loader__label {
+  color: var(--ink);
+  font-weight: 600;
+}
+.ms .lattice-loader__timer {
+  color: var(--muted-fg);
+}
+
 @media (max-width: 1000px) {
   .ms .kpis {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1342,28 +1650,9 @@
   }
 }
 @media (max-width: 640px) {
-  .ms .top {
-    flex-wrap: wrap;
-  }
-  /* 가운데 묶음(보기 전환 + 날짜 이동 또는 자물쇠)은 둘째 줄 전체 폭 — 뉴스·TO-DO 같은 자리 */
-  .ms .mid {
-    order: 3;
-    width: 100%;
-  }
-  .ms .mid .datenav {
-    flex: 1;
+  .ms .ptitle .datenav {
+    flex: 1 1 100%;
     justify-content: space-between;
-  }
-  .ms .mid .lockbtn {
-    margin-left: auto;
-  }
-  .ms .vsw a {
-    padding: 0 12px;
-  }
-  .ms .cal {
-    left: auto;
-    right: 0;
-    margin-left: 0;
   }
 }
 @media (max-width: 600px) {

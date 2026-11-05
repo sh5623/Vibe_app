@@ -79,9 +79,11 @@ app/
 │   ├── ahram.tsx            # /ahram
 │   ├── morning-signal.tsx   # /morning-signal
 │   ├── morning-signal-todo.tsx # /morning-signal/todo
-│   └── morning-signal/      # 전용 컴포넌트·model·CSS (Shell·Header 공용, todo/ = TO-DO)
+│   ├── morning-signal-layout.tsx # 두 라우트 공통 레이아웃(왼쪽 레일·휴대폰 하단 탭 바·배경)
+│   └── morning-signal/      # 전용 컴포넌트·model·CSS (Shell·Nav·Header 공용, todo/ = TO-DO)
 ├── components/
 │   ├── ui/                  # shadcn/ui — 수동 수정 금지
+│   ├── react-bits/          # react-bits(shadcn 레지스트리 @react-bits) 받은 효과 — Morning Signal 전용
 │   └── [Feature]/           # index.tsx 단일 파일 원칙
 ├── lib/
 │   ├── utils.ts             # cn()

@@ -15,17 +15,18 @@ async function noHorizontalScroll(page: Page) {
   expect(w).toBeLessThanOrEqual(375)
 }
 
-test('news header has view switch to TO-DO', async ({ page }) => {
+test('tab bar switches routes and the rail is hidden', async ({ page }) => {
   await mockTodoApi(page)
   await page.goto('/morning-signal')
-  const nav = page.getByRole('navigation', { name: '보기 전환' })
-  await expect(nav.getByRole('link', { name: 'News' })).toHaveAttribute('aria-current', 'page')
-  await nav.getByRole('link', { name: 'TO-DO' }).click()
+  await expect(page.locator('.rail')).toBeHidden()
+  const bar = page.locator('.tabbar').getByRole('navigation', { name: '보기 전환' })
+  await expect(bar.getByRole('link', { name: 'News' })).toHaveAttribute('aria-current', 'page')
+  const tab = await bar.getByRole('link', { name: 'News' }).boundingBox()
+  expect(tab?.height ?? 0).toBeGreaterThanOrEqual(48)
+  await bar.getByRole('link', { name: 'TO-DO' }).click()
   await expect(page).toHaveURL(/\/morning-signal\/todo$/)
   await expect(page.getByText('본인 확인')).toBeVisible()
-  await expect(
-    page.getByRole('navigation', { name: '보기 전환' }).getByRole('link', { name: 'TO-DO' })
-  ).toHaveAttribute('aria-current', 'page')
+  await expect(bar.getByRole('link', { name: 'TO-DO' })).toHaveAttribute('aria-current', 'page')
 })
 
 test('todo page keeps news shell and theme', async ({ page }) => {
@@ -37,33 +38,37 @@ test('todo page keeps news shell and theme', async ({ page }) => {
   await expect(page.locator('html')).toHaveAttribute('data-ms-theme', /light|dark/)
   await expect(page.locator('.datenav')).toHaveCount(0)
   await expect(page.getByRole('button', { name: '다시 잠그기' })).toHaveCount(0)
-  await expect(page.getByRole('heading', { name: 'Morning Signal' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'TO-DO' })).toBeVisible()
 })
 
-test('switch sits at the same second-row spot on both screens at 375px', async ({ page }) => {
+test('375 top row, date nav and tab bar fit without horizontal scroll', async ({ page }) => {
   await mockTodoApi(page, { unlocked: true })
-  const spots: Array<{ x: number; y: number }> = []
   for (const path of ['/morning-signal', '/morning-signal/todo']) {
     await page.goto(path)
-    const sw = page.getByRole('navigation', { name: '보기 전환' })
-    await expect(sw).toBeVisible()
-    const s = await sw.boundingBox()
-    const theme = await page.locator('.ms .theme').boundingBox()
-    // 브랜드·테마는 첫 줄, 전환은 그 아래 줄
-    expect(s && theme && s.y).toBeGreaterThan((theme?.y ?? 0) + (theme?.height ?? 0) - 1)
-    if (s) spots.push({ x: Math.round(s.x), y: Math.round(s.y) })
-    await expect(page.getByRole('heading', { name: 'Morning Signal' })).toBeVisible()
+    await expect(page.locator('.tabbar')).toBeVisible()
+    await expect(page.locator('.ptitle .theme')).toBeVisible()
     await noHorizontalScroll(page)
   }
-  expect(spots[0]).toEqual(spots[1])
-  // 뉴스의 날짜 이동은 전환 옆 같은 줄
   await page.goto('/morning-signal')
   const nav = await page.locator('.datenav').boundingBox()
-  const sw = await page.getByRole('navigation', { name: '보기 전환' }).boundingBox()
-  expect(
-    nav && sw && Math.abs(nav.y + nav.height / 2 - (sw.y + sw.height / 2))
-  ).toBeLessThanOrEqual(6)
-  expect(nav?.width).toBeGreaterThan(190)
+  const h1 = await page.locator('.ptitle h1').boundingBox()
+  expect((nav?.y ?? 0) > (h1?.y ?? 0) + (h1?.height ?? 0) - 1).toBe(true)
+  expect(nav?.width).toBeGreaterThan(300)
+})
+
+test('content is not hidden behind the tab bar', async ({ page }) => {
+  await mockTodoApi(page)
+  await page.goto('/morning-signal')
+  await expect(page.locator('.list .item').first()).toBeVisible()
+  await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight))
+  // 스크롤이 끝날 때까지 상태로 기다린다 — 마지막 칸 아래 끝이 탭 바 위에 와야 한다
+  await expect
+    .poll(async () => {
+      const last = await page.locator('.ms .wrap > :last-child').boundingBox()
+      const bar = await page.locator('.tabbar').boundingBox()
+      return (last?.y ?? 0) + (last?.height ?? 0) - ((bar?.y ?? 0) + 1)
+    })
+    .toBeLessThanOrEqual(0)
 })
 
 test('unlocked session shows lock button that relocks', async ({ page }) => {
@@ -256,11 +261,31 @@ test('status to DONE leaves pending and strikes in day list', async ({ page }) =
   await expect(sheet).toBeVisible()
   await expect(sheet.getByRole('button', { name: /IN PROGRESS/ })).toContainText('현재')
   await sheet.getByRole('button', { name: /^DONE/ }).click()
+  // DONE이 되는 순간 스프링 모션(react-bits SpringCheck) — 줄에 data-spring 이 붙고 원이 스프링 값으로 채워진다
+  await expect(
+    pendingRows(page)
+      .filter({ hasText: '자동차 보험 갱신 비교' })
+      .and(page.locator('[data-spring]'))
+  ).toHaveCount(1, { timeout: 300 })
   await expect(page.locator('.todo-pending-h')).toContainText('4')
   await expect(pendingRows(page).filter({ hasText: '자동차 보험 갱신 비교' })).toHaveCount(0, {
     timeout: 3000,
   })
   await expect(dayRows(page).filter({ hasText: '자동차 보험 갱신 비교' })).toHaveClass(/s-done/)
+})
+
+test('undo from DONE does not spring', async ({ page }) => {
+  await mockTodoApi(page, { unlocked: true, seed: seedDay() })
+  await page.goto('/morning-signal/todo')
+  const row = dayRows(page).filter({ hasText: '민수 축의금 보내기' })
+  await expect(row).toHaveClass(/s-done/)
+  await row.getByRole('button', { name: '상태 바꾸기' }).click()
+  await page
+    .getByRole('dialog', { name: '상태 바꾸기' })
+    .getByRole('button', { name: /^TODO/ })
+    .click()
+  await page.waitForTimeout(150) // 고정 대기: 부재 확인 — 스프링이 붙지 않는다
+  await expect(page.locator('.trow[data-spring]')).toHaveCount(0)
 })
 
 test('status to IN PROGRESS moves the row into that group', async ({ page }) => {
@@ -571,7 +596,7 @@ test('next page failure stops and offers retry', async ({ page }) => {
   await page.locator('.todo-tail').scrollIntoViewIfNeeded()
   const retry = page.getByRole('button', { name: '다시 불러오기' })
   await expect(retry).toBeVisible()
-  await page.waitForTimeout(1500)
+  await page.waitForTimeout(1500) // 고정 대기: 부재 확인 — 다음 쪽 요청이 더 나가지 않는다
   expect(cursorCalls).toBe(1)
   await retry.click()
   await expect(page.locator('.todo-day .trow')).toHaveCount(25)
@@ -616,4 +641,16 @@ test('sheet inputs are at least 16px so iOS Safari does not zoom', async ({ page
     .locator('input:not([type=file]), textarea')
     .evaluateAll((els) => els.map((e) => Number.parseFloat(getComputedStyle(e).fontSize)))
   for (const s of editSizes) expect(s).toBeGreaterThanOrEqual(16)
+})
+
+test('todo list loader uses the lattice', async ({ page }) => {
+  await mockTodoApi(page, { unlocked: true })
+  // 목록 응답만 늦춘다(뒤에 건 라우트가 먼저 돈다 — 기다렸다가 원래 목업으로 넘긴다)
+  await page.route('**/api/morning-signal-todo?**', async (route) => {
+    if (route.request().method() === 'GET') await new Promise((r) => setTimeout(r, 1500))
+    await route.fallback()
+  })
+  await page.goto('/morning-signal/todo')
+  await expect(page.locator('.todo-loader .lattice-loader__cell').first()).toBeVisible()
+  await expect(page.getByText('남은 일', { exact: true })).toBeVisible({ timeout: 6000 })
 })

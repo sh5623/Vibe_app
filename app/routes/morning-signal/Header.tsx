@@ -3,15 +3,15 @@ import {
   type MouseEvent as ReactMouseEvent,
   type Ref,
   useEffect,
+  useId,
   useLayoutEffect,
   useMemo,
   useRef,
   useState,
+  useSyncExternalStore,
 } from 'react'
-import { flushSync } from 'react-dom'
-import { Link } from 'react-router'
 import type { DaySummary } from '../../../api/morning-signal'
-import { calendarCells, dateParts, labelEn } from './model'
+import { calendarCells, dateParts, labelKo } from './model'
 
 type CssVars = CSSProperties & Record<`--${string}`, string | number>
 type MsTheme = 'light' | 'dark'
@@ -28,24 +28,43 @@ function readTheme(): MsTheme {
   return 'light'
 }
 
-/** 테마 버튼 — 레퍼런스 409–423행. html[data-ms-theme] 는 이 라우트가 마운트된 동안만 둔다. */
-function ThemeButton() {
-  const [theme, setTheme] = useState<MsTheme>(readTheme)
-
-  // 페인트 전에 토큰이 붙어야 첫 프레임부터 색이 맞는다. 언마운트하면 속성을 지워 다른 라우트로 새지 않게 한다.
+/** html[data-ms-theme] 를 이 라우트가 마운트된 동안만 둔다 — Shell 이 부른다(페인트 전에 토큰이 붙어야 첫 프레임부터 색이 맞는다). */
+export function useMsThemeAttr() {
   useLayoutEffect(() => {
     const root = document.documentElement
-    root.dataset.msTheme = theme
+    root.dataset.msTheme = readTheme()
     return () => {
       delete root.dataset.msTheme
     }
-  }, [theme])
+  }, [])
+}
+
+const subscribeTheme = (cb: () => void) => {
+  const mo = new MutationObserver(cb)
+  mo.observe(document.documentElement, { attributes: true, attributeFilter: ['data-ms-theme'] })
+  return () => mo.disconnect()
+}
+const themeNow = (): MsTheme =>
+  document.documentElement.dataset.msTheme === 'dark' ? 'dark' : 'light'
+
+/** 지금 테마(html[data-ms-theme]) — 바뀌면 다시 그린다 */
+export const useMsTheme = () =>
+  useSyncExternalStore(subscribeTheme, themeNow, () => 'light' as MsTheme)
+
+/**
+ * 테마 버튼 — 레퍼런스 409–423행. 레일(데스크톱)과 휴대폰 제목 줄에 하나씩 있으므로
+ * 상태를 컴포넌트에 두지 않고 html[data-ms-theme] 하나에서 읽는다.
+ */
+export function ThemeButton() {
+  const theme = useMsTheme()
+  const maskId = useId() // 버튼이 두 개(레일·휴대폰 줄)라 mask id 가 겹치지 않게
 
   const toggle = (e: ReactMouseEvent<HTMLButtonElement>) => {
-    const next: MsTheme = theme === 'dark' ? 'light' : 'dark'
-    // 뷰 전환이 새 화면을 찍기 전에 DOM 이 바뀌어 있어야 하므로 동기로 커밋한다
+    const next: MsTheme = themeNow() === 'dark' ? 'light' : 'dark'
+    const root = document.documentElement
+    // 뷰 전환이 새 화면을 찍기 전에 DOM 이 바뀌어 있어야 하므로 동기로 바꾼다
     const apply = () => {
-      flushSync(() => setTheme(next))
+      root.dataset.msTheme = next
       try {
         localStorage.setItem(THEME_KEY, next)
       } catch {
@@ -61,9 +80,11 @@ function ThemeButton() {
     const x = r.left + r.width / 2
     const y = r.top + r.height / 2
     const R = Math.hypot(Math.max(x, innerWidth - x), Math.max(y, innerHeight - y))
-    document
-      .startViewTransition(apply)
-      .ready.then(() => {
+    root.classList.add('vt-theme')
+    const t = document.startViewTransition(apply)
+    t.finished.finally(() => root.classList.remove('vt-theme'))
+    t.ready
+      .then(() => {
         document.documentElement.animate(
           { clipPath: [`circle(0px at ${x}px ${y}px)`, `circle(${R}px at ${x}px ${y}px)`] },
           {
@@ -84,7 +105,7 @@ function ThemeButton() {
       onClick={toggle}
     >
       <svg viewBox="0 0 24 24" aria-hidden="true">
-        <mask id="ms-moon-mask">
+        <mask id={maskId}>
           <rect x="-6" y="-6" width="36" height="36" fill="#fff" />
           <circle className="bite" cx="17" cy="7" r="7" fill="#000" />
         </mask>
@@ -94,7 +115,7 @@ function ThemeButton() {
           cy="12"
           r="8"
           fill="currentColor"
-          mask="url(#ms-moon-mask)"
+          mask={`url(#${maskId})`}
         />
         <g className="rays" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
           <line x1="12" y1="1" x2="12" y2="3" />
@@ -194,100 +215,16 @@ function Calendar({ days, cur, onPick, ref }: CalendarProps) {
   )
 }
 
-/** 로고 + 제목 + (뉴스만) 갱신 스탬프 */
-function Brand({ stamp }: { stamp?: string }) {
-  return (
-    <div className="brand">
-      <div className="logo" aria-hidden="true">
-        <span>
-          <i />
-          <i />
-          <i />
-        </span>
-      </div>
-      <div>
-        <h1>Morning Signal</h1>
-        {stamp !== undefined && (
-          <p>
-            <i className="live" />
-            <span>{stamp}</span>
-          </p>
-        )}
-      </div>
-    </div>
-  )
-}
-
-/**
- * 뉴스 | TO-DO 보기 전환 — 레퍼런스 .vsw(dashboard/morning-signal.html 230–235·287행). 두 화면 같은 모양.
- * 페이지를 오가는 링크라서 tablist 가 아니라 nav + aria-current 다(피드의 AI·시사·GitHub 탭과도 겹치지 않는다).
- */
-export function ViewSwitch({ view }: { view: 'news' | 'todo' }) {
-  const links = [
-    { key: 'news', label: 'News', to: '/morning-signal' },
-    { key: 'todo', label: 'TO-DO', to: '/morning-signal/todo' },
-  ] as const
-  return (
-    <nav className="vsw" aria-label="보기 전환">
-      {links.map((l) => (
-        <Link
-          key={l.key}
-          to={l.to}
-          aria-current={view === l.key ? 'page' : undefined}
-          className={view === l.key ? 'on' : undefined}
-        >
-          {l.label}
-        </Link>
-      ))}
-    </nav>
-  )
-}
-
-/** TO-DO·PIN 화면 헤더 — 날짜 이동·스탬프 대신 (잠금이 풀렸을 때만) 자물쇠 버튼 */
-export function TodoHeader({ onLock }: { onLock?: () => void }) {
-  return (
-    <header className="top">
-      <Brand />
-      <div className="mid">
-        <ViewSwitch view="todo" />
-        {onLock && (
-          <button type="button" className="lockbtn" aria-label="다시 잠그기" onClick={onLock}>
-            <svg width="17" height="17" viewBox="0 0 22 24" fill="none" aria-hidden="true">
-              <rect
-                x="2"
-                y="10"
-                width="18"
-                height="12"
-                rx="4"
-                stroke="currentColor"
-                strokeWidth="2"
-              />
-              <path
-                d="M6 10V7a5 5 0 0 1 10 0v3"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-              />
-            </svg>
-          </button>
-        )}
-      </div>
-      <ThemeButton />
-    </header>
-  )
-}
-
-interface HeaderProps {
+interface DateNavProps {
   days: DaySummary[]
   cur: string | null
-  /** 직전 이동 방향: -1 과거로, 1 최근으로, 0 이동 아님(라벨 슬라이드 없음) */
+  /** 직전 이동 방향: -1 과거로, 1 최근으로, 0 이동 아님(넘김 없음) */
   dir: number
-  stamp: string
   onGo: (date: string) => void
 }
 
-/** 헤더 — 레퍼런스 281–310행(보기 전환 버튼 제외)·597–635행. */
-export default function Header({ days, cur, dir, stamp, onGo }: HeaderProps) {
+/** 날짜 이동(‹ 날짜 › + 달력) — 예전 헤더 가운데 묶음. 이제 본문 제목 줄(TitleBar) 오른쪽에 들어간다. */
+export function DateNav({ days, cur, onGo }: DateNavProps) {
   const [calOpen, setCalOpen] = useState(false)
   const curBtnRef = useRef<HTMLButtonElement>(null)
   const calRef = useRef<HTMLDivElement>(null)
@@ -316,60 +253,49 @@ export default function Header({ days, cur, dir, stamp, onGo }: HeaderProps) {
   const prev = i > 0 ? days[i - 1] : undefined
   const next = i >= 0 && i < days.length - 1 ? days[i + 1] : undefined
   const latest = i >= 0 && i === days.length - 1
-  const slide = dir < 0 ? ' in-l' : dir > 0 ? ' in-r' : ''
 
   return (
-    <header className="top">
-      <Brand stamp={stamp} />
-      <div className="mid">
-        <ViewSwitch view="news" />
-        <div className="datenav">
-          <button
-            type="button"
-            aria-label="이전 날짜"
-            disabled={!prev}
-            onClick={() => prev && onGo(prev.date)}
-          >
-            ‹
-          </button>
-          <button
-            type="button"
-            className="cur"
-            aria-haspopup="dialog"
-            aria-expanded={calOpen}
-            ref={curBtnRef}
-            onClick={() => {
-              if (cur) setCalOpen((o) => !o)
-            }}
-          >
-            {/* key 로 다시 마운트해 이동할 때마다 슬라이드 애니메이션을 새로 건다(레퍼런스 updNav) */}
-            <span key={cur ?? ''} className={`t${slide}`}>
-              {cur ? labelEn(cur) : '—'}
-            </span>
-            {latest && <em>최신</em>}
-          </button>
-          <button
-            type="button"
-            aria-label="다음 날짜"
-            disabled={!next}
-            onClick={() => next && onGo(next.date)}
-          >
-            ›
-          </button>
-          {calOpen && cur && (
-            <Calendar
-              ref={calRef}
-              days={days}
-              cur={cur}
-              onPick={(date) => {
-                onGo(date)
-                setCalOpen(false)
-              }}
-            />
-          )}
-        </div>
-      </div>
-      <ThemeButton />
-    </header>
+    <div className="datenav">
+      <button
+        type="button"
+        aria-label="이전 날짜"
+        disabled={!prev}
+        onClick={() => prev && onGo(prev.date)}
+      >
+        ‹
+      </button>
+      <button
+        type="button"
+        className="cur"
+        aria-haspopup="dialog"
+        aria-expanded={calOpen}
+        ref={curBtnRef}
+        onClick={() => {
+          if (cur) setCalOpen((o) => !o)
+        }}
+      >
+        <span className="t">{cur ? labelKo(cur) : '—'}</span>
+        {latest && <em>최신</em>}
+      </button>
+      <button
+        type="button"
+        aria-label="다음 날짜"
+        disabled={!next}
+        onClick={() => next && onGo(next.date)}
+      >
+        ›
+      </button>
+      {calOpen && cur && (
+        <Calendar
+          ref={calRef}
+          days={days}
+          cur={cur}
+          onPick={(date) => {
+            onGo(date)
+            setCalOpen(false)
+          }}
+        />
+      )}
+    </div>
   )
 }

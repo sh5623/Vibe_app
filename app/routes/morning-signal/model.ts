@@ -12,8 +12,6 @@ import type {
 // 레퍼런스(second-brain .wiki-automation/dashboard/morning-signal.html)의 순수 함수 이식분.
 
 export const WD_KO: readonly string[] = ['일', '월', '화', '수', '목', '금', '토']
-const WD_EN = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'] as const
-const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 
 export function dateParts(date: string): { y: number; m: number; d: number; wd: number } {
   const [y = 0, m = 1, d = 1] = date.split('-').map(Number)
@@ -22,9 +20,10 @@ export function dateParts(date: string): { y: number; m: number; d: number; wd: 
 
 const pad2 = (n: number) => String(n).padStart(2, '0')
 
-export function labelEn(date: string): string {
+/** `10월 19일 (월)` — 날짜 이동·갱신 스탬프에 쓰는 한국어 표기(2026-11-05 사용자 결정) */
+export function labelKo(date: string): string {
   const p = dateParts(date)
-  return `${WD_EN[p.wd] ?? ''}, ${MON[p.m - 1] ?? ''} ${p.d}`
+  return `${p.m}월 ${p.d}일 (${WD_KO[p.wd] ?? ''})`
 }
 
 export function kstTime(iso: string | null | undefined): string {
@@ -54,14 +53,14 @@ export function pickInitialDate(days: DaySummary[], hash: string): string | null
   return days.some((d) => d.date === h) ? h : last.date
 }
 
-/** `${labelEn(date)} · HH:MM KST 갱신` — 시각은 day.updatedAt, 없으면 가장 늦은 feed.generatedAt. */
+/** `${labelKo(date)} · HH:MM KST 갱신` — 시각은 day.updatedAt, 없으면 가장 늦은 feed.generatedAt. */
 export function stampText(day: DaySummary, feeds: Feeds): string {
   const gen = [feeds.ai?.generatedAt, feeds.world?.generatedAt, feeds.gh?.generatedAt]
     .filter((g): g is string => !!g)
     .sort()
     .pop()
   const time = kstTime(day.updatedAt || gen)
-  return `${labelEn(day.date)}${time ? ` · ${time} KST 갱신` : ''}`
+  return `${labelKo(day.date)}${time ? ` · ${time} KST 갱신` : ''}`
 }
 
 export interface CalCell {

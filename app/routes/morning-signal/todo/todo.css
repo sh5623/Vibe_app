@@ -1361,3 +1361,29 @@
   margin: 0;
   color: var(--ink);
 }
+
+/* 휴대폰 하단 탭 바(768px 미만) 위로 만들기 버튼을 올린다 — morning-signal.css .tabbar */
+@media (max-width: 767.98px) {
+  .ms .todo-fab {
+    bottom: calc(64px + 16px + env(safe-area-inset-bottom, 0px));
+  }
+}
+
+/* 목록 로더 — 회전 고리 대신 격자(TodoList TodoLoader). 라벨 글자는 숨기고 낭독용으로만 */
+.ms .todo-loader:has(.lattice-loader) {
+  width: auto;
+  height: auto;
+  border: 0;
+  border-radius: 0;
+  animation: none;
+  display: flex;
+  justify-content: center;
+}
+.ms .todo-loader .lattice-loader__label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}

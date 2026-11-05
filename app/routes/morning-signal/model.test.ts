@@ -23,7 +23,7 @@ import {
   headlineParts,
   kpiModel,
   kstTime,
-  labelEn,
+  labelKo,
   pickInitialDate,
   safeUrl,
   sparkPath,
@@ -52,8 +52,9 @@ describe('WD_KO', () => {
   })
 })
 
-describe('labelEn', () => {
-  it('labelEn', () => expect(labelEn('2026-10-19')).toBe('Mon, Oct 19'))
+describe('labelKo', () => {
+  it('월 일 (요일)', () => expect(labelKo('2026-10-19')).toBe('10월 19일 (월)'))
+  it('한 자리 날짜', () => expect(labelKo('2026-11-05')).toBe('11월 5일 (목)'))
 })
 
 describe('kstTime', () => {
@@ -115,10 +116,10 @@ describe('stampText', () => {
       gh: { ...base, theme: 'gh', generatedAt: '2026-10-18T23:01:00Z' },
     }
     expect(stampText(day('2026-10-19', '2026-10-18T23:03:00Z'), feeds)).toBe(
-      'Mon, Oct 19 · 08:03 KST 갱신'
+      '10월 19일 (월) · 08:03 KST 갱신'
     )
-    expect(stampText(day('2026-10-19'), feeds)).toBe('Mon, Oct 19 · 08:01 KST 갱신')
-    expect(stampText(day('2026-10-19'), {})).toBe('Mon, Oct 19')
+    expect(stampText(day('2026-10-19'), feeds)).toBe('10월 19일 (월) · 08:01 KST 갱신')
+    expect(stampText(day('2026-10-19'), {})).toBe('10월 19일 (월)')
   })
 })
 

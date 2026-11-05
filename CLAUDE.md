@@ -83,9 +83,11 @@ app/                         # RR7 appDirectory (source root)
 │   ├── ahram.tsx            # /ahram
 │   ├── morning-signal.tsx   # /morning-signal
 │   ├── morning-signal-todo.tsx # /morning-signal/todo
-│   └── morning-signal/      # 라우트 전용 컴포넌트(Shell·Header 공용, todo/ = TO-DO)
+│   ├── morning-signal-layout.tsx # 두 라우트 공통 레이아웃(레일·탭 바·배경)
+│   └── morning-signal/      # 라우트 전용 컴포넌트(Shell·Nav·Header 공용, todo/ = TO-DO)
 ├── components/
 │   ├── ui/                  # shadcn/ui — 손대지 말 것
+│   ├── react-bits/          # react-bits 효과(shadcn 레지스트리 @react-bits, lint 일부 off)
 │   └── [Feature]/           # index.tsx 단일 파일 원칙
 ├── lib/
 │   ├── utils.ts             # cn() from shadcn

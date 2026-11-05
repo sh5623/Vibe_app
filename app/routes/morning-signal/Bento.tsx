@@ -5,10 +5,13 @@ import {
   type PointerEvent as ReactPointerEvent,
   useEffect,
   useLayoutEffect,
+  useMemo,
   useRef,
   useState,
 } from 'react'
+import ElectricBorder from '@/components/react-bits/ElectricBorder'
 import type { DaySummary, Feed, Feeds, Theme } from '../../../api/morning-signal'
+import { useMsTheme } from './Header'
 import {
   barTop,
   COLOR,
@@ -183,6 +186,31 @@ function DonutRing({ segments }: { segments: { len: number; offset: number }[] }
   )
 }
 
+/** FE 높음이 1건 이상인 날만 도넛 카드에 전류 테두리(react-bits ElectricBorder) — 색은 테마 토큰 --hi */
+function HighAlert({ on, children }: { on: boolean; children: ReactNode }) {
+  const theme = useMsTheme()
+  // biome-ignore lint/correctness/useExhaustiveDependencies: theme 이 바뀌면 토큰을 다시 읽는다(값은 DOM 에서 온다)
+  const color = useMemo(
+    () => getComputedStyle(document.documentElement).getPropertyValue('--hi').trim() || '#ef4444',
+    [theme]
+  )
+  if (!on) return <>{children}</>
+  return (
+    <ElectricBorder
+      className="ms-electric"
+      color={color}
+      theme={theme}
+      borderRadius={16}
+      thickness={1.5}
+      strands={3}
+      glow={0.6}
+      intensity={0.85}
+    >
+      {children}
+    </ElectricBorder>
+  )
+}
+
 function Donut({ feed }: { feed: Feed<'ai'> | undefined }) {
   const m = donutModel(feed?.items ?? [])
   const legend = [
@@ -191,33 +219,35 @@ function Donut({ feed }: { feed: Feed<'ai'> | undefined }) {
     { label: '낮음', color: 'var(--low)', value: m.low },
   ]
   return (
-    <article className="card panel" style={panelDelay(180)} {...tiltProps()}>
-      <h2>
-        <i style={{ background: 'var(--s-ai)' }} />
-        AI · FE 영향도
-      </h2>
-      <div className="donut">
-        <DonutRing segments={m.segments} />
-        <div className="ctr">
-          <div>
-            <Odometer as="b" value={m.high} id="oDonut" />
-            <small>AI 높음</small>
+    <HighAlert on={m.high >= 1}>
+      <article className="card panel" style={panelDelay(180)} {...tiltProps()}>
+        <h2>
+          <i style={{ background: 'var(--s-ai)' }} />
+          AI · FE 영향도
+        </h2>
+        <div className="donut">
+          <DonutRing segments={m.segments} />
+          <div className="ctr">
+            <div>
+              <Odometer as="b" value={m.high} id="oDonut" />
+              <small>AI 높음</small>
+            </div>
           </div>
         </div>
-      </div>
-      <div className="legend">
-        {legend.map((l) => (
-          <div key={l.label}>
-            <i style={{ background: l.color }} />
-            FE {l.label}
-            <b>{l.value}</b>
-          </div>
-        ))}
-      </div>
-      <p className="pempty" hidden={m.total > 0}>
-        {feed ? '검증된 AI 뉴스가 없는 날이에요.' : 'AI 뉴스를 가져오지 못했어요.'}
-      </p>
-    </article>
+        <div className="legend">
+          {legend.map((l) => (
+            <div key={l.label}>
+              <i style={{ background: l.color }} />
+              FE {l.label}
+              <b>{l.value}</b>
+            </div>
+          ))}
+        </div>
+        <p className="pempty" hidden={m.total > 0}>
+          {feed ? '검증된 AI 뉴스가 없는 날이에요.' : 'AI 뉴스를 가져오지 못했어요.'}
+        </p>
+      </article>
+    </HighAlert>
   )
 }
 

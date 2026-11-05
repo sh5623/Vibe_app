@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useLock, useTodoSession } from '@/hooks/use-morning-signal-todo'
 import type { Route } from './+types/morning-signal-todo'
-import { TodoHeader } from './morning-signal/Header'
-import Shell from './morning-signal/Shell'
+import { TitleBar } from './morning-signal/Nav'
 import PinGate from './morning-signal/todo/PinGate'
 import TodoList from './morning-signal/todo/TodoList'
 import { CreateSheet, DetailSheet } from './morning-signal/todo/TodoSheets'
+import { useMsLayout } from './morning-signal-layout'
 import './morning-signal/todo/todo.css'
 
 const TOAST_MS = 3000
@@ -24,6 +24,7 @@ export default function MorningSignalTodo() {
   const [detailId, setDetailId] = useState<string | null>(null)
   const [newId, setNewId] = useState<string | null>(null)
   const [toast, setToast] = useState<{ message: string; key: number } | null>(null)
+  const [pending, setPending] = useState<number | null>(null)
 
   const notify = useCallback((message: string) => setToast({ message, key: Date.now() }), [])
   useEffect(() => {
@@ -41,15 +42,30 @@ export default function MorningSignalTodo() {
     if (!unlocked) {
       setCreating(false)
       setDetailId(null)
+      setPending(null)
     }
   }, [unlocked])
+  const onLock = unlocked ? () => lock.mutate() : undefined
+  // 레일 TO-DO 칩·자물쇠(레이아웃이 그린다)
+  const { setTodoCount, setOnLock } = useMsLayout()
+  useEffect(() => setTodoCount(unlocked ? pending : null), [unlocked, pending, setTodoCount])
+  const relock = lock.mutate
+  useEffect(() => {
+    setOnLock(unlocked ? () => relock() : null)
+    return () => setOnLock(null)
+  }, [unlocked, relock, setOnLock])
 
   return (
-    <Shell>
-      <TodoHeader onLock={unlocked ? () => lock.mutate() : undefined} />
+    <>
+      <TitleBar title="TO-DO" onLock={onLock} />
       {session.isPending ? null : unlocked ? (
         <>
-          <TodoList onOpen={setDetailId} newId={newId} onError={notify} />
+          <TodoList
+            onOpen={setDetailId}
+            newId={newId}
+            onError={notify}
+            onPendingCount={setPending}
+          />
           <button
             type="button"
             className="todo-fab"
@@ -85,6 +101,6 @@ export default function MorningSignalTodo() {
       <div className={`todo-toast${toast ? ' show' : ''}`} role="status" aria-live="polite">
         {toast?.message}
       </div>
-    </Shell>
+    </>
   )
 }

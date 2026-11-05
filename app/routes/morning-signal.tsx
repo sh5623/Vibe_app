@@ -1,13 +1,15 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router'
+import LatticeLoader from '@/components/react-bits/LatticeLoader'
 import { useMsDay, useMsDays } from '@/hooks/use-morning-signal'
 import type { Route } from './+types/morning-signal'
 import Bento from './morning-signal/Bento'
 import Feed from './morning-signal/Feed'
-import Header from './morning-signal/Header'
+import { DateNav } from './morning-signal/Header'
 import Kpis from './morning-signal/Kpis'
-import { pickInitialDate, stampText } from './morning-signal/model'
-import Shell from './morning-signal/Shell'
+import { countsFor, pickInitialDate, stampText } from './morning-signal/model'
+import { TitleBar } from './morning-signal/Nav'
+import { useMsLayout } from './morning-signal-layout'
 
 const EMPTY = { title: '아직 저장된 뉴스가 없어요', text: '매일 아침 8시에 첫 브리핑이 들어와요.' }
 const ERROR = { title: '데이터를 불러오지 못했어요', text: '잠시 뒤 새로고침해 주세요.' }
@@ -65,13 +67,26 @@ export default function MorningSignal() {
   const state = failed ? ERROR : days?.length === 0 ? EMPTY : null
   const stamp = view ? stampText(view.day, view.feeds) : '불러오는 중'
 
+  // 레일 News 칩 — 그날 전체 건수(레이아웃이 그린다)
+  const { setNewsCount } = useMsLayout()
+  const newsTotal = curDay ? countsFor(curDay, view?.feeds ?? null).total : null
+  useEffect(() => setNewsCount(newsTotal), [newsTotal, setNewsCount])
+
   return (
-    <Shell>
-      <Header days={days ?? []} cur={cur} dir={sel?.dir ?? 0} stamp={stamp} onGo={go} />
+    <>
+      <TitleBar title="News" sub={stamp}>
+        <DateNav days={days ?? []} cur={cur} dir={sel?.dir ?? 0} onGo={go} />
+      </TitleBar>
       {state && (
         <section className="card state">
           <b>{state.title}</b>
           <span>{state.text}</span>
+        </section>
+      )}
+      {/* 첫 로딩 — 「신호 수신 중」(react-bits LatticeLoader · 초시계) */}
+      {!state && !(days && view) && (
+        <section className="ms-loading">
+          <LatticeLoader label="신호 수신 중" grid={4} pattern="sweep" cellSize={6} gap={3} />
         </section>
       )}
       {!state && days && view && (
@@ -81,6 +96,6 @@ export default function MorningSignal() {
           <Feed feeds={view.feeds} date={view.day.date} dir={sel?.dir ?? 0} />
         </div>
       )}
-    </Shell>
+    </>
   )
 }

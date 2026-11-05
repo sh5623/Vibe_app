@@ -1,4 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
+import LatticeLoader from '@/components/react-bits/LatticeLoader'
+import { springDone } from '@/components/react-bits/SpringCheck'
 import { useTodoList, useUpdateTodo } from '@/hooks/use-morning-signal-todo'
 import type { Todo, TodoStatus } from '../../../../api/morning-signal-todo'
 import { SAVE_FAILED, StatusIcon, StatusSheet, statusClass } from './TodoSheets'
@@ -92,7 +94,7 @@ function Row({ t, today, showLabel, leaving, entering, sep, onStatus, onOpen }: 
     .filter(Boolean)
     .join(' ')
   return (
-    <div className={cls}>
+    <div className={cls} data-id={t.id}>
       <button
         type="button"
         className="trow-ck"
@@ -117,14 +119,32 @@ function Row({ t, today, showLabel, leaving, entering, sep, onStatus, onOpen }: 
   )
 }
 
+/** 목록 로더 — 회전 고리 대신 격자(react-bits LatticeLoader · 4×4 sweep, 초시계 없음). 라벨은 낭독용으로만 쓴다 */
+function TodoLoader({ label }: { label: string }) {
+  return (
+    <span className="todo-loader">
+      <LatticeLoader
+        label={label}
+        grid={4}
+        pattern="sweep"
+        cellSize={5}
+        gap={3}
+        showTimer={false}
+      />
+    </span>
+  )
+}
+
 interface TodoListProps {
   onOpen: (id: string) => void
   /** 방금 만든 할 일 — 등장 모션을 준다 */
   newId?: string | null
   onError?: (message: string) => void
+  /** 남은 일 수가 바뀔 때 — 레일 TO-DO 칩용 */
+  onPendingCount?: (n: number) => void
 }
 
-export default function TodoList({ onOpen, newId, onError }: TodoListProps) {
+export default function TodoList({ onOpen, newId, onError, onPendingCount }: TodoListProps) {
   const list = useTodoList(true)
   const update = useUpdateTodo()
   const [expanded, setExpanded] = useState(false)
@@ -159,6 +179,11 @@ export default function TodoList({ onOpen, newId, onError }: TodoListProps) {
 
   // 빠지는 중인 줄은 원래 자리에 남겨 두었다가 접는다
   const live = pendingAll.filter((t) => t.status !== 'done' && !leaving.has(t.id))
+  const loaded = pages.length > 0
+  // 레일 TO-DO 칩 — 목록을 받은 뒤에만 알린다(모르는 동안 0을 보이지 않게)
+  useEffect(() => {
+    if (loaded) onPendingCount?.(live.length)
+  }, [loaded, live.length, onPendingCount])
   const split = splitPending(live)
   for (const l of leaving.values()) {
     const arr = split[l.group]
@@ -192,6 +217,10 @@ export default function TodoList({ onOpen, newId, onError }: TodoListProps) {
       const group: Group = t.status === 'in_progress' ? 'progress' : 'todo'
       const index = split[group].findIndex((x) => x.id === t.id)
       setLeaving((m) => new Map(m).set(t.id, { todo: { ...t, status: 'done' }, group, index }))
+      // DONE이 되는 순간 스프링(react-bits SpringCheck) — 줄이 .s-done 으로 다시 그려진 다음 프레임에 건다(저장은 아래에서 바로 보낸다)
+      requestAnimationFrame(() =>
+        springDone(document.querySelectorAll(`.ms .trow[data-id="${CSS.escape(t.id)}"]`))
+      )
       setTimeout(
         () =>
           setLeaving((m) => {
@@ -217,7 +246,7 @@ export default function TodoList({ onOpen, newId, onError }: TodoListProps) {
   if (list.isPending) {
     return (
       <div className="todo-view">
-        <div className="todo-loader" role="status" aria-label="불러오는 중" />
+        <TodoLoader label="불러오는 중" />
       </div>
     )
   }
@@ -312,13 +341,13 @@ export default function TodoList({ onOpen, newId, onError }: TodoListProps) {
 
       <div className="todo-tail" ref={tailRef}>
         {isFetchingNextPage ? (
-          <span className="todo-loader" role="status" aria-label="더 불러오는 중" />
+          <TodoLoader label="더 불러오는 중" />
         ) : isFetchNextPageError ? (
           <button type="button" className="todo-retry" onClick={() => void fetchNextPage()}>
             다시 불러오기
           </button>
         ) : hasNextPage ? (
-          <span className="todo-loader" role="status" aria-label="더 불러오는 중" />
+          <TodoLoader label="더 불러오는 중" />
         ) : items.length > 0 ? (
           <p>처음 기록까지 다 봤어요</p>
         ) : null}

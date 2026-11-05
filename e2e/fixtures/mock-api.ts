@@ -19,13 +19,19 @@ function load(name: FixtureName): Fixture {
   return JSON.parse(readFileSync(new URL(`./${name}.json`, import.meta.url), 'utf8')) as Fixture
 }
 
-export async function mockApi(page: Page, fixture: FixtureName | 'empty' | 'error'): Promise<void> {
+export async function mockApi(
+  page: Page,
+  fixture: FixtureName | 'empty' | 'error',
+  opts: { delayMs?: number } = {}
+): Promise<void> {
   const fx = fixture === 'empty' || fixture === 'error' ? null : load(fixture)
   await page.route('https://fonts.googleapis.com/**', (route) =>
     route.fulfill({ contentType: 'text/css', body: '' })
   )
   await page.route('https://fonts.gstatic.com/**', (route) => route.fulfill({ body: '' }))
   await page.route('**/api/morning-signal**', async (route) => {
+    // 첫 로딩 표시(LatticeLoader) 검증용 — 응답을 늦춘다
+    if (opts.delayMs) await new Promise((r) => setTimeout(r, opts.delayMs))
     if (fixture === 'error') {
       await route.fulfill({ status: 500, json: { error: 'SUPABASE_UNAVAILABLE' } })
       return

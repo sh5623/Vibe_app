@@ -51,5 +51,33 @@
       "!**/.claude",
       "!docs/morning-signal/todo-mockups"
     ]
-  }
+  },
+  "overrides": [
+    {
+      "includes": ["app/components/react-bits/**"],
+      "linter": {
+        "rules": {
+          "correctness": {
+            "useHookAtTopLevel": "off",
+            "useExhaustiveDependencies": "off"
+          },
+          "suspicious": {
+            "noArrayIndexKey": "off",
+            "noImplicitAnyLet": "off"
+          },
+          "a11y": {
+            "noAriaHiddenOnFocusable": "off",
+            "useSemanticElements": "off"
+          },
+          "complexity": {
+            "noImportantStyles": "off",
+            "useOptionalChain": "off"
+          },
+          "style": {
+            "noDescendingSpecificity": "off"
+          }
+        }
+      }
+    }
+  ]
 }
