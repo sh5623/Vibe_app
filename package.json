@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "react-router dev",
     "build": "react-router build",
-    "check": "biome check --write . && pnpm run check:tw",
+    "check": "biome check --write . && pnpm run check:tw && pnpm run check:e2e-waits",
+    "check:e2e-waits": "! grep -rn 'waitForTimeout(' e2e/ --include='*.ts' | grep -v '// 고정 대기:' || { echo '↑ 이유 없는 e2e 고정 대기. 일어나야 하는 상태(애니메이션·전환·스크롤이 끝난 모습)는 expect.poll 이나 자동 재시도 단언으로 기다린다. 고정 대기는 부재 확인(정해진 시간 안에 일어나지 않음)과 연타 간격에만 쓰고, 같은 줄에 // 고정 대기: <이유> 를 단다.'; exit 1; }",
     "check:tw": "! grep -rE 'bg-gradient-to-|flex-shrink-0|flex-grow-0|@tailwind base|@tailwind components|@tailwind utilities' app/ --include='*.tsx' --include='*.ts' --include='*.css' 2>/dev/null && pnpm run check:tw-names",
     "check:tw-names": "! grep -rnE '\\.(ring|static|fixed|absolute|relative|sticky|hidden|block|inline|flex|grid|table|contents|container|truncate|border|shadow|rounded|outline|transform|transition|visible|invisible|isolate|grow|shrink|italic|underline|uppercase|lowercase|capitalize|collapse|filter|blur|invert|sr-only)([^-a-zA-Z0-9_]|$)' app/ --include='*.css' --exclude='globals.css'",
     "typecheck": "react-router typegen && tsc --noEmit",

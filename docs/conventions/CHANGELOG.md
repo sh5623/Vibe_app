@@ -13,8 +13,8 @@
 
 | 층 | 이 프로젝트의 실제 위치 | 로드/발동 시점 | 예산 |
 | --- | --- | --- | --- |
-| 도구 설정 | `biome.json`(lint/format) · `tsconfig.json`(strict + noUncheckedIndexedAccess) · `package.json` scripts(`check`/`check:tw`/`typecheck`/`test`/`test:e2e`) — CI 워크플로 없음 | 자동 강제 | — (문서 규약보다 항상 우선) |
-| 경로 스코프 룰 | 없음(필요 시 `.claude/rules/` 신설) | 매칭 파일을 만질 때만 | 파일당 ≤150줄 |
+| 도구 설정 | `biome.json`(lint/format) · `tsconfig.json`(strict + noUncheckedIndexedAccess) · `package.json` scripts(`check`/`check:tw`/`check:e2e-waits`/`typecheck`/`test`/`test:e2e`) — CI 워크플로 없음 | 자동 강제 | — (문서 규약보다 항상 우선) |
+| 경로 스코프 룰 | 없음 — `.gitignore`가 `.claude/` 통째라 `.claude/rules/`에 써도 커밋되지 않는다(다른 클론·워크트리에 안 감). 쓰려면 먼저 `.gitignore`를 `.claude/*` + `!.claude/rules/`로 바꾼다 | 매칭 파일을 만질 때만 | 파일당 ≤150줄 |
 | 태스크·도메인 문서 | 없음(필요 시 `docs/` 하위 신설) | 해당 작업 시 명시적 Read | 느슨(문서당 ≤400줄 권장) |
 | 상시 로드 문서 | `CLAUDE.md`(루트, AGENTS.md 없음 — 이 파일이 앵커 그 자체) | 모든 세션 | **≤200줄** — 모든 세션·모든 파일에서 참인 것만 |
 | 아카이브 | docs/conventions/archive/ | 로드 안 됨 | — (사문화 규약 + 로테이션된 로그) |
@@ -36,6 +36,8 @@
 
 | 날짜 | 무엇에 물렸나 (≤120자 한 줄) | 안착 |
 | --- | --- | --- |
+| 2026-11-05 | e2e가 레일 열림·전환 끝을 고정 시간(`waitForTimeout`)으로 기다린 뒤 한 번만 확인해 병렬 실행에서 5개가 번갈아 실패 | `package.json` `check:e2e-waits`(도구) |
+| 2026-11-05 | 라우팅 표가 경로 룰 위치로 `.claude/rules/`를 가리켰으나 `.claude/`가 gitignore라 커밋되지 않음 | 이 파일 §라우팅 |
 | 2026-10-23 | 라이브 클라우드 루틴 프롬프트를 고치고 `docs/morning-signal/routines/` 사본을 안 고쳐 어긋남(요약 루틴 Slack 단계) | `docs/morning-signal/routines/README.md` §알려 둘 점 |
 | 2026-10-23 | 레포 안 Claude 워크트리(`.claude/worktrees/`)가 있으면 Biome이 중첩 루트로 멈추고 vitest가 테스트를 두 번 셈 | `biome.json`·`tsconfig.json`·`vite.config.ts` 제외(도구) |
 | 2026-10-23 | route CSS 커스텀 클래스 `.ring`·`.static`이 Tailwind 4 유틸리티와 같은 이름이라 덧씌워짐(PIN 자물쇠에 사각 테두리) | `package.json` `check:tw-names`(도구) |
@@ -45,6 +47,31 @@
 | 2026-08-11 | self-improvement 시스템 부트스트랩 — 문서 지형 탐지·라우팅 표 작성 | 이 파일 |
 
 ## §로그 (최신이 위 · 블록 1개 = 작업 단위 1개 · 본문 최대 15블록)
+
+### 2026-11-05 — Morning Signal 사이드 레일 구현 중 e2e 고정 대기를 도구로 막음
+
+- **계기**: 사이드 레일 e2e(`e2e/morning-signal.e2e.ts` 레일 묶음)의 Esc·호버·레일 링크·동작 줄이기·스쳐 지나감 테스트가 병렬 실행에서 번갈아 실패했다. 같은 동작을 따로 재면 제품은 8/8·6/6 정상이었다. 원인은 테스트 쪽이었다. «0.12초 뒤 열림 · 0.15초 뒤 닫힘 · View Transition 끝»을 정해진 시간(`waitForTimeout`)만큼 기다린 뒤 한 번만 확인했고, 부하가 걸리면 그 시간이 모자랐다.
+- **증거**: 실패는 병렬 실행에서만 나왔다(단독 실행은 통과). `expect.poll`·전환 끝 대기로 바꾼 뒤 72개가 3회 연속 통과했다. 재발 지점:
+  - ① 레일 테스트 5개(고침)
+  - ② 같은 파일의 날짜 출발판 테스트 2개 `date flips to the new date`·`rapid date clicks settle on the last date`(1.5초·2초 고정 대기 뒤 판 글자를 한 번 확인)
+  - ③ `e2e/morning-signal-todo.e2e.ts` `content is not hidden behind the tab bar`(스크롤 뒤 0.3초)
+  - ④ second-brain 아티팩트 검사 `.wiki-automation/tests/fx_check.js` `rail.clickWhileOpen`(고정 900ms에서 1회 실패 → 전환 끝을 기다리게 바꿈)
+- **변경 1(도구 신설)**: `package.json`에 `check:e2e-waits`를 추가하고 `pnpm check`에 연결했다.
+  - `e2e/**/*.ts`의 `waitForTimeout(` 줄에 `// 고정 대기: <이유>` 표시가 없으면 실패한다.
+  - 실패 메시지가 판단 기준을 함께 알려 준다: 일어나야 하는 상태는 `expect.poll`·자동 재시도 단언으로 기다리고, 부재 확인·연타 간격만 고정 대기 + 이유로 쓴다.
+  - 「일어나야 하는가 / 일어나지 않아야 하는가」는 도구가 가르지 못한다. 표시를 다는 사람이 메시지 기준으로 고른다.
+  - 문서 규약은 따로 쓰지 않았다. 상시 로드 `CLAUDE.md`는 238줄로 예산 200을 넘었고, 경로 룰은 아래 변경 2 때문에 공유되지 않는다.
+- **변경 2(라우팅 정정)**: §라우팅의 경로 스코프 룰 칸이 `.claude/rules/` 신설을 안내했다. 그런데 `.gitignore:42`가 `.claude/`를 통째로 제외해 거기 쓴 룰은 커밋되지 않는다(`git check-ignore -v .claude/rules/e2e.md` → `.gitignore:42:.claude/`). 칸을 실제 상태와 쓰는 조건으로 고쳤다.
+- **전파**: 기존 고정 대기 8건을 나눴다. 소급 미적용은 0건이다.
+  - 일어나야 하는 상태 3건(②의 2건, ③)은 `expect.poll`로 바꿨다.
+  - 부재 확인 4건에는 이유 표시를 달았다: `morning-signal.e2e.ts`의 오류 문구 없음·스쳐 지나감, `morning-signal-todo.e2e.ts`의 스프링 없음·추가 요청 없음.
+  - 연타 간격 1건에도 표시를 달았다.
+- **로컬 처리(게이트 탈락)**: react-bits `Waves`가 효과 정리 단계에서 `loseContext()`를 불렀다. React StrictMode(개발)가 효과를 정리→재실행하면 같은 `<canvas>`가 끊긴 컨텍스트를 받아 배경이 흰 면이 됐다. 레포의 WebGL 컴포넌트 중 정리 단계에서 컨텍스트를 끊는 것은 `Waves` 하나뿐이다(`ElectricBorder`는 끊지 않는다). 그래서 전역화하지 않고 `app/components/react-bits/Waves.tsx` 정리 주석에만 두었다. react-bits WebGL 컴포넌트를 하나 더 들일 때 재발 지점이 둘이 되면 그때 규약화한다. (같은 날 오후 사용자 요청으로 `Waves`를 통째로 지워 그 주석도 사라졌다 — 지금 레포에 정리 단계에서 컨텍스트를 끊는 컴포넌트는 0개다. 다시 받을 때 원본 정리 단계의 `loseContext()`를 지울 것.)
+- **검증**:
+  - PoC: 표시 없는 `waitForTimeout(900)`이 든 임시 e2e 파일을 두면 그 줄을 짚고 rc=1, 지우면 rc=0. 표시를 달기 전 기존 8건도 모두 검출했다.
+  - `pnpm check`·`typecheck`가 통과했고, 뉴스·TO-DO e2e 72개도 통과했다.
+  - 바꾼 3개 테스트를 5회 반복(동시 15개)하면 14개 통과, 1개 실패였다. 실패는 `content is not hidden behind the tab bar`의 바꾸지 않은 첫 단언(목록 첫 표시 5초 초과)에서 났고, 그 테스트만 10회 반복하면 10/10 통과했다.
+- **커밋·PR**: 미커밋(워킹 트리 · 브랜치 `feat/morning-signal-rail`)
 
 ### 2026-10-23 — Morning Signal 모바일 성능·표시 수정 중 「라이브 루틴 ↔ 사본」 어긋남 규약화
 
