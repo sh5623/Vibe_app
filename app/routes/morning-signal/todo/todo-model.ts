@@ -36,11 +36,31 @@ function byDueThenCreated(a: Todo, b: Todo): number {
   return due || a.createdAt.localeCompare(b.createdAt)
 }
 
-export function splitPending(todos: Todo[]): { progress: Todo[]; todo: Todo[] } {
+/** 「남은 일」 묶음 — 중요 표시는 상태와 무관하게 맨 위 IMPORTANT 로(그 안은 진행 중 → 할 일, 각각 마감순) */
+export function splitPending(todos: Todo[]): {
+  important: Todo[]
+  progress: Todo[]
+  todo: Todo[]
+} {
+  const open = todos.filter((t) => t.status !== 'done')
+  const imp = open.filter((t) => t.important)
+  const rest = open.filter((t) => !t.important)
   return {
-    progress: todos.filter((t) => t.status === 'in_progress').sort(byDueThenCreated),
-    todo: todos.filter((t) => t.status === 'todo').sort(byDueThenCreated),
+    important: [
+      ...imp.filter((t) => t.status === 'in_progress').sort(byDueThenCreated),
+      ...imp.filter((t) => t.status === 'todo').sort(byDueThenCreated),
+    ],
+    progress: rest.filter((t) => t.status === 'in_progress').sort(byDueThenCreated),
+    todo: rest.filter((t) => t.status === 'todo').sort(byDueThenCreated),
   }
+}
+
+/** 이 할 일이 「남은 일」 어느 묶음에 들어가는가 */
+export function pendingGroup(
+  t: Pick<Todo, 'important' | 'status'>
+): 'important' | 'progress' | 'todo' {
+  if (t.important) return 'important'
+  return t.status === 'in_progress' ? 'progress' : 'todo'
 }
 
 /** 추가한 날짜별 묶음 — 날짜 내림차순, 묶음 안은 최근 추가가 위. 같은 id 는 한 번만. */

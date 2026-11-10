@@ -47,6 +47,8 @@ export interface TodoInput {
   dueDate?: string | null
   dueTime?: string | null
   attachments?: Attachment[]
+  /** 켤 때(만들기)·바뀔 때(수정)만 보낸다 — 서버 컬럼이 없어도 다른 저장이 깨지지 않게 */
+  important?: boolean
 }
 
 export type TodoPatch = Partial<TodoInput> & { status?: TodoStatus }

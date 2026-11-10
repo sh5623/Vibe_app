@@ -16,6 +16,11 @@
   - Storage에 버킷 `ms-todo`가 있다. **Public이 꺼져 있고**, 파일 크기 제한 10MB, 허용 형식은 사진(png·jpeg·gif·webp·avif·heic·heif)과 `application/pdf`다(SVG 제외).
 - 여러 번 실행해도 된다. 버킷이 이미 있으면 허용 형식만 위 목록으로 다시 맞춘다.
 - **2026-10-30 갱신분**(잠금 시간이 두 배씩 늘어나는 `lock_count`, 버킷 허용 형식 좁히기)은 이미 설치한 프로젝트에서도 이 파일을 한 번 더 실행해야 적용된다.
+- **2026-11-10 갱신분**(중요 표시 `ms_todos.important`)도 같다 — 파일 전체를 다시 실행하거나 아래 한 줄만 실행한다. 실행 전에는 「★ 중요」를 켠 저장만 실패하고(「저장하지 못했어요」) 나머지 저장·목록은 그대로 된다.
+  ```sql
+  alter table public.ms_todos add column if not exists important boolean not null default false;
+  ```
+  확인: Table Editor → `ms_todos`에 `important`(bool, 기본 `false`) 열이 보이고 기존 행은 전부 `false`다.
 
 ## 2. PIN과 비밀값 정하기
 
@@ -65,6 +70,7 @@ curl -sS "https://seungho-apps.vercel.app/api/morning-signal-todo?op=session"
 - [ ] **틀린 PIN** 1번: 칸이 빨개지며 흔들리고 「PIN이 맞지 않아요. 다시 입력해 주세요.」가 나온다(안드로이드는 진동도). 잠시 뒤 칸이 비워진다.
 - [ ] **맞는 PIN**: 칸이 초록으로 바뀌고 자물쇠가 체크로 바뀐 뒤 목록이 열린다(처음엔 「아직 할 일이 없어요…」).
 - [ ] 오른쪽 아래 ＋ → 제목 입력 → 「📅 날짜」로 날짜·시간 → 「📎 첨부」로 사진 1장(올라가는 동안 「추가」가 꺼져 있다) → 「추가」 → 「남은 일」과 「오늘」에 생긴다.
+- [ ] 하나 더 만들며 「★ 중요」를 켠다 → 「남은 일」 맨 위 보라 상자(IMPORTANT)에 들어가고, 테두리를 따라 별빛이 천천히 돈다. 상세 → 「수정」에서 「★ 중요」를 끄면 상자에서 빠진다.
 - [ ] 그 줄을 누르면 상세가 열리고, 사진이 보이고 눌러서 열린다.
 - [ ] 줄 앞의 원을 누르고 DONE → 「남은 일」에서 접히며 빠지고, 날짜 목록에서는 취소선이 그어진다.
 - [ ] 헤더 자물쇠(다시 잠그기) → PIN 화면으로 돌아간다.
@@ -89,6 +95,7 @@ curl -sS "https://seungho-apps.vercel.app/api/morning-signal-todo?op=session"
 | 「사진이나 PDF만, 파일당 10MB까지…」 | 다른 형식(SVG·동영상 등)이거나 10MB를 넘는다 | 사진·PDF로 10MB 이하만 올린다. |
 | 상세에서 사진이 안 보인다 | 서명된 보기 주소를 못 만들었다 | 버킷 이름이 `ms-todo`인지, 1단계 SQL을 실행했는지 확인한다. |
 | 「목록을 불러오지 못했어요」 | 테이블이 없거나 Supabase 오류다 | 1단계 확인. Vercel 함수 로그를 본다. |
+| 「★ 중요」를 켜고 저장하면 「저장하지 못했어요」 | `ms_todos.important` 열이 없다(2026-11-10 갱신분 미실행) | 1단계의 `alter table … add column if not exists important …` 한 줄을 실행한다. |
 | 회사망에서 안 열린다 | ePrism이 `*.vercel.app`을 막는다(알려진 한계) | 휴대폰이나 집 네트워크에서 연다. |
 
 ## 9. 알려진 한계

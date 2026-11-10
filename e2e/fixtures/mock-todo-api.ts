@@ -25,6 +25,9 @@ export interface MockTodoState {
   uploadFail: boolean
   uploads: number
   creates: number
+  /** 마지막 create·update 요청 본문 — 보낸 필드를 확인할 때 */
+  lastCreate: Record<string, unknown> | null
+  lastUpdate: Record<string, unknown> | null
 }
 
 let seq = 0
@@ -48,6 +51,7 @@ export function makeTodo(over: Partial<Todo> = {}): Todo {
     createdAt: at,
     updatedAt: at,
     doneAt: null,
+    important: false,
     ...over,
   }
 }
@@ -95,6 +99,8 @@ export async function mockTodoApi(
     uploadFail: false,
     uploads: 0,
     creates: 0,
+    lastCreate: null,
+    lastUpdate: null,
   }
 
   await page.route(`${STORAGE}/**`, async (route) => {
@@ -193,15 +199,18 @@ export async function mockTodoApi(
         dueDate: (body.dueDate as string | null | undefined) ?? null,
         dueTime: (body.dueTime as string | null | undefined) ?? null,
         attachments: (body.attachments as Attachment[] | undefined) ?? [],
+        important: body.important === true,
         createdDate: kstToday(),
         createdAt: now,
       })
+      state.lastCreate = body
       state.todos.push(todo)
       return send(200, { todo })
     }
     if (op === 'update') {
       if (!found) return send(404, { error: 'NOT_FOUND' })
       const p = body as Partial<Todo>
+      state.lastUpdate = body
       Object.assign(found, p, { updatedAt: new Date().toISOString() })
       if (p.status) found.doneAt = p.status === 'done' ? new Date().toISOString() : null
       if (p.status) found.status = p.status as TodoStatus

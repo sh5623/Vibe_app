@@ -9,12 +9,21 @@
   --td-b2: #8b5cf6;
   --td-tint: #eef2fb;
   --td-line: #e3e8f2;
+  /* 중요(IMPORTANT) — 보라. 별빛 색은 TodoList.tsx IMP_STAR 와 같은 값 */
+  --td-imp: #8b5cf6;
+  --td-imp-3: #c026d3;
+  --td-imp-bg: #f4f1fd;
+  --td-imp-line: color-mix(in srgb, var(--td-imp) 22%, transparent);
 }
 :root[data-ms-theme="dark"] {
   --td-todo: #60a5fa;
   --td-prog: #fbbf24;
   --td-tint: rgba(148, 163, 184, 0.07);
   --td-line: rgba(148, 163, 184, 0.12);
+  --td-imp: #a78bfa;
+  --td-imp-3: #e879f9;
+  --td-imp-bg: rgba(139, 92, 246, 0.08);
+  --td-imp-line: rgba(167, 139, 250, 0.2);
 }
 
 .ms .todo-view {
@@ -562,6 +571,8 @@
   background: var(--td-tint);
   border-radius: 18px;
   padding: 4px 14px;
+  /* IMPORTANT 별빛 캔버스가 상자 밖 48px까지 번진다 — 가로만 잘라 휴대폰 가로 스크롤을 막는다(전류 테두리와 같은 방식) */
+  overflow-x: clip;
 }
 .ms .todo-sub {
   margin: 0;
@@ -575,6 +586,31 @@
 .ms .todo-sub.todo {
   color: var(--td-todo);
 }
+
+/* ── 중요(IMPORTANT) — 「남은 일」 맨 위 보라 상자 ─────────────────────
+   테두리 별빛은 react-bits StarBorder(캔버스, 화면 밖·동작 줄이기면 스스로 멈춤).
+   제목 글자색은 react-bits GradientText 의 linear·yoyo 를 CSS 키프레임으로 옮겼다 —
+   원본은 줄마다 requestAnimationFrame 으로 그라데이션 문자열을 다시 쓰므로, 휴대폰 부담을 줄이려고 JS 없이 돌린다.
+   흐름은 이 상자 안에서만, 날짜별 기록에서는 같은 색을 멈춘 채로 둔다(줄이 계속 늘어나는 목록이라). */
+.ms .todo-imp.star-border {
+  display: block;
+  margin: 8px -8px 6px;
+  padding: 0 8px;
+  font-weight: inherit;
+  line-height: inherit;
+  text-align: start;
+}
+.ms .todo-sub.important {
+  color: var(--td-imp);
+}
+/* 제목 글자색 규칙은 아래 .trow-tt·.s-done .trow-tt 뒤에 둔다(선택자 우선순위 순서) */
+.ms .todo-dt-imp {
+  margin: 0 0 4px;
+  font: 600 10px var(--fm);
+  letter-spacing: 0.1em;
+  color: var(--td-imp);
+}
+
 .ms .todo-clear {
   margin: 0;
   padding: 16px 0;
@@ -727,6 +763,34 @@
 .ms .s-done .trow-tt {
   background-size: 100% 1.2px;
   color: var(--muted-fg);
+}
+/* 중요 제목 — 남색→보라. 끝난 일에는 .imp 가 붙지 않아 위 취소선이 그대로 쓰인다 */
+.ms .trow.imp .trow-tt {
+  font-weight: 600;
+  background: linear-gradient(90deg, var(--td-b1), var(--td-imp));
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.ms .todo-imp .trow.imp .trow-tt {
+  background-image: linear-gradient(
+    90deg,
+    var(--td-b1),
+    var(--td-imp),
+    var(--td-imp-3),
+    var(--td-imp),
+    var(--td-b1)
+  );
+  background-size: 300% 100%;
+  animation: td-imp-flow 8s ease-in-out infinite alternate;
+}
+@keyframes td-imp-flow {
+  from {
+    background-position: 0% 50%;
+  }
+  to {
+    background-position: 100% 50%;
+  }
 }
 .ms .trow-mt {
   display: flex;
@@ -954,6 +1018,12 @@
   border-color: color-mix(in srgb, var(--td-b1) 40%, transparent);
   background: color-mix(in srgb, var(--td-b1) 8%, transparent);
 }
+.ms .todo-pill.imp.on {
+  color: var(--td-imp);
+  border-color: color-mix(in srgb, var(--td-imp) 45%, transparent);
+  background: color-mix(in srgb, var(--td-imp) 10%, transparent);
+  font-weight: 600;
+}
 .ms .todo-pill:focus-visible,
 .ms .todo-pill:focus-within {
   outline: 2px solid var(--td-b1);
@@ -1100,6 +1170,10 @@
 }
 .ms .todo-actions .todo-pill {
   margin-right: auto;
+}
+/* 수정 화면은 ★ 중요 · 📎 첨부를 왼쪽에 붙여 두고 첨부 뒤에서 벌린다 */
+.ms .todo-actions .todo-pill.imp {
+  margin-right: 0;
 }
 .ms .todo-btn {
   all: unset;

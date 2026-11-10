@@ -244,9 +244,24 @@ interface Draft {
   link: string
   date: string
   time: string
+  important: boolean
 }
 
-const emptyDraft: Draft = { title: '', body: '', link: '', date: '', time: '' }
+const emptyDraft: Draft = { title: '', body: '', link: '', date: '', time: '', important: false }
+
+/** ★ 중요 토글 — 다른 알약 버튼과 같은 모양, 켜면 보라 */
+function ImportantPill({ on, onToggle }: { on: boolean; onToggle: () => void }) {
+  return (
+    <button
+      type="button"
+      className={`todo-pill imp${on ? ' on' : ''}`}
+      aria-pressed={on}
+      onClick={onToggle}
+    >
+      ★ 중요
+    </button>
+  )
+}
 
 interface ClearableProps {
   label: string
@@ -314,6 +329,7 @@ function draftOf(t: Todo): Draft {
     link: t.link ?? '',
     date: t.dueDate ?? '',
     time: t.dueTime ?? '',
+    important: t.important,
   }
 }
 
@@ -358,7 +374,11 @@ export function CreateSheet({ open, onClose, onCreated, notify }: CreateSheetPro
     if (busy.current || done.current || !d.title.trim() || files.uploading) return null
     busy.current = true
     try {
-      const todo = await create.mutateAsync({ ...payloadOf(d), attachments: files.attachments })
+      const todo = await create.mutateAsync({
+        ...payloadOf(d),
+        attachments: files.attachments,
+        ...(d.important ? { important: true } : {}),
+      })
       done.current = true
       setD(emptyDraft)
       setShow({ date: false, link: false })
@@ -412,6 +432,10 @@ export function CreateSheet({ open, onClose, onCreated, notify }: CreateSheetPro
             📎 첨부
             <input type="file" multiple accept={ACCEPT} hidden onChange={files.add} />
           </label>
+          <ImportantPill
+            on={d.important}
+            onToggle={() => setD((x) => ({ ...x, important: !x.important }))}
+          />
         </div>
         {show.date && (
           <div className="todo-xf">
@@ -523,6 +547,7 @@ function DetailView({ t, mode, setMode, onClose, notify, filesPending }: DetailV
 
   return (
     <div className="todo-dt">
+      {t.important && <p className="todo-dt-imp">IMPORTANT</p>}
       <h3>{t.title}</h3>
       <fieldset className="todo-segs">
         <legend className="sr-only">상태</legend>
@@ -638,7 +663,11 @@ function EditForm({ t, notify, onDone }: { t: Todo; notify: Notify; onDone: () =
     try {
       await update.mutateAsync({
         id: t.id,
-        patch: { ...payloadOf(d), attachments: files.attachments },
+        patch: {
+          ...payloadOf(d),
+          attachments: files.attachments,
+          ...(d.important !== t.important ? { important: d.important } : {}),
+        },
       })
       onDone()
     } catch (e) {
@@ -693,6 +722,10 @@ function EditForm({ t, notify, onDone }: { t: Todo; notify: Notify; onDone: () =
       </div>
       <FileList files={files.files} onRemove={files.remove} />
       <div className="todo-actions">
+        <ImportantPill
+          on={d.important}
+          onToggle={() => setD((x) => ({ ...x, important: !x.important }))}
+        />
         <label className="todo-pill">
           📎 첨부
           <input type="file" multiple accept={ACCEPT} hidden onChange={files.add} />

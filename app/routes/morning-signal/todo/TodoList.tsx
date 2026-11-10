@@ -1,8 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
 import LatticeLoader from '@/components/react-bits/LatticeLoader'
 import { springDone } from '@/components/react-bits/SpringCheck'
+import StarBorder from '@/components/react-bits/StarBorder'
 import { useTodoList, useUpdateTodo } from '@/hooks/use-morning-signal-todo'
 import type { Todo, TodoStatus } from '../../../../api/morning-signal-todo'
+import { useMsTheme } from '../Header'
 import { SAVE_FAILED, StatusIcon, StatusSheet, statusClass } from './TodoSheets'
 import {
   dayHeading,
@@ -11,18 +13,21 @@ import {
   isDueSoon,
   kstToday,
   PENDING_LIMIT,
+  pendingGroup,
   STATUS_LABEL,
   splitPending,
 } from './todo-model'
 
 // 목록 — 시안 docs/morning-signal/todo-mockups/todo-list.html (v2, 줄 목록).
-// 맨 위 「남은 일」(TODO·IN PROGRESS, 날짜 무관) + 추가한 날짜별 기록(무한 스크롤, 20개씩).
+// 맨 위 「남은 일」(IMPORTANT·IN PROGRESS·TODO, 날짜 무관) + 추가한 날짜별 기록(무한 스크롤, 20개씩).
 
 /** DONE 이 된 줄이 「남은 일」에서 빠지기까지 — 체크 모션(~0.45s) + 접힘(0.36s) + 여유 */
 const LEAVE_MS = 850
 const ENTER_MS = 900
+/** IMPORTANT 테두리 별빛 색 — 캔버스에 칠하므로 CSS 변수가 아니라 실제 색이어야 한다(--td-imp 와 같은 값) */
+const IMP_STAR = { light: '#8b5cf6', dark: '#a78bfa' } as const
 
-type Group = 'progress' | 'todo'
+type Group = 'important' | 'progress' | 'todo'
 
 interface Leaving {
   todo: Todo
@@ -87,6 +92,8 @@ function Row({ t, today, showLabel, leaving, entering, sep, onStatus, onOpen }: 
   const cls = [
     'trow',
     `s-${statusClass(t.status)}`,
+    // 중요 강조(보라 글자) — 끝난 일은 강조를 뺀다. 글자색 흐름은 IMPORTANT 묶음 안에서만(CSS)
+    t.important && t.status !== 'done' ? 'imp' : '',
     sep ? 'sep' : '',
     leaving ? 'leaving' : '',
     entering ? 'enter' : '',
@@ -189,12 +196,14 @@ export default function TodoList({ onOpen, newId, onError, onPendingCount }: Tod
     const arr = split[l.group]
     arr.splice(Math.min(l.index, arr.length), 0, l.todo)
   }
-  const flat: Array<{ t: Todo; group: Group }> = [
+  // IMPORTANT 는 늘 다 보인다(접히면 표시한 의미가 없다) — 「처음 3줄」 제한은 그 아래 묶음에만
+  const rest: Array<{ t: Todo; group: Group }> = [
     ...split.progress.map((t) => ({ t, group: 'progress' as const })),
     ...split.todo.map((t) => ({ t, group: 'todo' as const })),
   ]
-  const shown = expanded ? flat : flat.slice(0, PENDING_LIMIT)
+  const shown = expanded ? rest : rest.slice(0, PENDING_LIMIT)
   const groups = groupByCreatedDate(items)
+  const theme = useMsTheme()
 
   const markEntering = (id: string) => {
     setEntering((s) => new Set(s).add(id))
@@ -214,7 +223,7 @@ export default function TodoList({ onOpen, newId, onError, onPendingCount }: Tod
     setStatusFor(null)
     if (!t || t.status === s) return
     if (s === 'done' && t.status !== 'done') {
-      const group: Group = t.status === 'in_progress' ? 'progress' : 'todo'
+      const group: Group = pendingGroup(t)
       const index = split[group].findIndex((x) => x.id === t.id)
       setLeaving((m) => new Map(m).set(t.id, { todo: { ...t, status: 'done' }, group, index }))
       // DONE이 되는 순간 스프링(react-bits SpringCheck) — 줄이 .s-done 으로 다시 그려진 다음 프레임에 건다(저장은 아래에서 바로 보낸다)
@@ -274,36 +283,72 @@ export default function TodoList({ onOpen, newId, onError, onPendingCount }: Tod
         <div className="todo-pending">
           {empty ? (
             <p className="todo-clear">아직 할 일이 없어요. ＋로 첫 할 일을 만들어 보세요.</p>
-          ) : flat.length === 0 ? (
+          ) : split.important.length + rest.length === 0 ? (
             <p className="todo-clear">남은 일이 없어요</p>
           ) : (
-            shown.map(({ t, group }) => {
-              const label = group !== lastGroup
-              lastGroup = group
-              return (
-                <div key={t.id} className="todo-pi">
-                  {label && (
-                    <p className={`todo-sub ${group}`}>
-                      {group === 'progress' ? 'IN PROGRESS' : 'TODO'}
-                    </p>
-                  )}
-                  <Row
-                    t={t}
-                    today={today}
-                    showLabel={false}
-                    sep={!label}
-                    leaving={leaving.has(t.id)}
-                    entering={entering.has(t.id) || t.id === newId}
-                    onStatus={setStatusFor}
-                    onOpen={onOpen}
-                  />
-                </div>
-              )
-            })
+            <>
+              {split.important.length > 0 && (
+                // 중요 묶음 — 테두리를 따라 별빛 하나가 돈다(react-bits StarBorder, 화면 밖·동작 줄이기면 멈춤).
+                // 그 안은 상태가 섞이므로 줄 끝에 IN PROGRESS·TODO 를 붙인다.
+                <StarBorder
+                  as="div"
+                  className="todo-imp"
+                  theme={theme}
+                  color={IMP_STAR[theme]}
+                  backgroundColor="var(--td-imp-bg)"
+                  borderColor="var(--td-imp-line)"
+                  textColor="inherit"
+                  radius={14}
+                  duration={6}
+                  trailLength={0.35}
+                  glow={0.5}
+                  hover="none"
+                  clickPulse={false}
+                >
+                  <p className="todo-sub important">IMPORTANT</p>
+                  {split.important.map((t, i) => (
+                    <Row
+                      key={t.id}
+                      t={t}
+                      today={today}
+                      showLabel
+                      sep={i > 0}
+                      leaving={leaving.has(t.id)}
+                      entering={entering.has(t.id) || t.id === newId}
+                      onStatus={setStatusFor}
+                      onOpen={onOpen}
+                    />
+                  ))}
+                </StarBorder>
+              )}
+              {shown.map(({ t, group }) => {
+                const label = group !== lastGroup
+                lastGroup = group
+                return (
+                  <div key={t.id} className="todo-pi">
+                    {label && (
+                      <p className={`todo-sub ${group}`}>
+                        {group === 'progress' ? 'IN PROGRESS' : 'TODO'}
+                      </p>
+                    )}
+                    <Row
+                      t={t}
+                      today={today}
+                      showLabel={false}
+                      sep={!label}
+                      leaving={leaving.has(t.id)}
+                      entering={entering.has(t.id) || t.id === newId}
+                      onStatus={setStatusFor}
+                      onOpen={onOpen}
+                    />
+                  </div>
+                )
+              })}
+            </>
           )}
-          {flat.length > PENDING_LIMIT && (
+          {rest.length > PENDING_LIMIT && (
             <button type="button" className="todo-more" onClick={() => setExpanded((e) => !e)}>
-              {expanded ? '접기' : `${flat.length - PENDING_LIMIT}개 더 보기`}
+              {expanded ? '접기' : `${rest.length - PENDING_LIMIT}개 더 보기`}
             </button>
           )}
         </div>

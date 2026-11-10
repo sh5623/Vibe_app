@@ -19,6 +19,8 @@ create table if not exists public.ms_todos (
 );
 create index if not exists ms_todos_created on public.ms_todos (created_at desc, id desc);
 create index if not exists ms_todos_open on public.ms_todos (status) where status <> 'done';
+-- 중요 표시(2026-11-10 추가) — 「남은 일」 맨 위 IMPORTANT 묶음. 기존 행은 false 로 채워진다.
+alter table public.ms_todos add column if not exists important boolean not null default false;
 
 -- 잠금 시도 횟수(행 하나)
 create table if not exists public.ms_todo_auth (

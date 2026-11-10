@@ -308,6 +308,8 @@ interface Row {
   created_at: string
   updated_at: string
   done_at: string | null
+  /** 컬럼을 추가하기 전 DB 를 흉내 내려고 기본 행에는 넣지 않는다 */
+  important?: boolean
 }
 
 function row(n: number, over: Partial<Row> = {}): Row {
@@ -654,6 +656,51 @@ describe('handler — Task 2 CRUD', () => {
       dueTime: '10:00',
       status: 'done',
       doneAt: '2026-10-23T00:00:00.000Z',
+    })
+  })
+
+  it('important maps from the row and defaults to false when the column is missing', async () => {
+    returned = [row(1, { important: true })]
+    const a = await call(makeReq('GET', { query: { op: 'get', id: uuid(1) }, cookie: cookie() }))
+    expect((a.body as { todo: Todo }).todo.important).toBe(true)
+    returned = [row(2)]
+    const b = await call(makeReq('GET', { query: { op: 'get', id: uuid(2) }, cookie: cookie() }))
+    expect((b.body as { todo: Todo }).todo.important).toBe(false)
+  })
+
+  it('create sends important only when given', async () => {
+    await call(makeReq('POST', { query: { op: 'create' }, body: { title: 't' }, cookie: cookie() }))
+    expect(calls.find((c) => c.method === 'POST')?.body).not.toHaveProperty('important')
+    calls = []
+    await call(
+      makeReq('POST', {
+        query: { op: 'create' },
+        body: { title: 't', important: true },
+        cookie: cookie(),
+      })
+    )
+    expect(calls.find((c) => c.method === 'POST')?.body).toMatchObject({ important: true })
+    const bad = await call(
+      makeReq('POST', {
+        query: { op: 'create' },
+        body: { title: 't', important: 'yes' },
+        cookie: cookie(),
+      })
+    )
+    expect(bad.res.statusCode).toBe(400)
+  })
+
+  it('update can turn important off', async () => {
+    await call(
+      makeReq('PATCH', {
+        query: { op: 'update', id: uuid(1) },
+        body: { important: false },
+        cookie: cookie(),
+      })
+    )
+    expect(calls.find((c) => c.method === 'PATCH')?.body).toEqual({
+      important: false,
+      updated_at: '2026-10-23T00:00:00.000Z',
     })
   })
 

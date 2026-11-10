@@ -27,6 +27,7 @@ function todo(id: string, over: Partial<Todo> = {}): Todo {
     createdAt: '2026-10-23T01:00:00.000Z',
     updatedAt: '2026-10-23T01:00:00.000Z',
     doneAt: null,
+    important: false,
     ...over,
   }
 }
@@ -47,6 +48,21 @@ describe('todo-model', () => {
     ])
     expect(r.progress.map((t) => t.id)).toEqual(['p-due', 'p-early', 'p-late'])
     expect(r.todo.map((t) => t.id)).toEqual(['t-2', 't-1'])
+    expect(r.important).toEqual([])
+  })
+
+  it('splitPending pulls important to its own group — in progress first, then due', () => {
+    const r = splitPending([
+      todo('t', { dueDate: '2026-10-24' }),
+      todo('i-todo-due', { important: true, dueDate: '2026-10-25' }),
+      todo('i-todo', { important: true }),
+      todo('i-prog', { important: true, status: 'in_progress', dueDate: '2026-11-30' }),
+      todo('p', { status: 'in_progress' }),
+      todo('i-done', { important: true, status: 'done' }),
+    ])
+    expect(r.important.map((t) => t.id)).toEqual(['i-prog', 'i-todo-due', 'i-todo'])
+    expect(r.progress.map((t) => t.id)).toEqual(['p'])
+    expect(r.todo.map((t) => t.id)).toEqual(['t'])
   })
 
   it('groupByCreatedDate sorts and dedupes', () => {

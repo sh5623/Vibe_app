@@ -16,6 +16,7 @@ const todo = (id: string, status: Todo['status'], createdDate = '2026-10-23'): T
   createdAt: `${createdDate}T00:00:00Z`,
   updatedAt: `${createdDate}T00:00:00Z`,
   doneAt: null,
+  important: false,
 })
 
 function data(): InfiniteData<ListResponse, string | null> {

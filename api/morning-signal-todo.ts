@@ -33,6 +33,8 @@ export interface Todo {
   createdAt: string
   updatedAt: string
   doneAt: string | null
+  /** 중요 표시 — 「남은 일」 맨 위 IMPORTANT 묶음 */
+  important: boolean
 }
 
 export interface SessionResponse {
@@ -63,6 +65,8 @@ interface TodoRow {
   created_at: string
   updated_at: string
   done_at: string | null
+  /** 2026-11-10 추가 컬럼 — 추가 SQL 을 돌리기 전 DB 에는 없다(없으면 false 로 읽는다) */
+  important?: boolean | null
 }
 
 export const PAGE_SIZE = 20
@@ -145,6 +149,7 @@ function toTodo(r: TodoRow): Todo {
     createdAt: normalizeStamp(r.created_at),
     updatedAt: normalizeStamp(r.updated_at),
     doneAt: r.done_at ? normalizeStamp(r.done_at) : null,
+    important: r.important === true,
   }
 }
 
@@ -243,6 +248,8 @@ const fields = {
   dueDate: dateStr.nullish(),
   dueTime: timeStr.nullish(),
   attachments: z.array(attachmentSchema).max(MAX_FILES).optional(),
+  // 클라이언트는 켤 때(만들기)·바뀔 때(수정)만 보낸다 — 컬럼이 없는 DB 에서도 다른 저장이 깨지지 않게
+  important: z.boolean().optional(),
 }
 const createSchema = z
   .object(fields)
@@ -276,6 +283,7 @@ function toRowPatch(v: Fields): Record<string, unknown> {
   }
   if (v.dueTime !== undefined && v.dueDate) out.due_time = v.dueTime ?? null
   if (v.attachments !== undefined) out.attachments = v.attachments
+  if (v.important !== undefined) out.important = v.important
   return out
 }
 
