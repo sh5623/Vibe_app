@@ -46,7 +46,7 @@ const TEXT = {
     changes: {
       label: 'Changelog',
       title: '최근 변경',
-      desc: 'v1.19.0은 빌드·E2E를 커밋 직전 1회로 옮긴 릴리스이고, v1.17.0과 v1.18.0은 2026년 9월 교차 레포 리뷰에서 재현된 지적을 고친 릴리스입니다.',
+      desc: 'v1.20.0은 게이트를 선언하지 않은 프로젝트에서 커밋 직전 명령을 package.json scripts로 고르게 한 릴리스이고, v1.19.0과 v1.19.1은 빌드·E2E를 커밋 직전 1회로 옮기고 그 결과를 커밋 트리와 같을 때만 잇게 한 릴리스입니다.',
     },
     install: {
       label: 'Install',
@@ -92,7 +92,7 @@ const TEXT = {
     changes: {
       label: 'Changelog',
       title: "What's New",
-      desc: 'v1.19.0 moves build and E2E to a single run right before the commit; v1.17.0 and v1.18.0 fix findings that a September 2026 cross-repo review reproduced.',
+      desc: 'v1.20.0 picks the pre-commit commands from package.json scripts for projects that declare no gate of their own; v1.19.0 and v1.19.1 move build and E2E to a single run right before the commit and chain the result only to an identical commit tree.',
     },
     install: {
       label: 'Install',
@@ -124,7 +124,7 @@ const SKILLS: Record<
       icon: '🔨',
       name: 'fe-build',
       title: '코드 구현',
-      desc: '타입 정의 → 훅/서비스 → 컴포넌트 → 테스트 순서로 구현합니다. 플러그인의 프레임워크 규칙(공통 + Next.js/Vite 절)을 먼저 읽고 위임하는 에이전트에 그 경로를 넘깁니다. Biome 또는 ESLint·Prettier 자동 적용, tsc/린터 오류 자동 수정.',
+      desc: '기본 순서는 타입 정의 → 훅/서비스 → 컴포넌트 → 테스트이고, 레포의 기존 순서나 TDD가 있으면 그것을 따릅니다. 플러그인의 프레임워크 규칙(공통 + Next.js/Vite 절)을 먼저 읽고 위임하는 에이전트에 그 경로를 넘깁니다. Biome 또는 ESLint·Prettier 자동 적용, tsc/린터 오류 자동 수정.',
       cmd: '/fe-rail:fe-build',
     },
     {
@@ -166,7 +166,7 @@ const SKILLS: Record<
       icon: '🔨',
       name: 'fe-build',
       title: 'Code Implementation',
-      desc: 'Implements in order: type definitions → hooks/services → components → tests. Reads the plugin framework rules first (common + Next.js/Vite section) and hands the path to every delegated agent. Applies Biome or ESLint·Prettier automatically and auto-fixes tsc/linter errors.',
+      desc: "Implements in the default order of type definitions → hooks/services → components → tests, or follows the repo's existing order or TDD when it has one. Reads the plugin framework rules first (common + Next.js/Vite section) and hands the path to every delegated agent. Applies Biome or ESLint·Prettier automatically and auto-fixes tsc/linter errors.",
       cmd: '/fe-rail:fe-build',
     },
     {
@@ -248,7 +248,7 @@ const AGENTS_KO = {
     },
     {
       name: 'fe-pr-author',
-      role: '검증 결과 객체 기반 PR 본문 작성 + gh pr create (push는 폴백만)',
+      role: '검증 결과 객체 기반 PR 본문 작성 + 리모트 호스트별 PR 생성(GitHub gh · CodeCommit aws, push는 폴백만)',
       model: 'sonnet',
     },
   ],
@@ -314,7 +314,7 @@ const AGENTS_EN = {
     },
     {
       name: 'fe-pr-author',
-      role: 'PR body from the verification-result object + gh pr create (push only as fallback)',
+      role: 'PR body from the verification-result object + PR creation by remote host (GitHub gh · CodeCommit aws; push only as fallback)',
       model: 'sonnet',
     },
   ],
@@ -332,7 +332,7 @@ const WORKFLOW: Record<Lang, Array<{ label: string; desc: string }>> = {
     },
     {
       label: '커밋 직전 빌드·E2E 1회',
-      desc: 'base 동기화(fetch → FF/rebase) 후 그 트리에서 한 번 — 통과하면 커밋 & PR 자동 생성',
+      desc: 'base 동기화(fetch → FF/rebase) 후 그 트리에서 한 번 — 명령은 프로젝트가 선언한 게이트, 없으면 package.json scripts에서 고름 · 통과하면 커밋 & PR 자동 생성',
     },
   ],
   en: [
@@ -349,13 +349,29 @@ const WORKFLOW: Record<Lang, Array<{ label: string; desc: string }>> = {
     },
     {
       label: 'Build + E2E once, before the commit',
-      desc: 'Sync with the base (fetch, then fast-forward or rebase), run once on that tree, then commit & auto PR creation',
+      desc: 'Sync with the base (fetch, then fast-forward or rebase) and run once on that tree, using your declared gate or else commands picked from package.json scripts; then commit & auto PR creation',
     },
   ],
 }
 
 const CHANGES: Record<Lang, Array<{ label: string; desc: string }>> = {
   ko: [
+    {
+      label: 'v1.20.0: 기본 게이트 명령은 package.json scripts에서',
+      desc: '게이트를 선언하지 않은 프로젝트에서 커밋 직전 빌드·E2E 명령을 고르는 방식을 바꿨습니다. 예전에는 package.json 전체에서 "e2e" 문자열을 찾아 test:e2e 스크립트를 놓치고 설정 없는 playwright test로 떨어졌고, 설정이 하위 폴더에 있는 앱에서는 그 실행이 단위 테스트 파일까지 읽어 실패한 뒤 수정 루프로 들어갔습니다. 이제 scripts 키를 직접 읽어 루트 스크립트 → 그 스크립트가 있는 워크스페이스 패키지 전부 → 루트 Playwright 설정 순으로 고르고, 그 밖은 사유와 함께 미실행으로 적습니다(회귀 eval 128 → 147, 실제 프로젝트 꼴 fixture 14개).',
+    },
+    {
+      label: 'v1.20.0: 판정하지 못한 화면은 0점이 아니라 미검증',
+      desc: 'fe-vision은 레퍼런스나 캡처가 없으면 점수 없이 unverified를 냅니다. fe-start는 revise 판정만 수정 루프에 넣으므로, 판정하지 못한 화면을 근거 없이 고치지 않습니다.',
+    },
+    {
+      label: 'v1.20.0: 동작별 근거 · PR 호스트 감지',
+      desc: '스펙의 인터랙션 항목을 시작 상태 → 입력 → 관찰 가능한 결과로 쓰고, "커밋할까요?" 보고가 항목마다 그 동작을 확인한 테스트나 관찰을 붙입니다. fe-pr-author는 리모트를 보고 GitHub면 gh pr create, CodeCommit이면 aws codecommit create-pull-request로 PR을 만들고, 그 밖의 호스트에서는 멈춥니다.',
+    },
+    {
+      label: 'v1.19.1: 결과는 커밋 트리와 같을 때만 잇는다',
+      desc: '범위 밖 변경이 섞인 트리에서 통과한 검사를 범위 파일만 담은 커밋의 근거로 쓰지 않습니다. 검증 지문은 untracked 파일까지 담는 임시 index 트리 id로 바꿨고, 동기화 모드는 staged 변경이 있으면 rebase하지 않습니다.',
+    },
     {
       label: 'v1.19.0: 빌드·E2E는 커밋 직전 1회',
       desc: '"커밋할까요?" 앞에서 돌던 빌드·E2E를 승인 뒤 커밋 직전으로 옮겼습니다. 그 앞에서 돈 결과는 수정 요청이나 상류 커밋 하나에 버려졌기 때문입니다(실측: 전체 E2E 3회, 약 40분 무효). 이제 base에 동기화한 트리에서 한 번만 돌고, 프로젝트가 CLAUDE.md·AGENTS.md에 푸시 전 게이트를 선언해 두면 그 명령을 씁니다.',
@@ -368,24 +384,24 @@ const CHANGES: Record<Lang, Array<{ label: string; desc: string }>> = {
       label: 'v1.18.0: 프레임워크 규칙이 실제로 에이전트에 닿음',
       desc: 'docs/framework-rules.md는 레포 CLAUDE.md의 @import로만 참조돼 소비자 세션에서 아무도 읽지 않았습니다. 이제 스킬이 해당 절만 읽고 위임하는 에이전트에 절대경로를 넘기며, claude plugin validate --strict가 경고 0으로 통과합니다.',
     },
-    {
-      label: 'v1.17.0: 훅의 범위 규칙',
-      desc: '훅은 Git 루트가 아니라 파일에서 가장 가까운 package.json 기준으로 도구·설정을 찾고(모노레포), git -C·셸 래핑도 차단기에 걸리며, 설정 보호는 편집 전후 실파일을 비교합니다.',
-    },
-    {
-      label: 'v1.17.0: 검증 결과 객체',
-      desc: '타입·린트·테스트 결과(명령·exit code·리비전)가 fe-start에서 PR 본문까지 객체로 전달됩니다. 테스트 체크리스트는 추정으로 «통과»를 적지 않습니다.',
-    },
-    {
-      label: 'v1.17.0: 커밋·푸시 담당 분리',
-      desc: 'fe-git-operator가 git commit --only로 사용자의 기존 스테이징을 건드리지 않고 커밋·푸시하고, fe-pr-author는 upstream이 없을 때만 폴백으로 푸시합니다.',
-    },
-    {
-      label: 'v1.17.0: 회귀 eval 116 → 118',
-      desc: '교차 레포 리뷰 12건을 임시 저장소 재현으로 회귀에 고정했습니다. ruby·claude CLI가 있으면 실제 YAML 파서와 plugin validate --strict까지 돌립니다.',
-    },
   ],
   en: [
+    {
+      label: 'v1.20.0: default gate commands come from package.json scripts',
+      desc: 'For projects that declare no gate of their own, fe-start now picks the pre-commit build and E2E commands differently. It used to grep the whole package.json for "e2e", which missed a test:e2e script and fell back to a bare playwright test; in an app whose configs live in subfolders, that run loaded the unit test files, failed, and sent the gate into the fix loop. It now reads the scripts keys: the root script, then every workspace package that has one, then a root Playwright config, and anything else is reported as not run with the reason (regression eval 128 → 147, 14 fixtures shaped like real projects).',
+    },
+    {
+      label: 'v1.20.0: an unjudged screen is unverified, not a 0',
+      desc: 'fe-vision returns unverified with no score when the reference or the capture is missing, and fe-start sends only revise verdicts into the fix loop, so a screen it could not judge is never "fixed" without evidence.',
+    },
+    {
+      label: 'v1.20.0: evidence per behavior · PR host detection',
+      desc: 'The spec writes each interaction as start state → input → observable result, and the "Shall I commit?" report attaches the test or observation that confirms each one. fe-pr-author looks at the remote: gh pr create on GitHub, aws codecommit create-pull-request on CodeCommit, and it stops on any other host.',
+    },
+    {
+      label: 'v1.19.1: results chain to the commit only when the trees match',
+      desc: 'A check that passed on a tree mixed with out-of-scope changes is no longer used as evidence for a commit holding only the scoped files. The fingerprint is now a tree id built in a temporary index, untracked files included, and sync mode does not rebase while changes are staged.',
+    },
     {
       label: 'v1.19.0: build and E2E run once, right before the commit',
       desc: 'Build and E2E used to run before "Shall I commit?", where one requested fix or one new upstream commit threw the result away (measured: three full E2E runs, about 40 minutes, wasted). They now run once, after you approve, on a tree synced with the base; if your project declares a pre-push gate in CLAUDE.md or AGENTS.md, that command is used instead.',
@@ -397,22 +413,6 @@ const CHANGES: Record<Lang, Array<{ label: string; desc: string }>> = {
     {
       label: 'v1.18.0: framework rules actually reach the agents',
       desc: 'docs/framework-rules.md was only @imported by the repo CLAUDE.md, which consumer sessions never load. Skills now read the relevant section and pass the absolute path to every delegated agent; claude plugin validate --strict passes with zero warnings.',
-    },
-    {
-      label: 'v1.17.0: hook scope rules',
-      desc: 'Hooks resolve tools and config from the nearest package.json rather than the git root (monorepos), git -C and shell wrapping reach the guard, and config protection compares the real file before and after the edit.',
-    },
-    {
-      label: 'v1.17.0: verification-result object',
-      desc: 'Type, lint and test results (command · exit code · revision) travel as an object from fe-start into the PR body. The test checklist never says "passed" by assumption.',
-    },
-    {
-      label: 'v1.17.0: commit/push ownership',
-      desc: 'fe-git-operator commits with git commit --only, leaving your pre-staged index alone, and pushes; fe-pr-author pushes only as a fallback when the branch has no upstream.',
-    },
-    {
-      label: 'v1.17.0: regression eval 116 → 118',
-      desc: 'Twelve cross-repo review findings were reproduced in throwaway repos and pinned as regressions. With ruby and the claude CLI present it also runs a real YAML parser and plugin validate --strict.',
     },
   ],
 }
