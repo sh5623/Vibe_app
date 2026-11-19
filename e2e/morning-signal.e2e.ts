@@ -627,6 +627,22 @@ test.describe('FE에 쓸 레포 → TO-DO', () => {
     )
   })
 
+  test('잠긴 채 이미 담은 레포(완료 포함)를 누르고 PIN을 풀면 중복 생성 없이 ✓', async ({
+    page,
+  }) => {
+    const state = await mockTodoApi(page, {
+      seed: [makeTodo({ title: 'dream-num/univer', link: UNIVER, status: 'done' })],
+    })
+    await page.goto('/morning-signal')
+    await expect(add(page)).toHaveAttribute('aria-pressed', 'false')
+    await add(page).click()
+    await page.keyboard.type('1234')
+    await expect(page.locator('#pinDlg')).toBeHidden()
+    await expect(add(page)).toHaveAttribute('aria-pressed', 'true')
+    await expect(page.getByRole('status')).toContainText('이미 TO-DO에 있어요')
+    expect(state.creates).toBe(0)
+  })
+
   test('저장 실패면 토스트', async ({ page }) => {
     const state = await mockTodoApi(page, { unlocked: true })
     state.failNext = { op: 'create', status: 503, error: 'DB_DOWN' }

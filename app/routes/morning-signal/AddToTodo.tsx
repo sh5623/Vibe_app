@@ -1,6 +1,7 @@
 import { useQueryClient } from '@tanstack/react-query'
 import { useEffect, useRef, useState } from 'react'
 import {
+  findTodoByLink,
   todoKeys,
   useCreateTodo,
   useFindTodoByLink,
@@ -62,7 +63,18 @@ export default function AddToTodo({ item, onNotify }: AddToTodoProps) {
     const g = pending.current
     pending.current = null
     setOpen(false)
-    save(g)
+    // 잠겨 있던 동안은 중복 조회를 못 했다 — 풀린 직후 확인하고, 이미 있으면 만들지 않는다
+    void qc
+      .fetchQuery({
+        queryKey: todoKeys.find(g.url),
+        queryFn: () => findTodoByLink(g.url),
+        staleTime: 0,
+      })
+      .then((hit) => {
+        if (hit) onNotify?.('이미 TO-DO에 있어요')
+        else save(g)
+      })
+      .catch(() => onNotify?.(SAVE_FAILED))
   }, [unlocked])
 
   const click = () => {

@@ -169,6 +169,17 @@ export function useTodoDetail(id: string | null): UseQueryResult<Todo, TodoApiEr
   })
 }
 
+/** 링크로 담은 할 일 조회(한 번) — 훅 밖(PIN 직후 중복 확인)에서도 쓴다 */
+export async function findTodoByLink(
+  link: string
+): Promise<{ id: string; status: TodoStatus } | null> {
+  return (
+    await request<{ todo: { id: string; status: TodoStatus } | null }>('find', {
+      params: { link },
+    })
+  ).todo
+}
+
 /** 링크로 이미 담은 할 일을 찾는다(완료 포함). 없으면 null. */
 export function useFindTodoByLink(
   link: string,
@@ -179,11 +190,7 @@ export function useFindTodoByLink(
     queryKey: todoKeys.find(link),
     queryFn: async () => {
       try {
-        return (
-          await request<{ todo: { id: string; status: TodoStatus } | null }>('find', {
-            params: { link },
-          })
-        ).todo
+        return await findTodoByLink(link)
       } catch (error) {
         onLocked(qc, error)
         throw error
