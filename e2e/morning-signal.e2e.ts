@@ -287,6 +287,20 @@ test('상단 막대는 전체 폭이고 .wrap 밖에 있다', async ({ page }) =
   await expect(page.locator('.wrap header.top')).toHaveCount(0)
 })
 
+test('스크롤해도 상단 막대가 화면 맨 위에 붙어 있다', async ({ page }) => {
+  await mockApi(page, 'normal')
+  for (const width of [1440, 375]) {
+    await page.setViewportSize({ width, height: 800 })
+    await page.goto('/morning-signal')
+    await expect(page.locator('header.top')).toBeVisible()
+    await page.mouse.wheel(0, 900)
+    await expect
+      .poll(async () => Math.abs((await page.locator('header.top').boundingBox())?.y ?? 99))
+      .toBeLessThanOrEqual(1)
+    expect(await page.evaluate(() => window.scrollY)).toBeGreaterThan(100)
+  }
+})
+
 test('날짜 이동은 상단 막대 오른쪽 칸 안에 있다', async ({ page }) => {
   await mockApi(page, 'normal')
   await page.goto('/morning-signal')

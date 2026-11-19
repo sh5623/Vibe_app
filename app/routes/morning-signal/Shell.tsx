@@ -22,7 +22,7 @@ export default function Shell({
     <div className="ms">
       <link rel="stylesheet" href={FONTS_URL} precedence="default" />
       <div className="aurora" aria-hidden="true" />
-      {/* 레일·탭 바는 .wrap(z-index 쌓임 맥락) 안에 둔다 — 밖에 두면 .wrap 안의 시트(z 50)가 탭 바 아래로 깔린다 */}
+      {/* 상단 막대(top)는 .wrap 밖 앞 형제(전체 폭 sticky · 전환 때 안 움직임). 하단 탭 바(nav)는 .wrap(z-index 쌓임 맥락) 안에 둔다 — 밖에 두면 .wrap 안의 시트(z 50)가 탭 바 아래로 깔린다 */}
       {top}
       <div className="wrap">
         {nav}
