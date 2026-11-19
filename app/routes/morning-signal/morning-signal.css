@@ -384,6 +384,11 @@
   font-weight: 800;
   letter-spacing: -0.01em;
 }
+.ms .ph .aux {
+  margin-left: auto;
+  font-size: 13px;
+  color: var(--muted);
+}
 .ms .ph .cnt {
   margin-left: auto;
   font-family: var(--f-num);
@@ -755,7 +760,8 @@
 .ms .seg button:hover {
   color: var(--fg);
 }
-.ms .seg button[aria-selected="true"] {
+.ms .seg button[aria-selected="true"],
+.ms .seg button[aria-pressed="true"] {
   background: var(--fg);
   border-color: var(--fg);
   color: var(--panel);
@@ -910,23 +916,26 @@
   color: var(--ok);
   font-weight: 700;
 }
-/* TO-DO 담기 버튼(시안 grid.css .btn · views.css .pk-f .btn) */
-.ms .pk-f .btn {
-  margin-left: auto;
+/* 버튼(시안 grid.css .btn · .btn.ghost) — TO-DO 담기 · PIN 창 · TO-DO 보드 Add 가 같이 쓴다 */
+.ms .btn {
   display: inline-flex;
   align-items: center;
   gap: 6px;
   min-height: 36px;
   padding: 0 14px;
   border-radius: var(--r-sm);
-  border: 1px solid var(--line);
-  background: var(--panel);
-  color: var(--fg);
+  border: 1px solid var(--fg);
+  background: var(--fg);
+  color: var(--panel);
   font: 700 13px var(--f-body);
   cursor: pointer;
 }
-.ms .pk-f .btn svg,
-.ms .pin-dlg .btn svg {
+.ms .btn.ghost {
+  background: var(--panel);
+  color: var(--fg);
+  border-color: var(--line);
+}
+.ms .btn svg {
   width: 17px;
   height: 17px;
   fill: none;
@@ -935,15 +944,18 @@
   stroke-linecap: round;
   stroke-linejoin: round;
 }
-.ms .pk-f .btn:focus-visible,
-.ms .pin-dlg .btn:focus-visible {
+.ms .btn:focus-visible {
   outline: 3px solid color-mix(in srgb, var(--navy) 45%, transparent);
   outline-offset: 2px;
 }
-.ms .pk-f .btn[aria-pressed="true"] {
+.ms .btn.ghost[aria-pressed="true"] {
   background: var(--ok-soft);
   color: var(--ok);
   border-color: transparent;
+}
+/* TO-DO 담기 버튼(views.css .pk-f .btn) */
+.ms .pk-f .btn {
+  margin-left: auto;
 }
 /* PIN 창(시안 base.css .pin) — 최상위 레이어라 상단 막대까지 덮는다 */
 .ms .pin-dlg {
@@ -978,17 +990,8 @@
   margin-top: 16px;
 }
 .ms .pin-dlg .btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
   min-height: 44px;
   padding: 0 16px;
-  border-radius: var(--r-sm);
-  border: 1px solid var(--line);
-  background: var(--panel);
-  color: var(--fg);
-  font: 700 13px var(--f-body);
-  cursor: pointer;
 }
 .ms .lang {
   display: inline-flex;

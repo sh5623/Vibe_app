@@ -56,26 +56,14 @@ export function makeTodo(over: Partial<Todo> = {}): Todo {
   }
 }
 
-/** 오늘(createdDate=today) 할 일 n 개 — 1분 간격, 앞쪽일수록 최근. 전부 DONE(남은 일에 안 섞이게). */
-export function makeTodos(n: number, today = '2026-10-23'): Todo[] {
-  return Array.from({ length: n }, (_, i) =>
-    makeTodo({
-      title: `기록 ${i + 1}`,
-      status: 'done',
-      createdDate: today,
-      createdAt: new Date(Date.parse(`${today}T02:00:00.000Z`) - i * 60_000).toISOString(),
-    })
-  )
-}
-
 function order(todos: Todo[]): Todo[] {
   return [...todos].sort(
     (a, b) => b.createdAt.localeCompare(a.createdAt) || b.id.localeCompare(a.id)
   )
 }
 
-function kstToday(): string {
-  return new Date(Date.now() + 9 * 3600_000).toISOString().slice(0, 10)
+function kstToday(nowMs: number): string {
+  return new Date(nowMs + 9 * 3600_000).toISOString().slice(0, 10)
 }
 
 export async function mockTodoApi(
@@ -86,8 +74,13 @@ export async function mockTodoApi(
     locked?: boolean
     unlocked?: boolean
     notConfigured?: boolean
+    /** 이 시각부터 흐르는 시계(만들기·완료 시각·최근 완료 범위) — 페이지 시계를 고정한 테스트와 맞춘다. 없으면 실제 시각 */
+    now?: string
   } = {}
 ): Promise<MockTodoState> {
+  const started = Date.now()
+  const base = opts.now ? Date.parse(opts.now) : started
+  const nowMs = () => base + (Date.now() - started)
   const state: MockTodoState = {
     todos: [...(opts.seed ?? [])],
     unlocked: opts.unlocked ?? false,
@@ -184,7 +177,7 @@ export async function mockTodoApi(
     }
     if (op === 'done') {
       const days = Number(url.searchParams.get('days') ?? '7')
-      const since = Date.now() - days * 86_400_000
+      const since = nowMs() - days * 86_400_000
       const items = state.todos
         .filter((t) => t.status === 'done' && t.doneAt && Date.parse(t.doneAt) >= since)
         .sort((a, b) => (b.doneAt ?? '').localeCompare(a.doneAt ?? ''))
@@ -204,7 +197,7 @@ export async function mockTodoApi(
       if (typeof body.title !== 'string' || !body.title.trim())
         return send(400, { error: 'INVALID_PAYLOAD' })
       state.creates += 1
-      const now = new Date().toISOString()
+      const now = new Date(nowMs()).toISOString()
       let link = typeof body.link === 'string' && body.link ? body.link : null
       if (link && !/^https?:\/\//.test(link)) link = `https://${link}`
       if (link) link = new URL(link).href
@@ -216,7 +209,7 @@ export async function mockTodoApi(
         dueTime: (body.dueTime as string | null | undefined) ?? null,
         attachments: (body.attachments as Attachment[] | undefined) ?? [],
         important: body.important === true,
-        createdDate: kstToday(),
+        createdDate: kstToday(nowMs()),
         createdAt: now,
       })
       state.lastCreate = body
@@ -227,8 +220,9 @@ export async function mockTodoApi(
       if (!found) return send(404, { error: 'NOT_FOUND' })
       const p = body as Partial<Todo>
       state.lastUpdate = body
-      Object.assign(found, p, { updatedAt: new Date().toISOString() })
-      if (p.status) found.doneAt = p.status === 'done' ? new Date().toISOString() : null
+      const at = new Date(nowMs()).toISOString()
+      Object.assign(found, p, { updatedAt: at })
+      if (p.status) found.doneAt = p.status === 'done' ? at : null
       if (p.status) found.status = p.status as TodoStatus
       return send(200, { todo: found })
     }

@@ -22,9 +22,6 @@ export function useMsThemeAttr() {
   }, [])
 }
 
-/** 임시 상수 — 남은 사용처(TodoList)와 함께 Task 7 에서 지운다 */
-export const useMsTheme = (): 'light' => 'light'
-
 interface CalendarProps {
   days: DaySummary[]
   cur: string
@@ -116,7 +113,7 @@ interface DateNavProps {
   onGo: (date: string) => void
 }
 
-/** 날짜 이동(‹ 날짜 › + 달력) — 예전 헤더 가운데 묶음. 이제 본문 제목 줄(TitleBar) 오른쪽에 들어간다. */
+/** 날짜 이동(‹ 날짜 › + 달력) — 상단 막대 오른쪽 칸(.top-slot)에 포털로 들어간다. */
 export function DateNav({ days, cur, onGo }: DateNavProps) {
   const [calOpen, setCalOpen] = useState(false)
   const curBtnRef = useRef<HTMLButtonElement>(null)

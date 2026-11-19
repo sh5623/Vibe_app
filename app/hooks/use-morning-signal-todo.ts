@@ -272,12 +272,35 @@ export function withStatus(
   }
 }
 
+/**
+ * 「남은 일」(첫 페이지 pending)에 없던 할 일을 DONE 이 아닌 상태로 되돌릴 때 pending 에 넣는다.
+ * 완료 기록에서 연 할 일을 되돌리면 목록 어디에도 없어 사라져 보이기 때문이다. 해당 없으면 data 그대로.
+ */
+export function withReopened(
+  data: ListData | undefined,
+  todo: Todo,
+  status: TodoStatus
+): ListData | undefined {
+  const first = data?.pages[0]
+  if (!data || !first || status === 'done') return data
+  if (first.pending?.some((t) => t.id === todo.id)) return data
+  return {
+    ...data,
+    pages: [
+      { ...first, pending: [...(first.pending ?? []), { ...todo, status, doneAt: null }] },
+      ...data.pages.slice(1),
+    ],
+  }
+}
+
+const DONE_PREFIX = ['ms', 'todo', 'done'] as const
+
 /** 수정. 상태 변경은 화면에 먼저 반영하고(낙관적), 실패하면 되돌린다. */
 export function useUpdateTodo(): UseMutationResult<
   Todo,
   TodoApiError,
   { id: string; patch: TodoPatch },
-  { prev: ListData | undefined }
+  { prev: ListData | undefined; reopened: boolean }
 > {
   const qc = useQueryClient()
   return useMutation({
@@ -287,22 +310,41 @@ export function useUpdateTodo(): UseMutationResult<
     onMutate: async ({ id, patch }) => {
       await qc.cancelQueries({ queryKey: todoKeys.list })
       const prev = qc.getQueryData<ListData>(todoKeys.list)
+      let reopened = false
       if (patch.status) {
         const status = patch.status
-        qc.setQueryData<ListData>(todoKeys.list, (d) => withStatus(d, id, status))
+        // 완료 기록에서 연 할 일(남은 일에 없다)을 되돌리면 남은 일에 넣고 완료 기록에서 뺀다
+        const fromDone = qc
+          .getQueriesData<Todo[]>({ queryKey: DONE_PREFIX })
+          .flatMap(([, d]) => d ?? [])
+          .find((t) => t.id === id)
+        const before = fromDone ?? findInList(prev, id)
+        reopened =
+          status !== 'done' && !prev?.pages[0]?.pending?.some((t) => t.id === id) && !!before
+        qc.setQueryData<ListData>(todoKeys.list, (d) => {
+          const next = withStatus(d, id, status)
+          return before && reopened ? withReopened(next, before, status) : next
+        })
+        if (status !== 'done') {
+          await qc.cancelQueries({ queryKey: DONE_PREFIX })
+          qc.setQueriesData<Todo[]>({ queryKey: DONE_PREFIX }, (d) => d?.filter((t) => t.id !== id))
+        }
         qc.setQueryData<Todo>(todoKeys.detail(id), (t) => (t ? { ...t, status } : t))
       }
-      return { prev }
+      return { prev, reopened }
     },
     onError: (e, { id }, ctx) => {
       if (ctx?.prev) qc.setQueryData(todoKeys.list, ctx.prev)
       void qc.invalidateQueries({ queryKey: todoKeys.detail(id) })
+      // 완료 기록에서 먼저 뺀 것을 서버 기준으로 되돌린다
+      void qc.invalidateQueries({ queryKey: DONE_PREFIX })
       onLocked(qc, e)
     },
-    onSettled: (_d, e, { id, patch }) => {
+    onSettled: (_d, e, { id, patch }, ctx) => {
       // 상태만 바꾼 성공 건은 이미 화면에 반영돼 있다. 불러온 페이지를 전부 순서대로 다시 받으면
       // 서버 왕복이 몇 번씩 이어지므로, 다시 받지 않고 낡음 표시만 해 둔다(다음 진입·포커스 때 갱신).
-      const statusOnly = !e && Object.keys(patch).every((k) => k === 'status')
+      // 완료에서 되돌린 건은 남은 일 순서·내용을 서버 기준으로 맞추려고 다시 받는다.
+      const statusOnly = !e && !ctx?.reopened && Object.keys(patch).every((k) => k === 'status')
       const refetchType = statusOnly ? 'none' : 'active'
       void qc.invalidateQueries({ queryKey: todoKeys.list, refetchType })
       void qc.invalidateQueries({ queryKey: todoKeys.detail(id), refetchType })

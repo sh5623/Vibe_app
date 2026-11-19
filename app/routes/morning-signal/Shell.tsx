@@ -1,6 +1,13 @@
-import type { ReactNode } from 'react'
+import { createContext, type ReactNode, useContext, useState } from 'react'
 import { useMsThemeAttr } from './Header'
 import './morning-signal.css'
+
+/**
+ * `.ms` 루트 요소 — 시트·토스트를 여기로 포털하면 `.wrap`(z 1 쌓임 맥락) 밖에서 그려져
+ * 상단 막대(z 40)와 하단 탭 바까지 덮는다. 선택자는 `.ms` 아래 그대로 맞는다.
+ */
+const MsRootContext = createContext<HTMLElement | null>(null)
+export const useMsRoot = () => useContext(MsRootContext)
 
 // 레퍼런스 4행 — React 19 가 <head> 로 끌어올린다
 const FONTS_URL =
@@ -18,16 +25,19 @@ export default function Shell({
   nav?: ReactNode
 }) {
   useMsThemeAttr()
+  const [root, setRoot] = useState<HTMLDivElement | null>(null)
   return (
-    <div className="ms">
+    <div className="ms" ref={setRoot}>
       <link rel="stylesheet" href={FONTS_URL} precedence="default" />
       <div className="aurora" aria-hidden="true" />
-      {/* 상단 막대(top)는 .wrap 밖 앞 형제(전체 폭 sticky · 전환 때 안 움직임). 하단 탭 바(nav)는 .wrap(z-index 쌓임 맥락) 안에 둔다 — 밖에 두면 .wrap 안의 시트(z 50)가 탭 바 아래로 깔린다 */}
+      {/* 상단 막대(top)는 .wrap 밖 앞 형제(전체 폭 sticky · 전환 때 안 움직임). 하단 탭 바(nav)는 .wrap 안. 시트·토스트는 useMsRoot 로 이 루트에 포털해 둘 다 덮는다 */}
       {top}
-      <div className="wrap">
-        {nav}
-        {children}
-      </div>
+      <MsRootContext.Provider value={root}>
+        <div className="wrap">
+          {nav}
+          {children}
+        </div>
+      </MsRootContext.Provider>
     </div>
   )
 }

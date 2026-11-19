@@ -6,6 +6,7 @@ import {
   useRef,
   useState,
 } from 'react'
+import { createPortal } from 'react-dom'
 import {
   TodoApiError,
   uploadAttachment,
@@ -15,6 +16,7 @@ import {
   useUpdateTodo,
 } from '@/hooks/use-morning-signal-todo'
 import type { Attachment, Todo, TodoStatus } from '../../../../api/morning-signal-todo'
+import { useMsRoot } from '../Shell'
 import { Markdown, MemoField } from './Markdown'
 import { dueText, STATUS_LABEL } from './todo-model'
 
@@ -64,8 +66,12 @@ interface SheetProps {
   children: ReactNode
 }
 
-/** 시트 껍데기 — 배경을 누르거나 Escape 로 닫힌다. 닫힐 때 내려가는 모션이 끝난 뒤 내용을 뗀다. */
+/**
+ * 시트 껍데기 — 배경을 누르거나 Escape 로 닫힌다. 닫힐 때 내려가는 모션이 끝난 뒤 내용을 뗀다.
+ * `.ms` 루트로 포털한다 — `.wrap` 안에 두면 상단 막대·하단 탭 바가 배경 위에 그려져 열린 채로 눌린다.
+ */
 export function Sheet({ open, onClose, label, children }: SheetProps) {
+  const root = useMsRoot()
   const [mounted, setMounted] = useState(open)
   const [shown, setShown] = useState(false)
   const panelRef = useRef<HTMLDivElement>(null)
@@ -99,7 +105,7 @@ export function Sheet({ open, onClose, label, children }: SheetProps) {
   }, [shown])
 
   if (!mounted) return null
-  return (
+  const sheet = (
     <div className={`todo-sheet${shown ? ' on' : ''}`}>
       <button
         type="button"
@@ -114,6 +120,7 @@ export function Sheet({ open, onClose, label, children }: SheetProps) {
       </div>
     </div>
   )
+  return root ? createPortal(sheet, root) : sheet
 }
 
 interface StatusSheetProps {
