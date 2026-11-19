@@ -8,7 +8,7 @@ import Bento from './morning-signal/Bento'
 import Feed from './morning-signal/Feed'
 import { DateNav } from './morning-signal/Header'
 import Kpis from './morning-signal/Kpis'
-import { countsFor, pickInitialDate } from './morning-signal/model'
+import { pickInitialDate } from './morning-signal/model'
 import { useMsLayout } from './morning-signal-layout'
 
 const EMPTY = { title: '아직 저장된 뉴스가 없어요', text: '매일 아침 8시에 첫 브리핑이 들어와요.' }
@@ -66,10 +66,8 @@ export default function MorningSignal() {
   const failed = (daysQ.isError && !days) || (dayQ.isError && !view)
   const state = failed ? ERROR : days?.length === 0 ? EMPTY : null
 
-  // 건수(레이아웃 컨텍스트) · 날짜 이동은 상단 막대 오른쪽 칸으로 포털
-  const { setNewsCount, dateSlot } = useMsLayout()
-  const newsTotal = curDay ? countsFor(curDay, view?.feeds ?? null).total : null
-  useEffect(() => setNewsCount(newsTotal), [newsTotal, setNewsCount])
+  // 날짜 이동은 상단 막대 오른쪽 칸으로 포털
+  const { dateSlot } = useMsLayout()
 
   return (
     <>

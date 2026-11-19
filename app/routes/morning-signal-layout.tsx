@@ -13,7 +13,6 @@ import './morning-signal/todo/todo.css'
 export interface MsLayoutContext {
   /** 상단 막대 오른쪽 칸 — 날짜 이동을 포털로 넣는다(없으면 아직 마운트 전) */
   dateSlot: HTMLElement | null
-  setNewsCount: (n: number | null) => void
   setTodoCount: (n: number | null) => void
   setOnLock: (fn: (() => void) | null) => void
 }
@@ -23,14 +22,12 @@ export const useMsLayout = () => useOutletContext<MsLayoutContext>()
 export default function MorningSignalLayout() {
   const { pathname } = useLocation()
   const view: MsView = pathname.replace(/\/$/, '').endsWith('/todo') ? 'todo' : 'news'
-  const [, setNewsCount] = useState<number | null>(null)
   const [dateSlot, setDateSlot] = useState<HTMLElement | null>(null)
   const [todoCount, setTodoCount] = useState<number | null>(null)
   const [onLock, setOnLockState] = useState<(() => void) | null>(null)
   const ctx = useMemo<MsLayoutContext>(
     () => ({
       dateSlot,
-      setNewsCount,
       setTodoCount,
       // 함수를 상태로 둘 때는 업데이터로 감싼다(그대로 넘기면 React 가 업데이터로 부른다)
       setOnLock: (fn) => setOnLockState(() => fn),
@@ -39,12 +36,8 @@ export default function MorningSignalLayout() {
   )
   return (
     <Shell
-      nav={
-        <>
-          <TopBar view={view} slotRef={setDateSlot} />
-          <MobileTabBar view={view} todoCount={todoCount} />
-        </>
-      }
+      top={<TopBar view={view} slotRef={setDateSlot} />}
+      nav={<MobileTabBar view={view} todoCount={todoCount} />}
     >
       {/* 임시: 다시 잠그기를 오른쪽 칸에 둔다(최종 자리는 Task 7 — Add 옆) */}
       {view === 'todo' &&

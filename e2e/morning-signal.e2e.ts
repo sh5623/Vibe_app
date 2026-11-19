@@ -278,6 +278,15 @@ test('가운데 탭 자리는 NEWS와 TO-DO에서 같다', async ({ page }) => {
   }
 })
 
+test('상단 막대는 전체 폭이고 .wrap 밖에 있다', async ({ page }) => {
+  await mockApi(page, 'normal')
+  await page.setViewportSize({ width: 1440, height: 800 })
+  await page.goto('/morning-signal')
+  const box = await page.locator('header.top').boundingBox()
+  expect(Math.round(box?.width ?? 0)).toBe(1440)
+  await expect(page.locator('.wrap header.top')).toHaveCount(0)
+})
+
 test('날짜 이동은 상단 막대 오른쪽 칸 안에 있다', async ({ page }) => {
   await mockApi(page, 'normal')
   await page.goto('/morning-signal')
