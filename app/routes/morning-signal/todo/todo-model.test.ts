@@ -3,6 +3,7 @@ import type { Todo } from '../../../../api/morning-signal-todo'
 import {
   continueList,
   doneGroups,
+  doneToday,
   dueLeft,
   dueText,
   dueWithin,
@@ -175,5 +176,25 @@ describe('dueLeft', () => {
   })
   it('마감이 없으면 null', () => {
     expect(dueLeft({ dueDate: null }, TODAY)).toBeNull()
+  })
+})
+
+describe('doneToday', () => {
+  const T = '2026-11-19'
+  const done = (id: string, doneAt: string | null) => todo(id, { status: 'done', doneAt })
+  it('완료 시각의 KST 날짜가 오늘인 것만 센다 — 어제 완료는 세지 않는다', () => {
+    expect(
+      doneToday(
+        [
+          done('t', '2026-11-19T03:00:00.000Z'),
+          // UTC 로는 11/18 이지만 KST 로는 11/19 01:00 — 오늘
+          done('t-kst', '2026-11-18T16:00:00.000Z'),
+          done('y', '2026-11-18T03:00:00.000Z'),
+          done('none', null),
+        ],
+        T
+      )
+    ).toBe(2)
+    expect(doneToday([done('y', '2026-11-18T03:00:00.000Z')], T)).toBe(0)
   })
 })

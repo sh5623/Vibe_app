@@ -243,11 +243,11 @@ test('보드는 카드 다섯 개 — 상태 · 중요 · 마감 임박 · 남�
     '남은 일',
     '완료 기록',
   ])
-  // 상태: 진행 중 2 · 할 일 3 · 완료(최근 7일) 2, 눈금 칸 = 7
+  // 상태: 진행 중 2 · 할 일 3 · 오늘 완료 1(어제 완료 「어린이집 서류 제출」은 세지 않는다), 눈금 칸 = 6
   const stat = card(page, 'stat')
   await expect(stat.locator('.ph .cnt')).toHaveText('5개 남음')
-  await expect(stat.locator('.legend li')).toHaveText(['진행 중2', '할 일3', '완료(최근 7일)2'])
-  await expect(stat.locator('.ticks i')).toHaveCount(7)
+  await expect(stat.locator('.legend li')).toHaveText(['진행 중2', '할 일3', '오늘 완료1'])
+  await expect(stat.locator('.ticks i')).toHaveCount(6)
 })
 
 test('중요 · 마감 임박 카드와 빈 상태', async ({ page }) => {

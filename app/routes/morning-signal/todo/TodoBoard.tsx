@@ -6,6 +6,7 @@ import { LockButton } from '../Nav'
 import TodoList, { STAR_ICON, STATUS_CHIP, TodoLoader } from './TodoList'
 import {
   doneGroups,
+  doneToday,
   dueLeft,
   dueText,
   dueWithin,
@@ -95,7 +96,8 @@ export default function TodoBoard({
   const pending = (list.data.pages[0]?.pending ?? []).filter((t) => t.status !== 'done')
   const nTodo = pending.filter((t) => t.status === 'todo').length
   const nProg = pending.filter((t) => t.status === 'in_progress').length
-  const nDone = done.data?.length ?? 0
+  // 상태 카드는 「오늘 완료」(설계 §4 · 시안 todo.js) — 완료 기록(최근 7일) 중 오늘(KST) 것만
+  const nDone = doneToday(done.data ?? [], today)
   const imp = splitPending(pending).important
   const soon = pending.filter((t) => dueWithin(t, today, DUE_DAYS)).sort(byDue)
   const groups = doneGroups(done.data ?? [], today)
@@ -103,7 +105,7 @@ export default function TodoBoard({
   const legend = [
     { label: '진행 중', n: nProg, c: 'var(--ai)' },
     { label: '할 일', n: nTodo, c: 'var(--muted)' },
-    { label: `완료(최근 ${DONE_DAYS}일)`, n: nDone, c: 'var(--ok)' },
+    { label: '오늘 완료', n: nDone, c: 'var(--ok)' },
   ]
 
   /** 중요·마감 임박 줄의 제목 — 누르면 상세 */

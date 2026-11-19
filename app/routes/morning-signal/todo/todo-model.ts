@@ -100,6 +100,11 @@ export function filterPending(list: Todo[], f: PendingFilter): Todo[] {
   return list.filter((t) => t.status === status)
 }
 
+/** 오늘(KST) 완료한 수 — 완료 시각(doneAt)의 KST 날짜가 today 인 것만 센다 */
+export function doneToday(list: Todo[], today: string): number {
+  return list.filter((t) => t.doneAt && kstToday(new Date(t.doneAt)) === today).length
+}
+
 /** 완료 기록 — 완료 시각(doneAt)의 KST 날짜별 묶음. 최신 날짜 먼저, 묶음 안도 최근 완료가 위. 라벨은 오늘 · 어제 · M월 D일 */
 export function doneGroups(list: Todo[], today: string): { label: string; items: Todo[] }[] {
   const map = new Map<string, Todo[]>()
