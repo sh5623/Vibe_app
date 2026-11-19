@@ -4,10 +4,13 @@ import type {
   Feed,
   Feeds,
   GhItem,
+  Impact,
   Theme,
   Top,
   WorldItem,
 } from '../../../api/morning-signal'
+import type { Todo } from '../../../api/morning-signal-todo'
+import { dueText } from './todo/todo-model'
 
 // 레퍼런스(second-brain .wiki-automation/dashboard/morning-signal.html)의 순수 함수 이식분.
 
@@ -375,4 +378,60 @@ export function tabCount(feed: Feed | undefined): { text: string; bad: boolean }
   if (!feed) return { text: '수집 실패', bad: true }
   const n = feed.items.length
   return { text: n ? String(n) : '0건', bad: !n }
+}
+
+// ---------- NEWS (B안) ----------
+
+export const TAB_LABEL: Record<Theme, string> = { ai: 'AI', world: 'World', gh: 'GitHub' }
+
+export interface AlertItem {
+  kind: 'today' | 'planned' | 'due'
+  title: string
+  sub: string
+  chip: string
+}
+
+const ALERT_MAX = 4
+
+/** 알림 카드 — 순서 today(World 제목에 「오늘」) → planned(AI 태그 「예정」) → due(마감 임박 할 일), 최대 4개. */
+export function alertItems(
+  feeds: Feeds,
+  dueSoon: Pick<Todo, 'title' | 'dueDate' | 'dueTime'>[] = []
+): AlertItem[] {
+  const today: AlertItem[] = (feeds.world?.items ?? [])
+    .filter((x) => x.title.includes('오늘'))
+    .map((x) => ({ kind: 'today', title: x.title, sub: x.summary, chip: '오늘' }))
+  const planned: AlertItem[] = (feeds.ai?.items ?? [])
+    .filter((x) => x.tags?.includes('예정'))
+    .map((x) => ({ kind: 'planned', title: x.title, sub: x.summary, chip: '예정' }))
+  const due: AlertItem[] = dueSoon.map((t) => ({
+    kind: 'due',
+    title: t.title,
+    sub: 'TO-DO',
+    chip: dueText(t) ?? '',
+  }))
+  return [...today, ...planned, ...due].slice(0, ALERT_MAX)
+}
+
+/** 오늘의 구성 — parts 는 피드가 있는 테마만(GitHub 집계 전이면 AI·World), impact 는 AI+GitHub 항목 계수. */
+export function mixModel(feeds: Feeds): {
+  total: number
+  parts: { theme: Theme; count: number }[]
+  impact: Record<Impact, number>
+} {
+  const parts: { theme: Theme; count: number }[] = []
+  for (const theme of ['ai', 'world', 'gh'] as const) {
+    const feed = feeds[theme]
+    if (feed) parts.push({ theme, count: feed.items.length })
+  }
+  const impact: Record<Impact, number> = { high: 0, mid: 0, low: 0 }
+  for (const x of [...(feeds.ai?.items ?? []), ...(feeds.gh?.items ?? [])]) impact[x.impact]++
+  return { total: parts.reduce((n, p) => n + p.count, 0), parts, impact }
+}
+
+/** FE 높음 레포 — 오늘 별 증가 내림차순(null 은 뒤). */
+export function fePicks(feed: Feed<'gh'> | undefined): GhItem[] {
+  return (feed?.items ?? [])
+    .filter((g) => g.impact === 'high')
+    .sort((a, b) => (b.starsTodayNum ?? -1) - (a.starsTodayNum ?? -1))
 }

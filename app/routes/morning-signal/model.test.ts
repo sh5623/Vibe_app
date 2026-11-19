@@ -7,10 +7,12 @@ import type {
   GhItem,
   WorldItem,
 } from '../../../api/morning-signal'
+import day1119 from '../../../e2e/fixtures/day-1119.json'
 import missing from '../../../e2e/fixtures/missing.json'
 import normal from '../../../e2e/fixtures/normal.json'
 import single from '../../../e2e/fixtures/single.json'
 import {
+  alertItems,
   barTop,
   calendarCells,
   catModel,
@@ -20,14 +22,17 @@ import {
   domain,
   donutModel,
   feedRows,
+  fePicks,
   headlineParts,
   kpiModel,
   kstTime,
   labelKo,
+  mixModel,
   pickInitialDate,
   safeUrl,
   sparkPath,
   stampText,
+  TAB_LABEL,
   tabCount,
   WD_KO,
 } from './model'
@@ -413,5 +418,91 @@ describe('tabCount', () => {
       text: '5',
       bad: false,
     })
+  })
+})
+
+// ---------- NEWS 계산 함수 ----------
+// fixture: 시안 data.js 의 11월 19일 데이터(AI 3 · World 5 · GitHub 15), `{ day, feeds }` 응답 모양 그대로.
+const fx = day1119.feeds as unknown as Feeds
+const due = (title: string, dueDate: string, dueTime: string | null = null) => ({
+  title,
+  dueDate,
+  dueTime,
+})
+
+describe('TAB_LABEL', () => {
+  it('소식 탭 이름', () => expect(TAB_LABEL).toEqual({ ai: 'AI', world: 'World', gh: 'GitHub' }))
+})
+
+describe('alertItems', () => {
+  it('World 제목의 「오늘」 → 오늘, AI 태그 「예정」 → 예정 순서', () => {
+    expect(alertItems(fx).map((a) => a.kind)).toEqual(['today', 'planned'])
+  })
+  it('칩과 부제', () => {
+    const [today, planned] = alertItems(fx)
+    expect(today).toMatchObject({ chip: '오늘' })
+    expect(today?.title).toContain('수능')
+    expect(today?.sub).toBe(fx.world?.items[3]?.summary)
+    expect(planned).toMatchObject({ chip: '예정' })
+    expect(planned?.title).toContain('Anthropic')
+  })
+  it('due 는 마감 문구와 TO-DO 부제', () => {
+    const a = alertItems({}, [due('보험 갱신', '2026-11-21', '10:00')])
+    expect(a).toEqual([{ kind: 'due', title: '보험 갱신', sub: 'TO-DO', chip: '11/21 (토) 10:00' }])
+  })
+  it('최대 4개', () => {
+    const many = [due('a', '2026-11-20'), due('b', '2026-11-21'), due('c', '2026-11-22')]
+    const r = alertItems(fx, many)
+    expect(r).toHaveLength(4)
+    expect(r.map((a) => a.kind)).toEqual(['today', 'planned', 'due', 'due'])
+  })
+  it('해당 없으면 빈 배열', () => {
+    expect(alertItems({})).toEqual([])
+  })
+})
+
+describe('mixModel', () => {
+  it('GitHub 집계 전이면 AI·World만 센다', () => {
+    const m = mixModel({ ai: fx.ai, world: fx.world })
+    expect(m.parts.map((p) => p.theme)).toEqual(['ai', 'world'])
+    expect(m.total).toBe(8)
+  })
+  it('전체 합계', () => {
+    const m = mixModel(fx)
+    expect(m.parts).toEqual([
+      { theme: 'ai', count: 3 },
+      { theme: 'world', count: 5 },
+      { theme: 'gh', count: 15 },
+    ])
+    expect(m.total).toBe(23)
+  })
+  it('impact 는 AI+GitHub 기준', () => {
+    expect(mixModel(fx).impact).toEqual({ high: 3, mid: 8, low: 7 })
+  })
+  it('빈 입력', () => {
+    expect(mixModel({})).toEqual({ total: 0, parts: [], impact: { high: 0, mid: 0, low: 0 } })
+  })
+})
+
+describe('fePicks', () => {
+  it('피드 없으면 빈 배열', () => {
+    expect(fePicks(undefined)).toEqual([])
+  })
+  it('high만, 오늘 별 많은 순', () => {
+    expect(fePicks(fx.gh).map((g) => g.repo)).toEqual([
+      'dream-num/univer',
+      'ag-ui-protocol/ag-ui',
+      'sveltejs/svelte',
+    ])
+  })
+  it('starsTodayNum null 은 뒤로', () => {
+    const gh = structuredClone(fx.gh) as NonNullable<Feeds['gh']>
+    const a = gh.items.find((g) => g.repo === 'dream-num/univer')
+    if (a) a.starsTodayNum = null
+    expect(fePicks(gh).map((g) => g.repo)).toEqual([
+      'ag-ui-protocol/ag-ui',
+      'sveltejs/svelte',
+      'dream-num/univer',
+    ])
   })
 })
