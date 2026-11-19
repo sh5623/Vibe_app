@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { useLock, useTodoSession } from '@/hooks/use-morning-signal-todo'
+import { useTodoSession } from '@/hooks/use-morning-signal-todo'
 import type { Route } from './+types/morning-signal-todo'
 import { useMsRoot } from './morning-signal/Shell'
 import PinGate from './morning-signal/todo/PinGate'
@@ -17,7 +17,6 @@ export function meta(_: Route.MetaArgs) {
 
 export default function MorningSignalTodo() {
   const session = useTodoSession()
-  const lock = useLock()
   const root = useMsRoot()
   const unlocked = session.data?.unlocked === true
 
@@ -38,7 +37,7 @@ export default function MorningSignalTodo() {
     const t = setTimeout(() => setNewId(null), NEW_ROW_MS)
     return () => clearTimeout(t)
   }, [newId])
-  // 잠기면(다시 잠그기·세션 만료) 열린 시트를 닫는다
+  // 잠기면(세션 만료) 열린 시트를 닫는다
   useEffect(() => {
     if (!unlocked) {
       setCreating(false)
@@ -64,7 +63,6 @@ export default function MorningSignalTodo() {
           <TodoBoard
             onOpen={setDetailId}
             onCreate={() => setCreating(true)}
-            onLock={() => lock.mutate()}
             newId={newId}
             onError={notify}
             onPendingCount={setPending}

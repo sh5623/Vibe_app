@@ -2,7 +2,6 @@ import { type CSSProperties, Fragment, useState } from 'react'
 import { useDoneHistory, useTodoList } from '@/hooks/use-morning-signal-todo'
 import type { Todo } from '../../../../api/morning-signal-todo'
 import Card, { Ticks } from '../Card'
-import { LockButton } from '../Nav'
 import TodoList, { STAR_ICON, STATUS_CHIP, TodoLoader } from './TodoList'
 import {
   doneGroups,
@@ -54,7 +53,6 @@ function byDue(a: Todo, b: Todo): number {
 interface TodoBoardProps {
   onOpen: (id: string) => void
   onCreate: () => void
-  onLock: () => void
   /** 방금 만든 할 일 — 남은 일에서 등장 모션 */
   newId?: string | null
   onError: (m: string) => void
@@ -65,7 +63,6 @@ interface TodoBoardProps {
 export default function TodoBoard({
   onOpen,
   onCreate,
-  onLock,
   newId,
   onError,
   onPendingCount,
@@ -199,7 +196,6 @@ export default function TodoBoard({
                 </button>
               ))}
             </fieldset>
-            <LockButton onLock={onLock} />
             {/* id 는 시안 그대로(#tAdd) — 휴대폰 순서 규칙(todo.css)이 쓴다. 보드는 화면에 하나뿐이다 */}
             <button
               type="button"

@@ -572,37 +572,16 @@
     grid-template-areas: "imp due" "list list" "stat done";
   }
 }
-/* 다시 잠그기 — 제목 줄(36)에 맞춘 아이콘 버튼(.btn.ghost 모양) */
-.ms .todo-board .ph .lockbtn {
-  /* .lockbtn 의 all: unset 이 box-sizing 을 되돌려 테두리만큼 커진다 — 제목 줄 높이를 넘지 않게 */
-  box-sizing: border-box;
-  width: 36px;
-  height: 36px;
-  border-radius: var(--r-sm);
-  border-color: var(--line);
-  background: var(--panel);
-  color: var(--fg);
-  box-shadow: none;
-}
-.ms .todo-board .ph .lockbtn:focus-visible {
-  outline: 3px solid color-mix(in srgb, var(--navy) 45%, transparent);
-  outline-offset: 2px;
-}
 @media (max-width: 760px) {
   /* 휴대폰 카드 순서(설계 §4): 중요 → 남은 일 → 마감 임박 → 상태 → 완료 기록 */
   .ms .ms-grid.todo-board {
     grid-template-areas: "imp" "list" "due" "stat" "done";
   }
-  /* 「남은 일」 제목과 같은 줄 오른쪽에 자물쇠 · Add, 거르기는 그 아래 한 줄(시안 views.css 104-106행) */
+  /* 「남은 일」 제목과 같은 줄 오른쪽에 Add, 거르기는 그 아래 한 줄(시안 views.css 104-106행) */
   .ms .todo-board .ph #tAdd {
     order: 2;
-    min-height: 44px;
-  }
-  .ms .todo-board .ph .lockbtn {
-    order: 2;
     margin-left: auto;
-    width: 44px;
-    height: 44px;
+    min-height: 44px;
   }
   .ms .todo-board .ph .seg {
     order: 3;

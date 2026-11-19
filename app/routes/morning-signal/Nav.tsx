@@ -1,4 +1,3 @@
-import { Lock } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router'
 
@@ -46,20 +45,6 @@ export function Logo() {
         <rect x="7.5" y="21.5" width="11" height="3" rx="1.5" fill="#ffffff" fillOpacity=".5" />
       </svg>
     </span>
-  )
-}
-
-export function LockButton({ onLock }: { onLock: () => void }) {
-  return (
-    <button
-      type="button"
-      className="lockbtn"
-      aria-label="다시 잠그기"
-      title="다시 잠그기"
-      onClick={onLock}
-    >
-      <Lock size={17} strokeWidth={2} aria-hidden="true" />
-    </button>
   )
 }
 

@@ -7,7 +7,7 @@ import './morning-signal/todo/todo.css'
 /**
  * News·TO-DO 공통 레이아웃 — 껍데기(정적 배경·상단 막대·하단 탭 바·테마 속성)를 한 번만 마운트한다.
  * 보기를 바꿔도 상단 막대가 유지되고 배경이 다시 그려지지 않는다(코드 리뷰 지적 3·4).
- * TO-DO 배지(남은 일 수)는 TO-DO 보기가 outlet context 로 알려 준다. 다시 잠그기는 TO-DO 「남은 일」 제목 줄에 있다.
+ * TO-DO 배지(남은 일 수)는 TO-DO 보기가 outlet context 로 알려 준다.
  */
 export interface MsLayoutContext {
   /** 상단 막대 오른쪽 칸 — 날짜 이동을 포털로 넣는다(없으면 아직 마운트 전) */
