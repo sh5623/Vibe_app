@@ -1,7 +1,7 @@
 import type { InfiniteData } from '@tanstack/react-query'
 import { describe, expect, it } from 'vitest'
 import type { ListResponse, Todo } from '../../api/morning-signal-todo'
-import { findInList, withStatus } from './use-morning-signal-todo'
+import { findInList, withReopened, withStatus } from './use-morning-signal-todo'
 
 const todo = (id: string, status: Todo['status'], createdDate = '2026-10-23'): Todo => ({
   id,
@@ -77,5 +77,22 @@ describe('withStatus', () => {
     withStatus(d, 'a', 'done')
     expect(d.pages[0]?.items[0]?.status).toBe('todo')
     expect(d.pages[0]?.dayCounts['2026-10-23']?.done).toBe(1)
+  })
+})
+
+describe('withReopened', () => {
+  it('남은 일에 없던 완료 항목을 되돌리면 남은 일에 넣는다', () => {
+    const b = todo('b', 'done')
+    const next = withReopened(data(), b, 'todo')
+    expect(next?.pages[0]?.pending?.map((t) => [t.id, t.status])).toEqual([
+      ['a', 'todo'],
+      ['b', 'todo'],
+    ])
+  })
+  it('이미 남은 일에 있거나 DONE 으로 가면 그대로', () => {
+    const d = data()
+    expect(withReopened(d, todo('a', 'todo'), 'in_progress')).toBe(d)
+    expect(withReopened(d, todo('b', 'done'), 'done')).toBe(d)
+    expect(withReopened(undefined, todo('b', 'done'), 'todo')).toBeUndefined()
   })
 })

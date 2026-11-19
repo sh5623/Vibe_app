@@ -8,8 +8,6 @@ export const STATUS_LABEL: Record<TodoStatus, 'TODO' | 'IN PROGRESS' | 'DONE'> =
   done: 'DONE',
 }
 
-/** 「남은 일」에서 처음 보이는 줄 수 */
-export const PENDING_LIMIT = 3
 /** 마감까지 이 일수 이하(지난 것 포함)면 날짜를 빨갛게 */
 const DUE_SOON_DAYS = 3
 
@@ -63,35 +61,6 @@ export function pendingGroup(
   return t.status === 'in_progress' ? 'progress' : 'todo'
 }
 
-/** 추가한 날짜별 묶음 — 날짜 내림차순, 묶음 안은 최근 추가가 위. 같은 id 는 한 번만. */
-export function groupByCreatedDate(items: Todo[]): Array<{ date: string; items: Todo[] }> {
-  const seen = new Set<string>()
-  const map = new Map<string, Todo[]>()
-  for (const t of items) {
-    if (seen.has(t.id)) continue
-    seen.add(t.id)
-    map.set(t.createdDate, [...(map.get(t.createdDate) ?? []), t])
-  }
-  return [...map.entries()]
-    .sort(([a], [b]) => b.localeCompare(a))
-    .map(([date, list]) => ({
-      date,
-      items: list.sort((a, b) => b.createdAt.localeCompare(a.createdAt)),
-    }))
-}
-
-export function dayHeading(date: string, today: string): { name: string; sub: string } {
-  const d = utcDate(date)
-  const m = d.getUTCMonth() + 1
-  const day = d.getUTCDate()
-  const wd = `${WEEKDAYS[d.getUTCDay()]}요일`
-  const n = daysBetween(today, date)
-  if (n === 0) return { name: '오늘', sub: `${m}월 ${day}일 ${wd}` }
-  if (n === 1) return { name: '어제', sub: `${m}월 ${day}일 ${wd}` }
-  const sameYear = date.slice(0, 4) === today.slice(0, 4)
-  return { name: `${sameYear ? '' : `${d.getUTCFullYear()}년 `}${m}월 ${day}일`, sub: wd }
-}
-
 export function dueText(t: Pick<Todo, 'dueDate' | 'dueTime'>): string | null {
   if (!t.dueDate) return null
   const d = utcDate(t.dueDate)
@@ -99,9 +68,60 @@ export function dueText(t: Pick<Todo, 'dueDate' | 'dueTime'>): string | null {
   return t.dueTime ? `${base} ${t.dueTime}` : base
 }
 
-export function isDueSoon(t: Todo, today: string): boolean {
+/** 마감이 오늘부터 days 일 뒤까지(지난 것 포함)인 남은 일인가 — 완료·마감 없음은 false */
+export function dueWithin(
+  t: Pick<Todo, 'dueDate' | 'status'>,
+  today: string,
+  days: number
+): boolean {
   if (t.status === 'done' || !t.dueDate) return false
-  return daysBetween(t.dueDate, today) <= DUE_SOON_DAYS
+  return daysBetween(t.dueDate, today) <= days
+}
+
+export function isDueSoon(t: Todo, today: string): boolean {
+  return dueWithin(t, today, DUE_SOON_DAYS)
+}
+
+/** 마감까지 남은 날을 말로 — 오늘 · 내일 · N일 남음 · N일 지남. 마감이 없으면 null */
+export function dueLeft(t: Pick<Todo, 'dueDate'>, today: string): string | null {
+  if (!t.dueDate) return null
+  const n = daysBetween(t.dueDate, today)
+  if (n === 0) return '오늘'
+  if (n === 1) return '내일'
+  return n > 0 ? `${n}일 남음` : `${-n}일 지남`
+}
+
+export type PendingFilter = 'all' | 'todo' | 'progress'
+
+/** 「남은 일」 상태 거르기 — 전체 · 할 일 · 진행 중 */
+export function filterPending(list: Todo[], f: PendingFilter): Todo[] {
+  if (f === 'all') return list
+  const status: TodoStatus = f === 'progress' ? 'in_progress' : 'todo'
+  return list.filter((t) => t.status === status)
+}
+
+/** 오늘(KST) 완료한 수 — 완료 시각(doneAt)의 KST 날짜가 today 인 것만 센다 */
+export function doneToday(list: Todo[], today: string): number {
+  return list.filter((t) => t.doneAt && kstToday(new Date(t.doneAt)) === today).length
+}
+
+/** 완료 기록 — 완료 시각(doneAt)의 KST 날짜별 묶음. 최신 날짜 먼저, 묶음 안도 최근 완료가 위. 라벨은 오늘 · 어제 · M월 D일 */
+export function doneGroups(list: Todo[], today: string): { label: string; items: Todo[] }[] {
+  const map = new Map<string, Todo[]>()
+  for (const t of list) {
+    if (!t.doneAt) continue
+    const date = kstToday(new Date(t.doneAt))
+    map.set(date, [...(map.get(date) ?? []), t])
+  }
+  return [...map.entries()]
+    .sort(([a], [b]) => b.localeCompare(a))
+    .map(([date, items]) => {
+      const n = daysBetween(today, date)
+      const d = utcDate(date)
+      const label =
+        n === 0 ? '오늘' : n === 1 ? '어제' : `${d.getUTCMonth() + 1}월 ${d.getUTCDate()}일`
+      return { label, items: items.sort((a, b) => (b.doneAt ?? '').localeCompare(a.doneAt ?? '')) }
+    })
 }
 
 const LIST_LINE = /^(\s*)(?:([-*])|(\d+)([.)]))\s+(.*)$/

@@ -4,10 +4,13 @@ import type {
   Feed,
   Feeds,
   GhItem,
+  Impact,
   Theme,
   Top,
   WorldItem,
 } from '../../../api/morning-signal'
+import type { Todo } from '../../../api/morning-signal-todo'
+import { dueText } from './todo/todo-model'
 
 // 레퍼런스(second-brain .wiki-automation/dashboard/morning-signal.html)의 순수 함수 이식분.
 
@@ -53,16 +56,6 @@ export function pickInitialDate(days: DaySummary[], hash: string): string | null
   return days.some((d) => d.date === h) ? h : last.date
 }
 
-/** `${labelKo(date)} · HH:MM KST 갱신` — 시각은 day.updatedAt, 없으면 가장 늦은 feed.generatedAt. */
-export function stampText(day: DaySummary, feeds: Feeds): string {
-  const gen = [feeds.ai?.generatedAt, feeds.world?.generatedAt, feeds.gh?.generatedAt]
-    .filter((g): g is string => !!g)
-    .sort()
-    .pop()
-  const time = kstTime(day.updatedAt || gen)
-  return `${labelKo(day.date)}${time ? ` · ${time} KST 갱신` : ''}`
-}
-
 export interface CalCell {
   date: string | null
   day: number | null
@@ -88,116 +81,7 @@ export function calendarCells(
   return cells
 }
 
-// ---------- KPI ----------
-
-export type KpiKey = 'total' | Theme
-
-/** 레퍼런스 COLOR — KPI 점·스파크라인·대표 3줄 이름표 색 */
-export const COLOR: Record<KpiKey, string> = {
-  total: 'var(--primary)',
-  ai: 'var(--s-ai)',
-  world: 'var(--s-world)',
-  gh: 'var(--s-gh)',
-}
-
-/** '2026-10-19' → '10.19' */
-export const mdDot = (date: string): string => date.slice(5).replace('-', '.')
-
-export interface Counts {
-  ai: number
-  world: number
-  gh: number
-  total: number
-}
-
-function tally(n: (t: Theme) => number): Counts {
-  const ai = n('ai')
-  const world = n('world')
-  const gh = n('gh')
-  return { ai, world, gh, total: ai + world + gh }
-}
-
-const feedCounts = (feeds: Feeds) => tally((t) => feeds[t]?.items.length ?? 0)
-
-/** feeds 가 있으면(=화면에 띄운 날짜) items 길이, 없으면 목록의 day.counts — 레퍼런스 countsFor. */
-export function countsFor(day: DaySummary, feeds: Feeds | null): Counts {
-  return feeds ? feedCounts(feeds) : tally((t) => Number(day.counts?.[t] ?? 0))
-}
-
-export interface Kpi {
-  value: number
-  delta: number | null
-  prevDate: string | null
-  series: number[]
-  min: number
-  max: number
-}
-
-/** 레퍼런스 renderKpis — 창 = cur 포함 최근 10개, 비교 = 목록에서 바로 앞 날짜(그날 counts). */
-export function kpiModel(days: DaySummary[], cur: string, feeds: Feeds): Record<KpiKey, Kpi> {
-  const idx = days.findIndex((d) => d.date === cur)
-  const win = idx >= 0 ? days.slice(Math.max(0, idx - 9), idx + 1) : []
-  const series = win.map((d) => countsFor(d, d.date === cur ? feeds : null))
-  // 목록에서 사라진 날짜를 아직 띄우고 있으면 그날 feeds 만으로 그린다
-  if (series.length === 0) series.push(feedCounts(feeds))
-  const prevDay = idx > 0 ? days[idx - 1] : undefined
-  const prev = prevDay ? countsFor(prevDay, null) : null
-  const kpi = (k: KpiKey): Kpi => {
-    const vals = series.map((c) => c[k])
-    const value = vals.at(-1) ?? 0
-    return {
-      value,
-      delta: prev ? value - prev[k] : null,
-      prevDate: prevDay?.date ?? null,
-      series: vals,
-      min: Math.min(...vals),
-      max: Math.max(...vals),
-    }
-  }
-  return { total: kpi('total'), ai: kpi('ai'), world: kpi('world'), gh: kpi('gh') }
-}
-
-/** 레퍼런스 sparkSvg 의 좌표 계산(427–437행). len 은 대시 길이로 쓰므로 올림한다. */
-export function sparkPath(
-  vals: number[],
-  w = 220,
-  h = 36
-): { line: string; area: string; len: number; end: [number, number] } {
-  let pts: [number, number][]
-  if (vals.length <= 1) {
-    pts = [
-      [0, h / 2],
-      [w, h / 2],
-    ]
-  } else {
-    const max = Math.max(...vals)
-    const min = Math.min(...vals)
-    const sx = w / (vals.length - 1)
-    pts = vals.map((v, i) => [i * sx, h - 4 - ((v - min) / Math.max(1, max - min)) * (h - 8)])
-  }
-  const line = pts.map((p, i) => `${i ? 'L' : 'M'}${p[0].toFixed(1)} ${p[1].toFixed(1)}`).join(' ')
-  let len = 0
-  for (let i = 1; i < pts.length; i++) {
-    const a = pts[i - 1]
-    const b = pts[i]
-    if (a && b) len += Math.hypot(b[0] - a[0], b[1] - a[1])
-  }
-  const end = pts.at(-1) ?? [w, h / 2]
-  return { line, area: `${line} L ${w} ${h} L 0 ${h} Z`, len: Math.ceil(len), end }
-}
-
-/** KPI 칩 — 행이 없으면 「수집 실패」, 0건이면 「0건」, 있으면 숨긴다(서버 status 와 같은 규칙). */
-export function chipFor(feed: Feed | undefined): {
-  show: boolean
-  zero: boolean
-  text: '' | '0건' | '수집 실패'
-} {
-  if (!feed) return { show: true, zero: false, text: '수집 실패' }
-  if (feed.items.length === 0) return { show: true, zero: true, text: '0건' }
-  return { show: false, zero: false, text: '' }
-}
-
-// ---------- 벤토 ----------
+// ---------- 오늘의 한 줄 ----------
 
 export interface HeadlineParts {
   before: string
@@ -223,7 +107,7 @@ export function headlineParts(
   return { before: headline.slice(0, at), mark, after }
 }
 
-/** day.tops 가 비었을 때만 쓴다(레퍼런스 492–496행): AI·시사 첫 기사, GitHub 는 FE 주목(없으면 오늘 별 최다). */
+/** 오늘의 한 줄 아래 「테마별 첫 소식」(레퍼런스 492–496행 · 서버 top_text 와 같은 규칙): AI·시사 첫 기사, GitHub 는 FE 주목(없으면 오늘 별 최다). */
 export function deriveTops(feeds: Feeds): Top[] {
   const tops: Top[] = []
   const ai = feeds.ai?.items[0]
@@ -236,62 +120,6 @@ export function deriveTops(feeds: Feeds): Top[] {
   if (world) tops.push({ theme: 'world', text: world.title })
   if (gh) tops.push({ theme: 'gh', text: `${gh.repo} · 오늘 ${gh.starsToday ?? ''}`.trim() })
   return tops
-}
-
-/** 도넛 둘레(r=46) */
-export const DONUT_C = 2 * Math.PI * 46
-
-/** 레퍼런스 renderDonut — 세그먼트 순서 높음·중간·낮음, 비어 있지 않은 세그먼트는 3 만큼 띄운다. offset 은 stroke-dashoffset 값. */
-export function donutModel(items: AiItem[]): {
-  high: number
-  mid: number
-  low: number
-  total: number
-  segments: { len: number; offset: number }[]
-} {
-  const n = { high: 0, mid: 0, low: 0 }
-  for (const x of items) if (n[x.impact] !== undefined) n[x.impact]++
-  const total = items.length
-  let acc = 0
-  const segments = [n.high, n.mid, n.low].map((v) => {
-    const len = total ? Math.max(0, (DONUT_C * v) / total - (v ? 3 : 0)) : 0
-    const seg = { len, offset: -acc || 0 }
-    acc += total ? (DONUT_C * v) / total : 0
-    return seg
-  })
-  return { ...n, total, segments }
-}
-
-export const WORLD_CATS = ['시사·국제', '경제', '상식·교양'] as const
-
-/** 레퍼런스 renderCatbar — pct 는 분류된 건수 합 기준 반올림, 합이 0 이면 null. */
-export function catModel(items: WorldItem[]): {
-  counts: [number, number, number]
-  pct: (number | null)[]
-} {
-  const counts: [number, number, number] = [0, 0, 0]
-  for (const x of items) {
-    const i = WORLD_CATS.indexOf(x.category)
-    if (i === 0 || i === 1 || i === 2) counts[i]++
-  }
-  const total = counts[0] + counts[1] + counts[2]
-  return { counts, pct: counts.map((v) => (total ? Math.round((v / total) * 100) : null)) }
-}
-
-/** 레퍼런스 renderBarlist — 오늘 별 증가 상위 5개(null 은 뒤로). scale 은 1등 대비 막대 길이(최소 0.05). */
-export function barTop(items: GhItem[]): { repo: string; value: string; scale: number }[] {
-  const top = items
-    .filter((g) => g?.repo)
-    .sort((a, b) => (b.starsTodayNum ?? -1) - (a.starsTodayNum ?? -1))
-    .slice(0, 5)
-  const max = Math.max(1, top[0]?.starsTodayNum ?? 1)
-  return top.map((g) => ({
-    repo: g.repo,
-    value:
-      g.starsToday ||
-      (g.starsTodayNum != null ? `+${g.starsTodayNum.toLocaleString('ko-KR')}` : '—'),
-    scale: Math.max(0.05, (g.starsTodayNum ?? 0) / max),
-  }))
 }
 
 // ---------- 피드 ----------
@@ -375,4 +203,60 @@ export function tabCount(feed: Feed | undefined): { text: string; bad: boolean }
   if (!feed) return { text: '수집 실패', bad: true }
   const n = feed.items.length
   return { text: n ? String(n) : '0건', bad: !n }
+}
+
+// ---------- NEWS (B안) ----------
+
+export const TAB_LABEL: Record<Theme, string> = { ai: 'AI', world: 'World', gh: 'GitHub' }
+
+export interface AlertItem {
+  kind: 'today' | 'planned' | 'due'
+  title: string
+  sub: string
+  chip: string
+}
+
+const ALERT_MAX = 4
+
+/** 알림 카드 — 순서 today(World 제목에 「오늘」) → planned(AI 태그 「예정」) → due(마감 임박 할 일), 최대 4개. */
+export function alertItems(
+  feeds: Feeds,
+  dueSoon: Pick<Todo, 'title' | 'dueDate' | 'dueTime'>[] = []
+): AlertItem[] {
+  const today: AlertItem[] = (feeds.world?.items ?? [])
+    .filter((x) => x.title.includes('오늘'))
+    .map((x) => ({ kind: 'today', title: x.title, sub: x.summary, chip: '오늘' }))
+  const planned: AlertItem[] = (feeds.ai?.items ?? [])
+    .filter((x) => x.tags?.includes('예정'))
+    .map((x) => ({ kind: 'planned', title: x.title, sub: x.summary, chip: '예정' }))
+  const due: AlertItem[] = dueSoon.map((t) => ({
+    kind: 'due',
+    title: t.title,
+    sub: 'TO-DO',
+    chip: dueText(t) ?? '',
+  }))
+  return [...today, ...planned, ...due].slice(0, ALERT_MAX)
+}
+
+/** 오늘의 구성 — parts 는 피드가 있는 테마만(GitHub 집계 전이면 AI·World), impact 는 AI+GitHub 항목 계수. */
+export function mixModel(feeds: Feeds): {
+  total: number
+  parts: { theme: Theme; count: number }[]
+  impact: Record<Impact, number>
+} {
+  const parts: { theme: Theme; count: number }[] = []
+  for (const theme of ['ai', 'world', 'gh'] as const) {
+    const feed = feeds[theme]
+    if (feed) parts.push({ theme, count: feed.items.length })
+  }
+  const impact: Record<Impact, number> = { high: 0, mid: 0, low: 0 }
+  for (const x of [...(feeds.ai?.items ?? []), ...(feeds.gh?.items ?? [])]) impact[x.impact]++
+  return { total: parts.reduce((n, p) => n + p.count, 0), parts, impact }
+}
+
+/** FE 높음 레포 — 오늘 별 증가 내림차순(null 은 뒤). */
+export function fePicks(feed: Feed<'gh'> | undefined): GhItem[] {
+  return (feed?.items ?? [])
+    .filter((g) => g.impact === 'high')
+    .sort((a, b) => (b.starsTodayNum ?? -1) - (a.starsTodayNum ?? -1))
 }

@@ -1,19 +1,97 @@
-import { type CSSProperties, memo, useLayoutEffect, useRef, useState } from 'react'
-import type { Feeds, Theme } from '../../../api/morning-signal'
-import { COLOR, feedRows, tabCount } from './model'
+import { memo, type ReactNode, useId, useState } from 'react'
+import type { AiItem, Feeds, GhItem, Theme, WorldItem } from '../../../api/morning-signal'
+import Card from './Card'
+import { feedRows, TAB_LABEL, tabCount } from './model'
 
-type CssVars = CSSProperties & Record<`--${string}`, string | number>
-
-const TABS: readonly { key: Theme; label: string }[] = [
-  { key: 'ai', label: 'AI 뉴스' },
-  { key: 'world', label: '시사·경제·상식' },
-  { key: 'gh', label: 'GitHub' },
-]
 const ORDER: readonly Theme[] = ['ai', 'world', 'gh']
-const EMPTY_LABEL: Record<Theme, string> = {
-  ai: 'AI 뉴스',
-  world: '시사·경제·상식 뉴스',
-  gh: 'GitHub 트렌딩',
+
+const EMPTY_TEXT: Record<Theme, { none: string; miss: string }> = {
+  ai: { none: '검증된 AI 뉴스가 없는 날이에요.', miss: '이 날짜의 AI 뉴스를 가져오지 못했어요.' },
+  world: {
+    none: '검증된 시사·경제·상식 뉴스가 없는 날이에요.',
+    miss: '이 날짜의 시사·경제·상식 뉴스를 가져오지 못했어요.',
+  },
+  gh: {
+    none: '정리된 GitHub 트렌딩이 없는 날이에요.',
+    miss: '이 날짜의 GitHub 트렌딩을 아직 가져오지 못했어요.',
+  },
+}
+
+type Row = ReturnType<typeof feedRows>[number]
+
+interface LineView {
+  /** 왼쪽 종류 칩 */
+  tag: ReactNode
+  /** 오른쪽 정보 — AI: FE 영향 / World: 분야 / GitHub: ★ 또는 FE 높음 칩 */
+  side: ReactNode
+  meta: string
+  noteLabel: string
+  linkLabel: string
+}
+
+/** 시안 news.js row() — 테마마다 다른 칩·오른쪽 정보·펼침 문구 */
+function lineView(theme: Theme, row: Row, item: AiItem | WorldItem | GhItem | undefined): LineView {
+  if (theme === 'gh') {
+    const g = item as GhItem | undefined
+    return {
+      tag: <span className="chip gh num">{`GH ${String(g?.rank ?? '').padStart(2, '0')}`}</span>,
+      side:
+        g?.impact === 'high' ? (
+          <span className="chip h">FE 높음</span>
+        ) : g?.stars ? (
+          `★ ${g.stars}`
+        ) : null,
+      meta: [g?.language, g?.stars && `★ ${g.stars}`, g?.starsToday && `오늘 ${g.starsToday}`]
+        .filter(Boolean)
+        .join(' · '),
+      noteLabel: 'FE에 쓸 곳',
+      linkLabel: 'GitHub에서 보기',
+    }
+  }
+  return {
+    tag:
+      theme === 'ai' ? (
+        <span className="chip ai">AI</span>
+      ) : (
+        <span className="chip world">World</span>
+      ),
+    // feedRows 의 칩 글자가 곧 AI `FE 높음/중간/낮음` · World 분야다
+    side: row.chip?.text ?? null,
+    meta: [row.meta, row.grade && `검증 ${row.grade}`].filter(Boolean).join(' · '),
+    noteLabel: 'FE',
+    linkLabel: '원문 보기',
+  }
+}
+
+/** 한 줄 — 누르면 요약 · FE 메모 · 원문 링크가 펼쳐진다(시안 `.lines details`) */
+function Line({ row, v }: { row: Row; v: LineView }) {
+  const empty = !row.summary && !row.impactNote && !v.meta && !row.link
+  return (
+    <li>
+      <details>
+        <summary>
+          {v.tag}
+          <span className="t">{row.title}</span>
+          {v.side && <span className="m">{v.side}</span>}
+        </summary>
+        <div className="more">
+          {row.summary && <p>{row.summary}</p>}
+          {row.impactNote && (
+            <p>
+              <b>{v.noteLabel}</b> {row.impactNote}
+            </p>
+          )}
+          {v.meta && <p>{v.meta}</p>}
+          {row.link && (
+            <a href={row.link.href} target="_blank" rel="noopener">
+              {v.linkLabel}
+            </a>
+          )}
+          {empty && <p>추가 정보가 없어요.</p>}
+        </div>
+      </details>
+    </li>
+  )
 }
 
 interface FeedProps {
@@ -22,150 +100,75 @@ interface FeedProps {
   date: string
   /** 날짜를 옮긴 방향 — 목록이 같은 쪽으로 미끄러진다 */
   dir: number
+  /** 고른 탭 — 라우트가 들고 있어 날짜를 옮겨도 남고, 오늘의 한 줄 칸에서도 바꾼다 */
+  tab: Theme
+  onTab: (t: Theme) => void
 }
 
 interface Slide {
   tab: Theme
+  date: string
   /** 마지막으로 목록을 바꾼 움직임의 방향(탭 순서 또는 날짜 순서) */
   dir: number
-  date: string
 }
 
-function Row({
-  row,
-  i,
-  color,
-}: {
-  row: ReturnType<typeof feedRows>[number]
-  i: number
-  color: string
-}) {
-  const [open, setOpen] = useState(false)
-  const style: CssVars = { '--d': `${i * 40}ms`, '--k': color }
-  const empty = !row.summary && !row.impactNote && !row.grade && !row.link
-  return (
-    <div className={open ? 'item open' : 'item'} style={style}>
-      <button type="button" aria-expanded={open} onClick={() => setOpen((o) => !o)}>
-        <span className="no">{String(i + 1).padStart(2, '0')}</span>
-        <span className="tt">
-          {row.title}
-          {row.tags.map((g, n) => (
-            // biome-ignore lint/suspicious/noArrayIndexKey: 태그는 중복될 수 있고 목록은 고정이다
-            <span key={n} className="tag">
-              {g}
-            </span>
-          ))}
-        </span>
-        <span className="meta">{row.meta}</span>
-        {row.chip ? <span className={`chip ${row.chip.cls}`}>{row.chip.text}</span> : <span />}
-        <span className="chev" />
-      </button>
-      <div className="more">
-        <div>
-          <div className="in">
-            {row.summary && <p>{row.summary}</p>}
-            {row.impactNote && (
-              <p>
-                <strong>FE 영향</strong> {row.impactNote}
-              </p>
-            )}
-            {row.grade && <p>검증 {row.grade}등급</p>}
-            {row.link && (
-              <a href={row.link.href} target="_blank" rel="noopener">
-                {row.link.label}
-              </a>
-            )}
-            {empty && <p>추가 정보가 없어요.</p>}
-          </div>
-        </div>
-      </div>
-    </div>
-  )
-}
-
-/** 피드 탭 + 목록 — 레퍼런스 renderList·moveInd·renderTabCounts(553–594행)와 탭 클릭(636–641행). */
-function Feed({ feeds, date, dir }: FeedProps) {
-  const [st, setSt] = useState<Slide>({ tab: 'ai', dir: 0, date })
-  // 날짜가 바뀌면 그 이동 방향으로 미끄러진다(렌더 중 setState — 이전 렌더 정보로 맞추는 React 권장 패턴)
-  if (st.date !== date) setSt({ ...st, dir, date })
-  const { tab } = st
-
-  const tabsRef = useRef<HTMLDivElement>(null)
-  const indRef = useRef<HTMLSpanElement>(null)
-
-  // 인디케이터 — 선택된 탭의 offsetLeft·offsetWidth. 크기가 바뀔 때와 글꼴이 로드됐을 때 다시 잰다.
-  // 건수 글자가 바뀌면 탭 폭도 바뀌므로 렌더마다 잰다.
-  const move = () => {
-    const on = tabsRef.current?.querySelector<HTMLElement>('button.on')
-    const ind = indRef.current
-    if (!on || !ind || !on.offsetWidth) return
-    ind.style.left = `${on.offsetLeft}px`
-    ind.style.width = `${on.offsetWidth}px`
-    ind.style.setProperty('--k', COLOR[tab])
+/** 소식 — 탭 AI · World · GitHub + 줄 목록. 시안 grid.css `.seg`·`.lines`·`.more` */
+function Feed({ feeds, date, dir, tab, onTab }: FeedProps) {
+  const [st, setSt] = useState<Slide>({ tab, date, dir: 0 })
+  // 날짜가 바뀌면 그 이동 방향, 탭이 바뀌면 탭 순서 방향으로 미끄러진다(렌더 중 setState — 이전 렌더 정보로 맞추는 React 권장 패턴)
+  if (st.tab !== tab || st.date !== date) {
+    setSt({
+      tab,
+      date,
+      dir: st.date !== date ? dir : ORDER.indexOf(tab) < ORDER.indexOf(st.tab) ? -1 : 1,
+    })
   }
-  useLayoutEffect(move)
-  // biome-ignore lint/correctness/useExhaustiveDependencies: move 는 렌더마다 새로 만들어지지만 tab 말고는 ref 만 읽는다
-  useLayoutEffect(() => {
-    const el = tabsRef.current
-    const ro = new ResizeObserver(move)
-    if (el) ro.observe(el)
-    window.addEventListener('resize', move)
-    let live = true
-    document.fonts?.ready.then(() => live && move())
-    return () => {
-      live = false
-      ro.disconnect()
-      window.removeEventListener('resize', move)
-    }
-  }, [tab])
-
-  const pick = (k: Theme) => {
-    if (k === tab) return
-    setSt({ tab: k, dir: ORDER.indexOf(k) < ORDER.indexOf(tab) ? -1 : 1, date })
-  }
-
+  const ids = useId()
   const feed = feeds[tab]
   const rows = feedRows(tab, feed)
-  const color = COLOR[tab]
   const slide = st.dir < 0 ? ' sl' : st.dir > 0 ? ' sr' : ''
 
+  const tabs = (
+    <div className="seg" role="tablist" aria-label="소식 테마">
+      {ORDER.map((k) => {
+        const c = tabCount(feeds[k])
+        return (
+          <button
+            key={k}
+            type="button"
+            role="tab"
+            id={`${ids}-${k}`}
+            aria-selected={k === tab}
+            aria-controls={`${ids}-panel`}
+            onClick={() => onTab(k)}
+          >
+            {TAB_LABEL[k]} <em className={c.bad ? 'bad' : undefined}>{c.text}</em>
+          </button>
+        )
+      })}
+    </div>
+  )
+
   return (
-    <section className="feed">
-      <div className="seg-tabs" role="tablist" ref={tabsRef}>
-        <span className="ind" ref={indRef} />
-        {TABS.map(({ key, label }) => {
-          const c = tabCount(feeds[key])
-          return (
-            <button
-              key={key}
-              type="button"
-              role="tab"
-              data-k={key}
-              className={key === tab ? 'on' : undefined}
-              aria-selected={key === tab}
-              onClick={() => pick(key)}
-            >
-              {label} <em className={c.bad ? 'bad' : undefined}>{c.text}</em>
-            </button>
-          )
-        })}
-      </div>
-      {/* key: 날짜·탭이 바뀔 때마다 새로 그려 펼침 상태와 미끄러짐·오름 애니메이션을 처음부터 다시 돈다 */}
-      <div className={`card list${slide}`} key={`${date}|${tab}|${feed?.generatedAt ?? ''}`}>
+    <Card area="feed" title="소식" aux={tabs} className="top-r">
+      <div role="tabpanel" id={`${ids}-panel`} aria-labelledby={`${ids}-${tab}`}>
         {rows.length === 0 ? (
-          <div className="none">
+          <p className="empty">
             {feed
-              ? `검증된 ${EMPTY_LABEL[tab]}가 없는 날이에요.${feed.note ? ` ${feed.note}` : ''}`
-              : `이 날짜의 ${EMPTY_LABEL[tab]}를 가져오지 못했어요.`}
-          </div>
+              ? `${EMPTY_TEXT[tab].none}${feed.note ? ` ${feed.note}` : ''}`
+              : EMPTY_TEXT[tab].miss}
+          </p>
         ) : (
-          rows.map((row, i) => (
-            // biome-ignore lint/suspicious/noArrayIndexKey: 순번이 곧 행의 정체성이다
-            <Row key={i} row={row} i={i} color={color} />
-          ))
+          // key: 날짜·탭이 바뀔 때마다 새로 그려 펼침 상태를 닫고 미끄러짐을 처음부터 다시 돈다
+          <ul className={`lines${slide}`} key={`${date}|${tab}|${feed?.generatedAt ?? ''}`}>
+            {rows.map((row, i) => (
+              // biome-ignore lint/suspicious/noArrayIndexKey: 순번이 곧 행의 정체성이다
+              <Line key={i} row={row} v={lineView(tab, row, feed?.items[i])} />
+            ))}
+          </ul>
         )}
       </div>
-    </section>
+    </Card>
   )
 }
 

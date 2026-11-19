@@ -86,13 +86,19 @@ interface PinGateProps {
   lockedUntil: string | null
   /** 서버에 PIN·비밀값이 설정되지 않았다(503 TODO_NOT_CONFIGURED) */
   configError: boolean
+  /** 창 안에서 쓴다 — 큰 제목·자물쇠 연출·성공 모션 없이 숫자칸·오류·잠금 시간만 */
+  compact?: boolean
 }
 
 /**
  * 세션은 라우트만 구독하고 여기에는 값으로 받는다 — 실패한 세션 조회를 여기서 한 번 더 구독하면
  * TanStack 이 마운트 때 다시 조회하며 status 를 pending 으로 되돌려 라우트가 이 컴포넌트를 내렸다 올리기를 반복한다.
  */
-export default function PinGate({ lockedUntil: initialLock, configError }: PinGateProps) {
+export default function PinGate({
+  lockedUntil: initialLock,
+  configError,
+  compact = false,
+}: PinGateProps) {
   const qc = useQueryClient()
   const unlock = useUnlock()
 
@@ -224,6 +230,11 @@ export default function PinGate({ lockedUntil: initialLock, configError }: PinGa
   }
 
   async function success() {
+    // 창 안에서는 성공 모션 없이 바로 세션을 갱신한다(창이 곧 닫히고 담기가 이어진다)
+    if (compact) {
+      await qc.invalidateQueries({ queryKey: todoKeys.session })
+      return
+    }
     setPhase('success')
     setHaloKey((k) => k + 1)
     try {
@@ -295,7 +306,10 @@ export default function PinGate({ lockedUntil: initialLock, configError }: PinGa
   const label = phase === 'verifying' ? '확인 중' : phase === 'success' ? '열기 →' : '확인'
 
   return (
-    <section className={`pin${out ? ' out' : ''}${disabled ? ' off' : ''}`} aria-label="TO-DO 잠금">
+    <section
+      className={`pin${compact ? ' compact' : ''}${out ? ' out' : ''}${disabled ? ' off' : ''}`}
+      aria-label="TO-DO 잠금"
+    >
       <button
         type="button"
         className="eye"

@@ -1,66 +1,43 @@
-import type { ReactNode } from 'react'
+import { createContext, type ReactNode, useContext, useState } from 'react'
 import { useMsThemeAttr } from './Header'
 import './morning-signal.css'
 
+/**
+ * `.ms` 루트 요소 — 시트·토스트를 여기로 포털하면 `.wrap`(z 1 쌓임 맥락) 밖에서 그려져
+ * 상단 막대(z 40)와 하단 탭 바까지 덮는다. 선택자는 `.ms` 아래 그대로 맞는다.
+ */
+const MsRootContext = createContext<HTMLElement | null>(null)
+export const useMsRoot = () => useContext(MsRootContext)
+
 // 레퍼런스 4행 — React 19 가 <head> 로 끌어올린다
 const FONTS_URL =
-  'https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800&family=Geist+Mono:wght@400;500;600&family=IBM+Plex+Sans+KR:wght@400;500;600;700&display=swap'
+  'https://fonts.googleapis.com/css2?family=Gothic+A1:wght@400;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap'
 
-/**
- * 목록 빨간 칩(FE 높음·FE 주목)의 전류 테두리 필터 — 칩마다 캔버스를 띄우지 않고 이 필터 하나를 함께 쓴다.
- * 잡음 무늬(seed)를 0.09초마다 바꿔 테두리가 지직거린다. 동작 줄이기면 CSS 가 필터를 떼어 정지한 빨간 고리만 남는다.
- * 아티팩트판 morning-signal.html 의 #msZap 과 같은 값.
- */
-function ZapDefs() {
-  return (
-    <svg className="ms-defs" width="0" height="0" aria-hidden="true" focusable="false">
-      <filter
-        id="ms-zap"
-        x="-40%"
-        y="-80%"
-        width="180%"
-        height="260%"
-        colorInterpolationFilters="sRGB"
-      >
-        <feTurbulence type="turbulence" baseFrequency="0.11" numOctaves={3} seed={1} result="noise">
-          <animate
-            attributeName="seed"
-            values="1;4;2;7;3;9;5;8"
-            dur="0.72s"
-            calcMode="discrete"
-            repeatCount="indefinite"
-          />
-        </feTurbulence>
-        <feDisplacementMap
-          in="SourceGraphic"
-          in2="noise"
-          scale={3.2}
-          xChannelSelector="R"
-          yChannelSelector="B"
-        />
-      </filter>
-    </svg>
-  )
-}
-
-/** 뉴스·TO-DO 공통 껍데기 — 글꼴, 오로라·격자 배경, 칩 전류 필터, 테마 속성, 레일·탭 바(nav), 가운데 정렬 틀 */
-export default function Shell({ children, nav }: { children: ReactNode; nav?: ReactNode }) {
+/** 뉴스·TO-DO 공통 껍데기 — 글꼴, 정적 오로라 배경, 밝은 화면 속성, 상단 막대·탭 바(nav), 가운데 정렬 틀 */
+export default function Shell({
+  children,
+  top,
+  nav,
+}: {
+  children: ReactNode
+  /** 상단 막대 — .wrap 밖 앞 형제(전체 폭 sticky · 보기 전환 때 움직이지 않는다) */
+  top?: ReactNode
+  nav?: ReactNode
+}) {
   useMsThemeAttr()
+  const [root, setRoot] = useState<HTMLDivElement | null>(null)
   return (
-    <div className="ms">
+    <div className="ms" ref={setRoot}>
       <link rel="stylesheet" href={FONTS_URL} precedence="default" />
-      <div className="aurora" aria-hidden="true">
-        <i />
-        <i />
-        <i />
-      </div>
-      <div className="grid-bg" aria-hidden="true" />
-      <ZapDefs />
-      {/* 레일·탭 바는 .wrap(z-index 쌓임 맥락) 안에 둔다 — 밖에 두면 .wrap 안의 시트(z 50)가 탭 바 아래로 깔린다 */}
-      <div className="wrap">
-        {nav}
-        {children}
-      </div>
+      <div className="aurora" aria-hidden="true" />
+      {/* 상단 막대(top)는 .wrap 밖 앞 형제(전체 폭 sticky · 전환 때 안 움직임). 하단 탭 바(nav)는 .wrap 안. 시트·토스트는 useMsRoot 로 이 루트에 포털해 둘 다 덮는다 */}
+      {top}
+      <MsRootContext.Provider value={root}>
+        <div className="wrap">
+          {nav}
+          {children}
+        </div>
+      </MsRootContext.Provider>
     </div>
   )
 }

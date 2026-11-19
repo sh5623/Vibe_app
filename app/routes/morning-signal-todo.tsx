@@ -1,12 +1,12 @@
 import { useCallback, useEffect, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { useLock, useTodoSession } from '@/hooks/use-morning-signal-todo'
 import type { Route } from './+types/morning-signal-todo'
-import { TitleBar } from './morning-signal/Nav'
+import { useMsRoot } from './morning-signal/Shell'
 import PinGate from './morning-signal/todo/PinGate'
-import TodoList from './morning-signal/todo/TodoList'
+import TodoBoard from './morning-signal/todo/TodoBoard'
 import { CreateSheet, DetailSheet } from './morning-signal/todo/TodoSheets'
 import { useMsLayout } from './morning-signal-layout'
-import './morning-signal/todo/todo.css'
 
 const TOAST_MS = 3000
 const NEW_ROW_MS = 900
@@ -18,6 +18,7 @@ export function meta(_: Route.MetaArgs) {
 export default function MorningSignalTodo() {
   const session = useTodoSession()
   const lock = useLock()
+  const root = useMsRoot()
   const unlocked = session.data?.unlocked === true
 
   const [creating, setCreating] = useState(false)
@@ -45,49 +46,33 @@ export default function MorningSignalTodo() {
       setPending(null)
     }
   }, [unlocked])
-  const onLock = unlocked ? () => lock.mutate() : undefined
-  // 레일 TO-DO 칩·자물쇠(레이아웃이 그린다)
-  const { setTodoCount, setOnLock } = useMsLayout()
+  // 하단 탭 TO-DO 배지(레이아웃이 그린다)
+  const { setTodoCount } = useMsLayout()
   useEffect(() => setTodoCount(unlocked ? pending : null), [unlocked, pending, setTodoCount])
-  const relock = lock.mutate
-  useEffect(() => {
-    setOnLock(unlocked ? () => relock() : null)
-    return () => setOnLock(null)
-  }, [unlocked, relock, setOnLock])
+
+  // 토스트는 시트 위에 떠야 한다 — 시트와 같은 .ms 루트로 포털
+  const toastEl = (
+    <div className={`todo-toast${toast ? ' show' : ''}`} role="status" aria-live="polite">
+      {toast?.message}
+    </div>
+  )
 
   return (
     <>
-      <TitleBar title="TO-DO" onLock={onLock} />
       {session.isPending ? null : unlocked ? (
         <>
-          <TodoList
+          <TodoBoard
             onOpen={setDetailId}
+            onCreate={() => setCreating(true)}
+            onLock={() => lock.mutate()}
             newId={newId}
             onError={notify}
             onPendingCount={setPending}
           />
-          <button
-            type="button"
-            className="todo-fab"
-            aria-label="할 일 만들기"
-            onClick={() => setCreating(true)}
-          >
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-              <path
-                d="M12 5v14M5 12h14"
-                stroke="currentColor"
-                strokeWidth="2.6"
-                strokeLinecap="round"
-              />
-            </svg>
-          </button>
           <CreateSheet
             open={creating}
             onClose={() => setCreating(false)}
-            onCreated={(t) => {
-              setNewId(t.id)
-              window.scrollTo({ top: 0, behavior: 'smooth' })
-            }}
+            onCreated={(t) => setNewId(t.id)}
             notify={notify}
           />
           <DetailSheet id={detailId} onClose={() => setDetailId(null)} notify={notify} />
@@ -98,9 +83,7 @@ export default function MorningSignalTodo() {
           configError={session.error?.code === 'TODO_NOT_CONFIGURED'}
         />
       )}
-      <div className={`todo-toast${toast ? ' show' : ''}`} role="status" aria-live="polite">
-        {toast?.message}
-      </div>
+      {root ? createPortal(toastEl, root) : toastEl}
     </>
   )
 }

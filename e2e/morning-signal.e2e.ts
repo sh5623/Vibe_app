@@ -1,5 +1,7 @@
+import { readFileSync } from 'node:fs'
 import { expect, type Page, test } from '@playwright/test'
 import { mockApi } from './fixtures/mock-api'
+import { makeTodo, mockTodoApi } from './fixtures/mock-todo-api'
 
 const dateBtn = (page: Page) => page.locator('.datenav .cur')
 
@@ -10,7 +12,6 @@ test('opens latest date with 최신 badge', async ({ page }) => {
   await expect(dateBtn(page).getByText('최신')).toBeVisible()
   await expect(page.getByRole('button', { name: '다음 날짜' })).toBeDisabled()
   await expect(page).toHaveURL(/#2026-10-19$/)
-  await expect(page.getByText('10월 19일 (월) · 08:03 KST 갱신')).toBeVisible()
 })
 
 test('honours hash and prev button updates hash', async ({ page }) => {
@@ -58,22 +59,16 @@ test('calendar navigates and closes on Escape', async ({ page }) => {
   // 바깥을 눌러도 닫힌다
   await dateBtn(page).click()
   await expect(dialog).toBeVisible()
-  await page.locator('.ptitle h1').click()
+  await page.locator('.top .brand').click()
   await expect(dialog).toBeHidden()
 })
 
-test('theme persists and does not leak to other routes', async ({ page }) => {
+test('밝은 화면 고정 — 테마 버튼이 없고 저장된 dark를 무시한다', async ({ page }) => {
   await mockApi(page, 'normal')
+  await page.addInitScript(() => localStorage.setItem('ms-theme', 'dark'))
   await page.goto('/morning-signal')
-  const html = page.locator('html')
-  await expect(html).toHaveAttribute('data-ms-theme', 'light')
-  await page.getByRole('button', { name: '다크 모드로 전환' }).click()
-  await expect(html).toHaveAttribute('data-ms-theme', 'dark')
-  await expect(page.getByRole('button', { name: '라이트 모드로 전환' })).toBeVisible()
-  expect(await page.evaluate(() => localStorage.getItem('ms-theme'))).toBe('dark')
-
-  await page.reload()
-  await expect(html).toHaveAttribute('data-ms-theme', 'dark')
+  await expect(page.locator('html')).toHaveAttribute('data-ms-theme', 'light')
+  await expect(page.locator('.theme')).toHaveCount(0)
 
   // 앱 안에서 다른 라우트로 옮기면(문서는 그대로) 라우트가 언마운트되며 속성을 지운다
   await page.evaluate(() => {
@@ -81,10 +76,15 @@ test('theme persists and does not leak to other routes', async ({ page }) => {
     window.dispatchEvent(new PopStateEvent('popstate'))
   })
   await expect(page.locator('.ms')).toHaveCount(0)
-  await expect(html).not.toHaveAttribute('data-ms-theme')
+  await expect(page.locator('html')).not.toHaveAttribute('data-ms-theme')
+})
 
-  await page.goto('/')
-  await expect(html).not.toHaveAttribute('data-ms-theme')
+test('전류 필터가 없다', async ({ page }) => {
+  await mockApi(page, 'normal')
+  await page.goto('/morning-signal')
+  await expect(page.locator('#ms-zap')).toHaveCount(0)
+  await expect(page.locator('.aurora')).toHaveCount(1)
+  await expect(page.locator('.grid-bg')).toHaveCount(0)
 })
 
 test('empty state', async ({ page }) => {
@@ -92,13 +92,13 @@ test('empty state', async ({ page }) => {
   await page.goto('/morning-signal')
   await expect(page.getByText('아직 저장된 뉴스가 없어요')).toBeVisible()
   await expect(page.getByText('매일 아침 8시에 첫 브리핑이 들어와요.')).toBeVisible()
-  await expect(page.locator('.content')).toHaveCount(0)
+  await expect(page.locator('.ms-grid')).toHaveCount(0)
 })
 
 test('error state after retries', async ({ page }) => {
   await mockApi(page, 'error')
   await page.goto('/morning-signal')
-  await expect(page.getByText('불러오는 중')).toBeVisible()
+  await expect(page.locator('.ms-loading')).toBeVisible()
   await expect(page.getByText('데이터를 불러오지 못했어요')).toBeVisible({ timeout: 15_000 })
   await expect(page.getByText('잠시 뒤 새로고침해 주세요.')).toBeVisible()
 })
@@ -110,8 +110,8 @@ test('background refetch failure keeps the dashboard instead of the error card',
   await page.clock.install()
   await mockApi(page, 'normal')
   await page.goto('/morning-signal')
-  await expect(page.locator('.content')).toBeVisible()
-  await expect(page.locator('[data-kpi="total"] .odo')).toHaveAttribute('data-value', '24')
+  await expect(page.locator('.ms-grid')).toBeVisible()
+  await expect(page.locator('.cnt.big')).toHaveText('24건')
 
   // 이제부터 API가 500을 돌려준다. 목록·상세 둘 다 재시도(3번)까지 모두 실패해야 isError가 된다.
   let failures = 0
@@ -121,52 +121,19 @@ test('background refetch failure keeps the dashboard instead of the error card',
   await page.unrouteAll({ behavior: 'wait' })
   await mockApi(page, 'error')
   await page.clock.fastForward('02:00')
-  await page.evaluate(() => window.dispatchEvent(new Event('visibilitychange')))
+  await page.evaluate(() => window.dispatchEvent(new Event('visibilitychange', { bubbles: true })))
 
   // 목록 1+3회 · 상세 1+3회
   await expect.poll(() => failures, { timeout: 20_000 }).toBeGreaterThanOrEqual(8)
   // 마지막 실패가 상태(isError)로 반영되어 다시 그려질 틈을 준다
   await page.waitForTimeout(500) // 고정 대기: 부재 확인 — 오류 문구가 뒤늦게 뜨지 않는다
   await expect(page.getByText('데이터를 불러오지 못했어요')).toHaveCount(0)
-  await expect(page.locator('.content')).toBeVisible()
-  await expect(page.locator('[data-kpi="total"] .odo')).toHaveAttribute('data-value', '24')
+  await expect(page.locator('.ms-grid')).toBeVisible()
+  await expect(page.locator('.cnt.big')).toHaveText('24건')
   await expect(dateBtn(page).locator('.t')).toHaveText('10월 19일 (월)')
 })
 
-test('kpis show counts, deltas and failure chips', async ({ page }) => {
-  await mockApi(page, 'normal')
-  await page.goto('/morning-signal')
-  await expect(page.locator('[data-kpi="total"] .odo')).toHaveAttribute('data-value', '24')
-  await expect(page.locator('[data-kpi="gh"] .delta')).toHaveText('+1')
-  await expect(page.locator('[data-kpi="gh"] .delta')).toHaveAttribute('title', '10.16 대비')
-  await expect(page.locator('[data-kpi="ai"] .delta')).toHaveClass(/down/)
-  await expect(page.locator('[data-kpi="ai"] .kchip')).toBeHidden()
-
-  // missing: gh 행 없음 → 수집 실패, world 0건 → 0건
-  await page.unrouteAll({ behavior: 'wait' })
-  await mockApi(page, 'missing')
-  await page.reload()
-  await expect(page.locator('[data-kpi="gh"] .kchip')).toHaveText('수집 실패')
-  await expect(page.locator('[data-kpi="gh"] .kchip')).not.toHaveClass(/zero/)
-  await expect(page.locator('[data-kpi="world"] .kchip')).toHaveText('0건')
-  await expect(page.locator('[data-kpi="world"] .kchip')).toHaveClass(/zero/)
-  await expect(page.locator('[data-kpi="gh"] .odo')).toHaveAttribute('data-value', '0')
-})
-
-test('sparkline end dot stays round at phone width', async ({ page }) => {
-  // 선은 가로로만 늘어나는 SVG 라 폭이 넓은 모바일 1열에서 끝점이 타원으로 납작해졌다
-  await page.setViewportSize({ width: 375, height: 800 })
-  await mockApi(page, 'normal')
-  await page.goto('/morning-signal')
-  const dot = page.locator('[data-kpi="ai"] .spark-dot')
-  await expect(dot).toBeVisible()
-  const box = await dot.boundingBox()
-  expect(box).not.toBeNull()
-  // 맥박 애니메이션 중에도 가로·세로 비율은 같다
-  expect(Math.abs((box?.width ?? 0) - (box?.height ?? 1))).toBeLessThan(0.5)
-})
-
-test('headline renders mark and tops', async ({ page }) => {
+test('오늘의 한 줄: 강조 구절 · 테마별 첫 소식 3칸', async ({ page }) => {
   const errors: string[] = []
   page.on('console', (m) => {
     if (m.type() === 'error') errors.push(m.text())
@@ -174,41 +141,32 @@ test('headline renders mark and tops', async ({ page }) => {
   page.on('pageerror', (e) => errors.push(e.message))
   await mockApi(page, 'normal')
   await page.goto('/morning-signal')
-  await expect(page.locator('.eyebrow')).toHaveText('10.19 월 · 오늘의 한 줄')
-  await expect(page.locator('h2.line mark')).toContainText('막는 기업이 늘고')
-  await expect(page.locator('.tops li')).toHaveCount(3)
-  await expect(page.locator('.tops li').first()).toContainText('AI')
-  await expect(page.locator('.barlist .row')).toHaveCount(5)
-  await expect(page.locator('.barlist .row.first')).toContainText('MadsLorentzen/ai-job-search')
-  await expect(page.locator('.pick span')).toHaveText([
-    'FE 주목 · anthropics/claude-plugins-official',
-    'FE 주목 · cursor/plugins',
-  ])
+  await expect(page.locator('.headline mark')).toContainText('막는 기업이 늘고')
+  await expect(page.locator('.tops .top-cell')).toHaveCount(3)
+  await expect(page.locator('.tops .top-cell').first()).toContainText('AI')
 
-  // 단어가 날아가는 중(220ms)에 처음 날짜로 돌아와도 out 상태로 굳지 않고 다시 지어진다
+  // 날짜를 옮기면 그날 제목으로 바뀐다
   await page.getByRole('button', { name: '이전 날짜' }).click()
-  await expect(page.locator('.eyebrow')).toHaveText('10.16 금 · 오늘의 한 줄')
-  await page.getByRole('button', { name: '다음 날짜' }).click()
-  await expect(page.locator('.eyebrow')).toHaveText('10.19 월 · 오늘의 한 줄')
-  await expect(page.locator('h2.line .w.out')).toHaveCount(0)
-  await expect(page.locator('h2.line mark')).toContainText('막는 기업이 늘고')
+  await expect(page.locator('.headline mark')).toContainText('코스피는 7.57% 급락')
 
-  // 헤드라인·tops 가 없는 날(10-15)로 옮기면 폴백 문구로 바뀐다
+  // 헤드라인·피드가 없는 날(10-15)은 폴백 문구, 첫 소식 칸은 「아직 없음」
   await page.goto('/morning-signal#2026-10-15')
   await page.reload()
-  await expect(page.locator('h2.line.none')).toHaveText('오늘의 한 줄이 아직 없어요.')
-  await expect(page.locator('.tops li')).toHaveCount(0)
+  await expect(page.locator('.headline.none')).toHaveText('오늘의 한 줄이 아직 없어요.')
+  await expect(page.locator('.tops .top-cell')).toHaveCount(3)
+  await expect(page.locator('.tops .top-cell .tt')).toHaveText([
+    '아직 없음',
+    '아직 없음',
+    '아직 없음',
+  ])
   expect(errors).toEqual([])
 })
 
-test('bento empty texts when feeds missing', async ({ page }) => {
+test('피드가 빈 날 — 챙길 것 빈 상태', async ({ page }) => {
   await mockApi(page, 'noai')
   await page.goto('/morning-signal')
-  await expect(page.getByText('AI 뉴스를 가져오지 못했어요.', { exact: true })).toBeVisible()
-  await expect(page.getByText('GitHub 트렌딩을 가져오지 못했어요.', { exact: true })).toBeVisible()
-  await expect(
-    page.getByText('검증된 시사·경제 뉴스가 없는 날이에요.', { exact: true })
-  ).toBeVisible()
+  await expect(page.getByText('오늘 챙길 것이 없어요', { exact: true })).toBeVisible()
+  await expect(page.locator('.tops [data-theme="ai"] .tt')).toHaveText('아직 없음')
 })
 
 test('tabs switch lists and rows expand', async ({ page }) => {
@@ -216,34 +174,33 @@ test('tabs switch lists and rows expand', async ({ page }) => {
   await page.goto('/morning-signal')
   const tabs = page.getByRole('tab')
   await expect(tabs.first()).toHaveAttribute('aria-selected', 'true')
-  await expect(page.locator('.list .item')).toHaveCount(6)
+  await expect(page.locator('.lines > li')).toHaveCount(6)
 
-  await page.getByRole('tab', { name: /GitHub/ }).click()
-  await expect(page.getByRole('tab', { name: /GitHub/ })).toHaveAttribute('aria-selected', 'true')
+  await page.getByRole('tab', { name: /^GitHub/ }).click()
+  await expect(page.getByRole('tab', { name: /^GitHub/ })).toHaveAttribute('aria-selected', 'true')
   await expect(tabs.first()).toHaveAttribute('aria-selected', 'false')
-  await expect(page.locator('.list')).toHaveClass(/sr/)
-  await expect(page.locator('.list .item')).toHaveCount(13)
+  await expect(page.locator('.lines')).toHaveClass(/sr/)
+  await expect(page.locator('.lines > li')).toHaveCount(13)
 
-  const first = page.locator('.list .item').first()
-  await first.locator('> button').click()
-  await expect(first.locator('> button')).toHaveAttribute('aria-expanded', 'true')
-  await expect(first).toHaveClass(/open/)
+  const first = page.locator('.lines > li').first()
+  await first.locator('summary').click()
+  await expect(first.locator('details')).toHaveAttribute('open', '')
   await expect(first.locator('.more a')).toHaveAttribute('target', '_blank')
 
   // 날짜를 옮겨도 고른 탭이 남는다
   await page.getByRole('button', { name: '이전 날짜' }).click()
-  await expect(page.getByRole('tab', { name: /GitHub/ })).toHaveAttribute('aria-selected', 'true')
+  await expect(page.getByRole('tab', { name: /^GitHub/ })).toHaveAttribute('aria-selected', 'true')
 })
 
 test('tab counts flag failures', async ({ page }) => {
   await mockApi(page, 'missing')
   await page.goto('/morning-signal')
-  await expect(page.getByRole('tab', { name: /GitHub/ }).locator('em')).toHaveText('수집 실패')
-  await expect(page.getByRole('tab', { name: /GitHub/ }).locator('em')).toHaveClass(/bad/)
-  const world = page.getByRole('tab', { name: /시사/ })
+  await expect(page.getByRole('tab', { name: /^GitHub/ }).locator('em')).toHaveText('수집 실패')
+  await expect(page.getByRole('tab', { name: /^GitHub/ }).locator('em')).toHaveClass(/bad/)
+  const world = page.getByRole('tab', { name: /^World/ })
   await expect(world.locator('em')).toHaveText('0건')
   await world.click()
-  await expect(page.locator('.list .none')).toHaveText(
+  await expect(page.locator('[data-area="feed"] .empty')).toHaveText(
     '검증된 시사·경제·상식 뉴스가 없는 날이에요.'
   )
 })
@@ -252,8 +209,8 @@ test('reduced motion still renders everything', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' })
   await mockApi(page, 'normal')
   await page.goto('/morning-signal')
-  await expect(page.locator('[data-kpi="total"] .odo')).toHaveAttribute('data-value', '24')
-  await expect(page.locator('.list .item')).toHaveCount(6)
+  await expect(page.locator('.cnt.big')).toHaveText('24건')
+  await expect(page.locator('.lines > li')).toHaveCount(6)
 })
 
 test('home links to morning signal', async ({ page }) => {
@@ -264,116 +221,117 @@ test('home links to morning signal', async ({ page }) => {
   await expect(page).toHaveURL(/\/morning-signal(#.*)?$/)
 })
 
-// ── 왼쪽 레일(768px 이상) — 2026-11-05 사이드 레일 설계 §5.2 ───────────────────────
+// ── 상단 막대 · 하단 탭 바(B안) ───────────────────────────────────────────────────────
 
-/** (x, y) 지점에서 실제로 눌리는 요소가 레일 안인가 — 접힌 레일은 clip-path 로 56px 밖이 눌리지 않는다 */
-const hitRail = (page: Page, x: number, y: number) =>
-  page.evaluate(
-    ([px, py]) => !!document.elementFromPoint(px ?? 0, py ?? 0)?.closest('.rail'),
-    [x, y]
+test('가운데 탭 자리는 NEWS와 TO-DO에서 같다', async ({ page }) => {
+  await mockApi(page, 'normal')
+  for (const width of [1440, 1024]) {
+    await page.setViewportSize({ width, height: 800 })
+    await page.goto('/morning-signal')
+    await expect(page.locator('.views')).toBeVisible()
+    const a = await page.locator('.views').boundingBox()
+    await page.getByRole('link', { name: 'TO-DO' }).click()
+    await expect(page).toHaveURL(/\/todo$/)
+    const b = await page.locator('.views').boundingBox()
+    expect(Math.abs((a?.x ?? 0) - (b?.x ?? -1))).toBeLessThan(1)
+  }
+})
+
+test('상단 막대는 전체 폭이고 .wrap 밖에 있다', async ({ page }) => {
+  await mockApi(page, 'normal')
+  await page.setViewportSize({ width: 1440, height: 800 })
+  await page.goto('/morning-signal')
+  const box = await page.locator('header.top').boundingBox()
+  expect(Math.round(box?.width ?? 0)).toBe(1440)
+  await expect(page.locator('.wrap header.top')).toHaveCount(0)
+})
+
+test('스크롤해도 상단 막대가 화면 맨 위에 붙어 있다', async ({ page }) => {
+  await mockApi(page, 'normal')
+  for (const width of [1440, 375]) {
+    await page.setViewportSize({ width, height: 800 })
+    await page.goto('/morning-signal')
+    await expect(page.locator('header.top')).toBeVisible()
+    await page.mouse.wheel(0, 900)
+    await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(100)
+    await expect
+      .poll(async () => Math.abs((await page.locator('header.top').boundingBox())?.y ?? 99))
+      .toBeLessThanOrEqual(1)
+  }
+})
+
+test('날짜 이동은 상단 막대 오른쪽 칸 안에 있다', async ({ page }) => {
+  await mockApi(page, 'normal')
+  await page.goto('/morning-signal')
+  await expect(page.locator('.top-slot .datenav')).toBeVisible()
+  await expect(page.locator('.ptitle')).toHaveCount(0)
+  await expect(page.locator('.rail')).toHaveCount(0)
+})
+
+test('375px: 날짜 칸 글자와 「최신」이 잘리지 않고 화면 안에 있다', async ({ page }) => {
+  await mockApi(page, '1119')
+  await page.setViewportSize({ width: 375, height: 812 })
+  await page.goto('/morning-signal')
+  const label = page.locator('.datenav .cur')
+  await expect(label.locator('.t')).toHaveText('11월 19일 (목)')
+  await expect(label.getByText('최신')).toBeVisible()
+  const fit = await label.evaluate((el) => ({ sw: el.scrollWidth, cw: el.clientWidth }))
+  expect(fit.sw).toBeLessThanOrEqual(fit.cw)
+  const nav = await page.locator('.datenav').boundingBox()
+  expect((nav?.x ?? 0) + (nav?.width ?? 999)).toBeLessThanOrEqual(375 - 16)
+})
+
+test('1440px: 상단 막대 가장자리가 카드 가장자리와 같고 본문 폭은 시안 1320', async ({ page }) => {
+  await mockApi(page, '1119')
+  await page.setViewportSize({ width: 1440, height: 900 })
+  await page.goto('/morning-signal')
+  await expect(page.locator('.ms-grid > .p')).toHaveCount(5)
+  const grid = await page.locator('.ms-grid').boundingBox()
+  const brand = await page.locator('.top .brand').boundingBox()
+  const nav = await page.locator('.top .datenav').boundingBox()
+  // 시안 .wrap max-width 1320 − 좌우 여백 16 × 2
+  expect(Math.round(grid?.width ?? 0)).toBe(1288)
+  expect(Math.round(brand?.x ?? -1)).toBe(Math.round(grid?.x ?? 0))
+  expect(Math.round((nav?.x ?? 0) + (nav?.width ?? 0))).toBe(
+    Math.round((grid?.x ?? 0) + (grid?.width ?? 0))
   )
-const railRowY = async (page: Page, name: RegExp) => {
-  const b = await page.locator('.rail').getByRole('link', { name }).boundingBox()
-  return (b?.y ?? 0) + (b?.height ?? 0) / 2
-}
-
-test('header row is gone and title shows the view', async ({ page }) => {
-  await mockApi(page, 'normal')
-  await page.goto('/morning-signal')
-  await expect(page.locator('header.top')).toHaveCount(0)
-  await expect(page.locator('.ptitle h1')).toHaveText('News')
-  await expect(page.getByText('10월 19일 (월) · 08:03 KST 갱신')).toBeVisible()
 })
 
-test('rail collapsed then opens on hover', async ({ page }) => {
+test('상단 막대: 로고·이름·보기 전환에 현재 화면 표시', async ({ page }) => {
   await mockApi(page, 'normal')
   await page.goto('/morning-signal')
-  const y = await railRowY(page, /News/)
-  expect(await hitRail(page, 150, y)).toBe(false)
-  await page.mouse.move(28, y)
-  await expect.poll(() => hitRail(page, 150, y), { timeout: 3000 }).toBe(true)
-  await expect(page.locator('.rail').getByRole('link', { name: /News/ })).toContainText('24')
+  await expect(page.locator('header.top .brand .bn')).toHaveText('Morning Signal')
+  const nav = page.locator('header.top').getByRole('navigation', { name: '보기 전환' })
+  await expect(nav.getByRole('link', { name: 'NEWS' })).toHaveAttribute('aria-current', 'page')
+  await nav.getByRole('link', { name: 'TO-DO' }).click()
+  await expect(nav.getByRole('link', { name: 'TO-DO' })).toHaveAttribute('aria-current', 'page')
 })
 
-test('brushing past the rail does not open it', async ({ page }) => {
+test('휴대폰: 스크롤 뒤에도 하단 탭 바가 화면 아래에 있다', async ({ page }) => {
   await mockApi(page, 'normal')
+  await page.setViewportSize({ width: 375, height: 812 })
   await page.goto('/morning-signal')
-  const y = await railRowY(page, /News/)
-  // 레일 위(28)를 지나 바로 본문(700)으로 — 두 이동을 같은 작업에서 보내 부하와 무관하게 0.12초 안에 빠져나가게 한다
-  await page.evaluate(
-    ([yy]) => {
-      for (const x of [28, 700])
-        document.dispatchEvent(
-          new PointerEvent('pointermove', {
-            clientX: x,
-            clientY: yy,
-            pointerType: 'mouse',
-            bubbles: true,
-          })
-        )
-    },
-    [y]
+  await expect(page.locator('.tabbar')).toBeVisible()
+  await page.mouse.wheel(0, 900)
+  await expect
+    .poll(async () => {
+      const box = await page.locator('.tabbar').boundingBox()
+      return Math.round((box?.y ?? 0) + (box?.height ?? 0))
+    })
+    .toBe(812)
+  expect(await page.locator('.top').evaluate((el) => getComputedStyle(el).backdropFilter)).toBe(
+    'none'
   )
-  await page.waitForTimeout(450) // 고정 대기: 부재 확인 — 그 사이 레일이 열리지 않는다
-  await expect(page.locator('.rail')).not.toHaveClass(/open/)
-  expect(await hitRail(page, 150, y)).toBe(false)
-})
-
-test('keyboard focus opens the rail and Escape closes it', async ({ page }) => {
-  await mockApi(page, 'normal')
-  await page.goto('/morning-signal')
-  const y = await railRowY(page, /News/)
-  await page.keyboard.press('Tab')
-  await expect(page.locator('.rail').locator(':focus')).toHaveCount(1)
-  // 펼침·접힘은 clip-path 전환(0.3s·0.2s)이라 병렬 실행 부하에선 고정 대기가 모자란다 — 그 상태가 될 때까지 기다린다
-  await expect.poll(() => hitRail(page, 150, y), { timeout: 3000 }).toBe(true)
-  await page.keyboard.press('Escape')
-  await expect(page.locator('.rail')).not.toHaveClass(/open/)
-  await expect.poll(() => hitRail(page, 150, y), { timeout: 3000 }).toBe(false)
-})
-
-test('rail link navigates with aria-current and stays open while hovered', async ({ page }) => {
-  await mockApi(page, 'normal')
-  await page.goto('/morning-signal')
-  const nav = page.locator('.rail').getByRole('navigation', { name: '보기 전환' })
-  await expect(nav.getByRole('link', { name: /News/ })).toHaveAttribute('aria-current', 'page')
-  const y = await railRowY(page, /TO-DO/)
-  await page.mouse.move(28, y)
-  // 다 펼쳐진 뒤에 이름표 자리(x 150)를 누른다 — 병렬 부하에선 고정 대기가 모자란다
-  await expect.poll(() => hitRail(page, 150, y), { timeout: 3000 }).toBe(true)
-  await page.mouse.click(150, y)
-  await expect(page).toHaveURL(/\/morning-signal\/todo$/)
-  await expect(nav.getByRole('link', { name: /TO-DO/ })).toHaveAttribute('aria-current', 'page')
-  // 라우트 이동은 View Transition 이라 전환이 끝나기 전엔 elementFromPoint 가 전환 레이어를 집는다 — 끝날 때까지 기다린다
-  await expect(page.locator('.rail')).toHaveClass(/open/)
-  await expect.poll(() => hitRail(page, 150, y), { timeout: 3000 }).toBe(true)
-  await page.mouse.move(900, 500)
-  await expect.poll(() => hitRail(page, 150, y), { timeout: 3000 }).toBe(false)
-})
-
-test('reduced motion opens the rail at once', async ({ page }) => {
-  await page.emulateMedia({ reducedMotion: 'reduce' })
-  await mockApi(page, 'normal')
-  await page.goto('/morning-signal')
-  const y = await railRowY(page, /News/)
-  await page.mouse.move(28, y)
-  // 「바로」는 시계 시간 대신 전환 길이로 본다(부하에 따라 렌더 시각이 흔들린다): 머묾 지연·clip-path 전환이 없어야 한다
-  await expect(page.locator('.rail')).toHaveClass(/open/, { timeout: 1000 })
-  const dur = await page.evaluate(
-    () => getComputedStyle(document.querySelector('.rail-in') as Element).transitionDuration
-  )
-  expect(Number.parseFloat(dur)).toBeLessThan(0.01)
-  await expect.poll(() => hitRail(page, 150, y), { timeout: 1000 }).toBe(true)
 })
 
 // ── 배경·날짜 — 파형·출발판을 빼고 원래대로(2026-11-05 후속 「정신 없다」) ───────────────
 
-test('background is the static grid, not animated waves', async ({ page }) => {
+test('background is the static aurora, not animated waves', async ({ page }) => {
   await mockApi(page, 'normal')
   await page.goto('/morning-signal')
-  await expect(page.locator('.ms .grid-bg')).toHaveCount(1)
+  await expect(page.locator('.ms .aurora')).toHaveCount(1)
   await expect(page.locator('.ms .ms-waves')).toHaveCount(0)
-  await expect(page.locator('.ms .grid-bg canvas, .ms > canvas')).toHaveCount(0)
+  await expect(page.locator('.ms > canvas')).toHaveCount(0)
 })
 
 test('date label is plain text and changes at once', async ({ page }) => {
@@ -397,78 +355,120 @@ test('rapid date clicks settle on the last date', async ({ page }) => {
   await expect(dateBtn(page).locator('.t')).toHaveText('10월 14일 (수)')
 })
 
-// ── 목록 빨간 칩 전류(FE 높음·FE 주목) — 도넛 카드 전류의 작은 판, SVG 필터 하나를 함께 쓴다 ──
+// ── NEWS 격자와 카드(B안 §4 · 시안 11월 19일 데이터) ─────────────────────────────────
 
-/** 목록 칩 상태 — 빨간 칩 수, 전류 필터(#ms-zap)가 걸린 칩 수, 테두리 고리가 있는 빨간 칩 수 */
-const zapState = (page: Page) =>
-  page.evaluate(() => {
-    const chips = [...document.querySelectorAll('.ms .list .item .chip')]
-    const high = chips.filter((c) => c.classList.contains('h'))
-    const zapped = chips.filter((c) => getComputedStyle(c, '::after').filter.includes('ms-zap'))
-    return {
-      filters: document.querySelectorAll('#ms-zap').length,
-      anim: document.querySelectorAll('#ms-zap animate').length,
-      high: high.length,
-      zapped: zapped.length,
-      onlyHigh: zapped.every((c) => c.classList.contains('h')),
-      // Tailwind preflight 가 모든 ::after 에 `border: 0 solid` 를 주므로 굵기와 content 로 본다
-      ring: high.filter((c) => {
-        const a = getComputedStyle(c, '::after')
-        return a.content !== 'none' && Number.parseFloat(a.borderTopWidth) > 0
-      }).length,
-      canvases: document.querySelectorAll('.ms .list canvas').length,
-    }
+test.describe('NEWS 격자 (11/19)', () => {
+  test.beforeEach(async ({ page }) => {
+    await mockApi(page, '1119')
   })
 
-test('FE high chips in AI and GitHub lists get the electric ring', async ({ page }) => {
-  await mockApi(page, 'normal')
-  await page.goto('/morning-signal')
-  await expect(page.locator('.ms .list .item').first()).toBeVisible()
-  const ai = await zapState(page)
-  expect(ai).toMatchObject({ filters: 1, high: 2, zapped: 2, onlyHigh: true, canvases: 0 })
-  expect(ai.anim).toBeGreaterThan(0)
-  // 시사·경제·상식은 FE 영향도가 없다(분류 칩뿐)
-  await page.getByRole('tab', { name: /시사·경제·상식/ }).click()
-  await expect.poll(async () => (await zapState(page)).high).toBe(0)
-  expect((await zapState(page)).zapped).toBe(0)
-  // GitHub 는 FE 주목 2건
-  await page.getByRole('tab', { name: /GitHub/ }).click()
-  await expect.poll(async () => (await zapState(page)).zapped).toBe(2)
-  expect((await zapState(page)).onlyHigh).toBe(true)
+  test('1행 카드는 위·아래 끝이 같고 제목 시작점이 같다', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 })
+    await page.goto('/morning-signal')
+    await expect(page.locator('.ms-grid > .p')).toHaveCount(5)
+    const boxes = await page.locator('.ms-grid > .p').evaluateAll((els) =>
+      els.slice(0, 3).map((el) => {
+        const r = el.getBoundingClientRect()
+        const h = (el.querySelector('h2') as HTMLElement).getBoundingClientRect()
+        return {
+          t: Math.round(r.top),
+          b: Math.round(r.bottom),
+          ht: Math.round(h.top - r.top),
+          hl: Math.round(h.left - r.left),
+        }
+      })
+    )
+    expect(boxes).toHaveLength(3)
+    expect(new Set(boxes.map((x) => `${x.t}/${x.b}/${x.ht}/${x.hl}`)).size).toBe(1)
+  })
+
+  test('소식 탭은 AI · World · GitHub, 처음엔 AI', async ({ page }) => {
+    await page.goto('/morning-signal')
+    await expect(page.getByRole('tab')).toHaveText(['AI 3', 'World 5', 'GitHub 15'])
+    await expect(page.getByRole('tab', { name: /^AI/ })).toHaveAttribute('aria-selected', 'true')
+  })
+
+  test('오늘의 한 줄 World 칸을 누르면 소식이 World로 바뀐다', async ({ page }) => {
+    await page.goto('/morning-signal')
+    await page.locator('.tops [data-theme="world"]').click()
+    await expect(page.getByRole('tab', { name: /^World/ })).toHaveAttribute('aria-selected', 'true')
+    await expect(page.locator('.lines > li')).toHaveCount(5)
+  })
+
+  test('줄 오른쪽 정보 — AI는 FE 영향, World는 분야, GitHub는 ★ 또는 FE 높음 칩', async ({
+    page,
+  }) => {
+    await page.goto('/morning-signal')
+    await expect(page.locator('.lines > li').first().locator('.m')).toHaveText('FE 중간')
+    await page.getByRole('tab', { name: /^World/ }).click()
+    await expect(page.locator('.lines > li').first().locator('.m')).toHaveText('시사·국제')
+    await page.getByRole('tab', { name: /^GitHub/ }).click()
+    await expect(page.locator('.lines > li').first().locator('.m')).toHaveText('★ 9,163')
+    await expect(page.locator('.lines > li').nth(4).locator('.chip.h')).toHaveText('FE 높음')
+  })
+
+  test('챙길 것은 수능(오늘)과 Anthropic 상장(예정)', async ({ page }) => {
+    await page.goto('/morning-signal')
+    const rows = page.locator('[data-area="alert"] .rows > li')
+    await expect(rows).toHaveCount(2)
+    await expect(rows.first()).toContainText('수능')
+    await expect(rows.first().locator('.chip')).toHaveText('오늘')
+    await expect(rows.nth(1).locator('.chip')).toHaveText('예정')
+  })
+
+  test('오늘의 구성은 23건, FE에 쓸 레포는 오늘 별 많은 순 3개', async ({ page }) => {
+    await page.goto('/morning-signal')
+    await expect(page.locator('[data-area="mix"] .cnt.big')).toHaveText('23건')
+    await expect(page.locator('[data-area="mix"] .meter b')).toHaveText(['3', '8', '7'])
+    await expect(page.locator('.picks .pk-h a')).toHaveText([
+      'dream-num/univer',
+      'ag-ui-protocol/ag-ui',
+      'sveltejs/svelte',
+    ])
+  })
+
+  test('375px에서 가로 스크롤이 없다', async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 812 })
+    await page.goto('/morning-signal')
+    await expect(page.locator('.ms-grid > .p')).toHaveCount(5)
+    await page.getByRole('tab', { name: /^GitHub/ }).click()
+    await expect(page.locator('.lines > li')).toHaveCount(15)
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(375)
+  })
+
+  test('FE 높음 칩 고리는 화면에 들어온 카드(.live)에서만 돈다', async ({ page }) => {
+    // 휴대폰 1열에서 FE에 쓸 레포 카드는 맨 아래라 처음엔 화면 밖이다
+    await page.setViewportSize({ width: 375, height: 812 })
+    await page.goto('/morning-signal')
+    const card = page.locator('[data-area="trend"]')
+    const chip = card.locator('.chip.h').first()
+    await expect(chip).toBeAttached()
+    await expect(card).not.toHaveClass(/\blive\b/)
+    await chip.scrollIntoViewIfNeeded()
+    await expect(card).toHaveClass(/\blive\b/)
+    await expect
+      .poll(() => chip.evaluate((el) => getComputedStyle(el, '::after').animationPlayState))
+      .toBe('running')
+    await page.evaluate(() => window.scrollTo(0, 0))
+    await expect(card).not.toHaveClass(/\blive\b/)
+  })
 })
 
-test('reduced motion keeps a still red ring on FE high chips', async ({ page }) => {
-  await page.emulateMedia({ reducedMotion: 'reduce' })
-  await mockApi(page, 'normal')
+test('highlight가 제목에 없으면 강조 없이 그린다', async ({ page }) => {
+  await mockApi(page, '1119', { day: { highlight: '없는 구절' } })
   await page.goto('/morning-signal')
-  await expect(page.locator('.ms .list .item').first()).toBeVisible()
-  expect(await zapState(page)).toMatchObject({ high: 2, zapped: 0, ring: 2 })
+  await expect(page.locator('.headline')).toHaveText(
+    'APEC 정상들은 선전에, 코스피는 다시 5,000선 위로'
+  )
+  await expect(page.locator('.headline mark')).toHaveCount(0)
 })
 
-// ── FE 높음 경고 전류 테두리(react-bits ElectricBorder) — 도넛 카드, 설계 §4-2·§6.2 ──
-
-test('electric border wraps the donut card when FE high exists', async ({ page }) => {
-  await mockApi(page, 'normal')
+test('GitHub 집계 전 — 첫 소식 칸은 「아직 없음」, FE에 쓸 레포는 빈 상태', async ({ page }) => {
+  await mockApi(page, '1119-nogh')
   await page.goto('/morning-signal')
-  const wrap = page.locator('.bento .ms-electric')
-  await expect(wrap).toHaveCount(1)
-  await expect(wrap.locator('canvas')).toHaveCount(1)
-  await expect(wrap.getByRole('heading', { name: 'AI · FE 영향도' })).toBeVisible()
-})
-
-test('no electric border on a day without FE high', async ({ page }) => {
-  await mockApi(page, 'noai')
-  await page.goto('/morning-signal')
-  await expect(page.getByRole('heading', { name: 'AI · FE 영향도' })).toBeVisible()
-  await expect(page.locator('.bento .ms-electric')).toHaveCount(0)
-})
-
-test('electric border does not cause horizontal scroll at 375px', async ({ page }) => {
-  await page.setViewportSize({ width: 375, height: 812 })
-  await mockApi(page, 'normal')
-  await page.goto('/morning-signal')
-  await expect(page.locator('.bento .ms-electric canvas')).toHaveCount(1)
-  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(375)
+  await expect(page.locator('.tops [data-theme="gh"] .tt')).toHaveText('아직 없음')
+  await expect(page.getByText('오늘은 FE 영향이 높은 레포가 없어요', { exact: true })).toBeVisible()
+  await expect(page.getByRole('tab', { name: /^GitHub/ }).locator('em')).toHaveText('수집 실패')
 })
 
 // ── 신호 수신 중(react-bits LatticeLoader) — 첫 로딩, 설계 §6.2 ───────────────────
@@ -482,24 +482,12 @@ test('shows the lattice loader while news loads', async ({ page }) => {
   await expect(loader).toContainText('신호 수신 중')
   await expect(loader.locator('.lattice-loader__cell').first()).toBeVisible()
   await expect(loader).toBeHidden({ timeout: 5000 })
-  await expect(page.locator('#k-total, .kpi').first()).toBeVisible()
+  await expect(page.locator('.ms-grid')).toBeVisible()
 })
 
 // ── 리뷰 지적: 보기 전환이 레일·탭 바·배경을 다시 마운트하지 않는다(레이아웃 라우트) ─────────────
 
-/** 라우트가 바뀌는 순간(aria-current 가 TO-DO 로 넘어간 첫 프레임)의 선택 표시 애니메이션 수 */
-const indicatorAnimsOnSwitch = (page: Page) =>
-  page.waitForFunction(
-    () => {
-      const a = document.querySelector('.rail a[aria-current="page"]')
-      if (!a?.textContent?.includes('TO-DO')) return false
-      return { anims: document.querySelector('.rind')?.getAnimations().length ?? 0 }
-    },
-    null,
-    { polling: 'raf', timeout: 5000 }
-  )
-
-test('rail indicator slides to the new view and the shell stays mounted', async ({ page }) => {
+test('the shell stays mounted when switching views', async ({ page }) => {
   await page.addInitScript(() => {
     const w = window as unknown as { __vt: number }
     w.__vt = 0
@@ -512,18 +500,15 @@ test('rail indicator slides to the new view and the shell stays mounted', async 
   })
   await mockApi(page, 'normal')
   await page.goto('/morning-signal')
-  await expect(page.locator('.ms .grid-bg')).toHaveCount(1)
+  await expect(page.locator('.ms .aurora')).toHaveCount(1)
   await page.evaluate(() => {
-    ;(document.querySelector('.ms .grid-bg') as HTMLElement & { __keep?: number }).__keep = 1
+    ;(document.querySelector('.ms .aurora') as HTMLElement & { __keep?: number }).__keep = 1
   })
-  const y = await railRowY(page, /TO-DO/)
-  await page.mouse.click(28, y)
-  const r = await (await indicatorAnimsOnSwitch(page)).jsonValue()
-  expect((r as { anims: number }).anims).toBeGreaterThan(0)
+  await page.locator('.views').getByRole('link', { name: 'TO-DO' }).click()
   await expect(page).toHaveURL(/\/morning-signal\/todo$/)
   expect(
     await page.evaluate(
-      () => (document.querySelector('.ms .grid-bg') as HTMLElement & { __keep?: number })?.__keep
+      () => (document.querySelector('.ms .aurora') as HTMLElement & { __keep?: number })?.__keep
     )
   ).toBe(1)
   expect(await page.evaluate(() => (window as unknown as { __vt: number }).__vt)).toBeGreaterThan(0)
@@ -543,8 +528,225 @@ test('reduced motion switches views without a view transition', async ({ page })
   })
   await mockApi(page, 'normal')
   await page.goto('/morning-signal')
-  const y = await railRowY(page, /TO-DO/)
-  await page.mouse.click(28, y)
+  await page.locator('.views').getByRole('link', { name: 'TO-DO' }).click()
   await expect(page).toHaveURL(/\/morning-signal\/todo$/)
   expect(await page.evaluate(() => (window as unknown as { __vt: number }).__vt)).toBe(0)
+})
+
+// ── 레포를 TO-DO에 담기(Task 6) ─────────────────────────────────────────
+test.describe('FE에 쓸 레포 → TO-DO', () => {
+  const add = (page: Page) => page.locator('.picks [aria-label="TO-DO에 담기"]').first()
+  const UNIVER = 'https://github.com/dream-num/univer'
+
+  test.beforeEach(async ({ page }) => {
+    await mockApi(page, '1119')
+  })
+
+  test('잠긴 상태에서 담기 → PIN → 담김', async ({ page }) => {
+    const state = await mockTodoApi(page)
+    await page.goto('/morning-signal')
+    await expect(add(page)).toHaveAttribute('aria-pressed', 'false')
+    await add(page).click()
+    await expect(page.locator('#pinDlg')).toBeVisible()
+    await expect(page.locator('#pinDlg')).toContainText('PIN을 입력하세요')
+    await page.keyboard.type('1234')
+    await expect(page.locator('#pinDlg')).toBeHidden()
+    await expect(add(page)).toHaveAttribute('aria-pressed', 'true')
+    await expect(page.getByRole('status')).toContainText('TO-DO에 담았어요')
+    expect(state.todos[0]).toMatchObject({
+      title: 'dream-num/univer',
+      link: UNIVER,
+      status: 'todo',
+    })
+    expect(state.creates).toBe(1)
+  })
+
+  test('풀려 있으면 PIN 없이 바로 담고, 다시 눌러도 더 담지 않는다', async ({ page }) => {
+    const state = await mockTodoApi(page, { unlocked: true })
+    await page.goto('/morning-signal')
+    await add(page).click()
+    await expect(add(page)).toHaveAttribute('aria-pressed', 'true')
+    await expect(page.locator('#pinDlg')).toHaveCount(0)
+    await add(page).click()
+    expect(state.creates).toBe(1)
+  })
+
+  test('PIN이 틀리면 창 안에 오류', async ({ page }) => {
+    await mockTodoApi(page)
+    await page.goto('/morning-signal')
+    await add(page).click()
+    await page.keyboard.type('0000')
+    await expect(page.locator('#pinDlg [role="alert"]')).toContainText('PIN이 맞지 않아요')
+    await expect(page.locator('#pinDlg')).toBeVisible()
+  })
+
+  test('잠금 상태(429)면 창 안에 남은 시간', async ({ page }) => {
+    await mockTodoApi(page, { locked: true })
+    await page.goto('/morning-signal')
+    await add(page).click()
+    await expect(page.locator('#pinDlg')).toContainText('남음')
+    await expect(page.locator('#pinDlg input')).toBeDisabled()
+  })
+
+  test('PIN 창을 닫으면 담기가 취소된다', async ({ page }) => {
+    await page.clock.install()
+    const state = await mockTodoApi(page)
+    await page.goto('/morning-signal')
+    await add(page).click()
+    await expect(page.locator('#pinDlg')).toBeVisible()
+    await page.keyboard.press('Escape')
+    await expect(page.locator('#pinDlg')).toHaveCount(0)
+    // 다른 곳에서 풀린 것처럼 — 세션을 다시 읽게 한다
+    state.unlocked = true
+    const found = page.waitForResponse((r) => r.url().includes('op=find'))
+    // 세션은 60초 동안 신선하다 — 시계를 넘기고 숨김 → 보임으로 다시 읽게 한다
+    await page.clock.fastForward(61_000)
+    await page.evaluate(() => {
+      for (const v of ['hidden', 'visible']) {
+        Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => v })
+        document.dispatchEvent(new Event('visibilitychange', { bubbles: true }))
+      }
+    })
+    await found
+    expect(state.creates).toBe(0)
+    await expect(add(page)).toHaveAttribute('aria-pressed', 'false')
+  })
+
+  test('이미 담은 레포(완료 포함)는 처음부터 ✓', async ({ page }) => {
+    const state = await mockTodoApi(page, {
+      unlocked: true,
+      seed: [makeTodo({ title: 'dream-num/univer', link: UNIVER, status: 'done' })],
+    })
+    await page.goto('/morning-signal')
+    await expect(add(page)).toHaveAttribute('aria-pressed', 'true')
+    await expect(add(page)).toContainText('TO-DO')
+    await add(page).click()
+    expect(state.creates).toBe(0)
+    await expect(page.locator('.picks [aria-label="TO-DO에 담기"]').nth(1)).toHaveAttribute(
+      'aria-pressed',
+      'false'
+    )
+  })
+
+  test('잠긴 채 이미 담은 레포(완료 포함)를 누르고 PIN을 풀면 중복 생성 없이 ✓', async ({
+    page,
+  }) => {
+    const state = await mockTodoApi(page, {
+      seed: [makeTodo({ title: 'dream-num/univer', link: UNIVER, status: 'done' })],
+    })
+    await page.goto('/morning-signal')
+    await expect(add(page)).toHaveAttribute('aria-pressed', 'false')
+    await add(page).click()
+    await page.keyboard.type('1234')
+    await expect(page.locator('#pinDlg')).toBeHidden()
+    await expect(add(page)).toHaveAttribute('aria-pressed', 'true')
+    await expect(page.getByRole('status')).toContainText('이미 TO-DO에 있어요')
+    expect(state.creates).toBe(0)
+  })
+
+  test('저장 실패면 토스트', async ({ page }) => {
+    const state = await mockTodoApi(page, { unlocked: true })
+    state.failNext = { op: 'create', status: 503, error: 'DB_DOWN' }
+    await page.goto('/morning-signal')
+    await add(page).click()
+    await expect(page.getByRole('status')).toContainText('저장하지 못했어요. 다시 시도해 주세요.')
+    await expect(add(page)).toHaveAttribute('aria-pressed', 'false')
+  })
+
+  test('풀려 있으면 마감 임박 할 일이 챙길 것에 붙는다', async ({ page }) => {
+    await page.clock.setFixedTime(new Date('2026-11-19T03:00:00Z'))
+    await mockTodoApi(page, {
+      unlocked: true,
+      seed: [
+        makeTodo({ title: '분기 보고서 제출', dueDate: '2026-11-20' }),
+        makeTodo({ title: '먼 일', dueDate: '2026-11-30' }),
+      ],
+    })
+    await page.goto('/morning-signal')
+    const rows = page.locator('[data-area="alert"] .rows > li')
+    await expect(rows.filter({ hasText: '분기 보고서 제출' })).toHaveCount(1)
+    await expect(rows.filter({ hasText: '먼 일' })).toHaveCount(0)
+  })
+
+  test('잠겨 있으면 PIN을 묻지 않고 마감 항목도 없다', async ({ page }) => {
+    await mockTodoApi(page, {
+      seed: [makeTodo({ title: '분기 보고서 제출', dueDate: '2026-11-19' })],
+    })
+    await page.goto('/morning-signal')
+    await expect(page.locator('[data-area="alert"] .rows > li').first()).toBeVisible()
+    await expect(page.locator('[data-area="alert"]')).not.toContainText('분기 보고서 제출')
+    await expect(page.locator('#pinDlg')).toHaveCount(0)
+  })
+})
+
+// ── 최종 검토 수정 ──────────────────────────────────────────────────────
+test.describe('PIN 창 위치·닫힘', () => {
+  for (const width of [375, 1440]) {
+    test(`${width}px 에서 창이 화면 가운데에 온다`, async ({ page }) => {
+      await page.setViewportSize({ width, height: 900 })
+      await mockApi(page, '1119')
+      await mockTodoApi(page)
+      await page.goto('/morning-signal')
+      await page.locator('.picks [aria-label="TO-DO에 담기"]').first().click()
+      const box = await page.locator('#pinDlg').boundingBox()
+      expect(box).not.toBeNull()
+      const cx = (box?.x ?? 0) + (box?.width ?? 0) / 2
+      const cy = (box?.y ?? 0) + (box?.height ?? 0) / 2
+      expect(Math.abs(cx - width / 2)).toBeLessThanOrEqual(2)
+      expect(Math.abs(cy - 450)).toBeLessThanOrEqual(2)
+      // 카드 안이 아니라 .ms 루트 아래에 있다
+      await expect(page.locator('.ms > #pinDlg')).toHaveCount(1)
+    })
+  }
+
+  test('안쪽 여백을 눌러도 닫히지 않고, 바깥(어두운 영역)을 누르면 닫힌다', async ({ page }) => {
+    await mockApi(page, '1119')
+    await mockTodoApi(page)
+    await page.goto('/morning-signal')
+    await page.locator('.picks [aria-label="TO-DO에 담기"]').first().click()
+    const dlg = page.locator('#pinDlg')
+    const box = await dlg.boundingBox()
+    await page.mouse.click((box?.x ?? 0) + 6, (box?.y ?? 0) + 6)
+    await expect(dlg).toBeVisible()
+    await page.mouse.click(5, 5)
+    await expect(dlg).toHaveCount(0)
+  })
+})
+
+test('하단 TO-DO 배지가 NEWS 에서도 남은 일 수이고, 다시 잠그면 사라진다', async ({ page }) => {
+  await page.setViewportSize({ width: 375, height: 812 })
+  await mockApi(page, '1119')
+  await mockTodoApi(page, {
+    unlocked: true,
+    seed: [makeTodo({ id: 'a' }), makeTodo({ id: 'b' }), makeTodo({ id: 'c', status: 'done' })],
+  })
+  await page.goto('/morning-signal')
+  await expect(page.locator('.tabbar .tab-badge')).toHaveText('2')
+  await page.locator('.tabbar').getByRole('link', { name: 'TO-DO' }).click()
+  await page.getByRole('button', { name: '다시 잠그기' }).click()
+  await page.locator('.tabbar').getByRole('link', { name: 'NEWS' }).click()
+  await expect(page.locator('.tabbar .tab-badge')).toHaveCount(0)
+})
+
+test('눈금이 100건에서도 카드 폭 안에 머문다 (375px)', async ({ page }) => {
+  await page.setViewportSize({ width: 375, height: 812 })
+  await mockApi(page, '1119')
+  const fx = JSON.parse(
+    readFileSync(new URL('./fixtures/day-1119.json', import.meta.url), 'utf8')
+  ) as { day: Record<string, unknown>; feeds: Record<string, unknown> }
+  const base = fx.feeds.ai as { items: unknown[] }
+  const ai = base.items
+  const many = { ...base, items: Array.from({ length: 100 }, (_, i) => ai[i % ai.length]) }
+  await page.route('**/api/morning-signal?date=*', (route) =>
+    route.fulfill({ json: { day: fx.day, feeds: { ...fx.feeds, ai: many } } })
+  )
+  await page.goto('/morning-signal')
+  const card = page.locator('[data-area="mix"]')
+  await expect(card.locator('.ticks').first().locator('i')).toHaveCount(100 + 5 + 15)
+  const c = await card.boundingBox()
+  for (const t of await card.locator('.ticks').all()) {
+    // 컨테이너가 아니라 마지막 칸의 오른쪽 끝을 잰다(칸이 넘쳐도 컨테이너 상자는 카드 안이다)
+    const b = await t.locator('i').last().boundingBox()
+    expect((b?.x ?? 0) + (b?.width ?? 0)).toBeLessThanOrEqual((c?.x ?? 0) + (c?.width ?? 0))
+  }
 })

@@ -1,18 +1,61 @@
 /* /morning-signal 전용 스타일 — 레퍼런스 second-brain .wiki-automation/dashboard/morning-signal.html 6–276행 이식.
-   이식 규칙: 토큰은 html[data-ms-theme] 이 있을 때만(라우트가 마운트 중일 때만) 적용, body → .ms,
+   이식 규칙: 토큰은 html[data-ms-theme](늘 light) 이 있을 때만(라우트가 마운트 중일 때만) 적용, body → .ms,
    나머지 선택자는 .ms 아래로, @keyframes 는 ms- 접두. 개발 보기 전용 규칙(.vsw·.devhead·.devgrid·.devcard·
    .dempty·.crow·.ctype·.sum·.jiras·.jira·.raw)은 뺐다.
-   레이아웃: 헤더(로고·날짜 이동·테마) → KPI 4 → 벤토(한 줄·도넛·카테고리바·바리스트) → 피드
-   팔레트: ui-ux-pro-max Analytics Dashboard(라이트, 기본) / Financial Dashboard(다크). */
+   레이아웃(B안 2026-11-19): 상단 막대(로고·NEWS/TO-DO·날짜 이동) → NEWS 격자(챙길 것 · 오늘의 한 줄 · 오늘의 구성 /
+   소식 · FE에 쓸 레포). 색·크기는 시안(second-brain .wiki-automation/specs/2026-11-19-morning-signal-redesign-mockup) 값. */
 :root[data-ms-theme] {
-  --bg: #f8fafc;
+  /* 밝은 화면 고정(B안) — 시안 base.css 값. 아래 구 이름(--card·--surface-muted·--ink…)은 뒤 태스크가 새 이름으로 옮길 때까지 같은 값으로 이어 둔다 */
+  --bg: #f6f8fc;
+  --panel: #ffffff;
+  --panel2: #f5f8fd;
+  --line: #dbe5f6;
+  --line2: #e8eef8;
+  --fg: #0f172a;
+  --tick: #e3eaf5;
+  --hover: #f1f5fc;
+  --ai: #2563eb;
+  --world: #0891b2;
+  --econ: #7c3aed;
+  --life: #db2777;
+  --gh: #d97706;
+  --hot: #dc2626;
+  --ai-ink: #1d4fd8;
+  --world-ink: #0e7490;
+  --econ-ink: #6d28d9;
+  --life-ink: #be185d;
+  --gh-ink: #92400e;
+  --hot-ink: #b91c1c;
+  --ai-soft: #e7efff;
+  --world-soft: #e0f4f8;
+  --econ-soft: #f1eafe;
+  --life-soft: #fde7f1;
+  --gh-soft: #fdf0dc;
+  --hot-soft: #fde8e8;
+  --ok-soft: #e2f4e8;
+  --navy: #1e3a8a;
+  --on-lead: #ffffff;
+  --lang-ts: #3178c6;
+  --lang-js: #c9a400;
+  --lang-py: #3572a5;
+  --lang-go: #00a5c8;
+  --lang-sh: #5fae2e;
+  --pad: 20px;
+  --gap: 16px;
+  --head: 36px;
+  --r: 16px;
+  --r-sm: 10px;
+  --f-body: "Gothic A1", "Apple SD Gothic Neo", sans-serif;
+  --f-num: "JetBrains Mono", ui-monospace, Menlo, monospace;
+  /* 구 이름 → 새 값 */
   --card: #ffffff;
-  --muted: #e9eef6;
-  --muted-fg: #475569;
+  --surface-muted: #e8eef8;
+  --muted: #52607a;
+  --muted-fg: #52607a;
   --ink: #0f172a;
-  --border: #dbeafe;
-  --primary: #1e40af;
-  --s-ai: #3b82f6;
+  --border: #dbe5f6;
+  --primary: #1e3a8a;
+  --s-ai: #2563eb;
   --s-world: #0891b2;
   --s-gh: #d97706;
   --hi: #dc2626;
@@ -20,39 +63,13 @@
   --low: #94a3b8;
   --ok: #15803d;
   --on-primary: #ffffff;
-  --glow: 0.1;
-  --shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 8px 24px -12px rgba(30, 64, 175, 0.18);
-  --ease: cubic-bezier(0.16, 1, 0.3, 1);
-  --f: "Geist", "IBM Plex Sans KR", system-ui, sans-serif;
-  --fm: "Geist Mono", "IBM Plex Sans KR", ui-monospace, monospace;
+  --shadow: 0 1px 2px rgb(15 23 42 / 0.05), 0 6px 12px -6px rgb(30 64 175 / 0.14);
+  --ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --f: "Gothic A1", "Apple SD Gothic Neo", sans-serif;
+  --fm: "JetBrains Mono", ui-monospace, Menlo, monospace;
   color-scheme: light;
-  /* 레퍼런스는 body 배경이 캔버스로 번진다 — 오버스크롤 영역도 같은 색이 되게 html 에 둔다 */
+  /* 오버스크롤 영역도 같은 색이 되게 html 에 둔다 */
   background: var(--bg);
-}
-:root[data-ms-theme="dark"] {
-  --bg: #020617;
-  --card: #0e1223;
-  --muted: #1a1e2f;
-  --muted-fg: #94a3b8;
-  --ink: #f8fafc;
-  --border: rgba(148, 163, 184, 0.16);
-  --primary: #60a5fa;
-  --s-ai: #60a5fa;
-  --s-world: #22d3ee;
-  --s-gh: #fbbf24;
-  --hi: #ef4444;
-  --mid: #f59e0b;
-  --low: #64748b;
-  --ok: #22c55e;
-  --on-primary: #020617;
-  --glow: 0.16;
-  --shadow: 0 1px 0 rgba(255, 255, 255, 0.03) inset, 0 12px 32px -16px rgba(0, 0, 0, 0.7);
-  color-scheme: dark;
-}
-::view-transition-old(root),
-::view-transition-new(root) {
-  animation: none;
-  mix-blend-mode: normal;
 }
 .ms * {
   box-sizing: border-box;
@@ -63,70 +80,25 @@
   color: var(--ink);
   font: 14px / 1.6 var(--f);
   min-height: 100vh;
-  overflow-x: hidden;
+  overflow-x: clip;
   -webkit-font-smoothing: antialiased;
 }
+/* 정적 배경 — 움직임·blur 없음(iPhone 부담 방지). 시안 base.css 의 radial-gradient 3개 */
 .ms .aurora {
-  position: fixed;
-  inset: -25vmax;
-  pointer-events: none;
-  z-index: 0;
-}
-.ms .aurora i {
-  position: absolute;
-  width: 44vmax;
-  height: 44vmax;
-  border-radius: 50%;
-  /* filter: blur() 를 움직이는 층에 쓰면 iOS Safari 가 매 프레임 다시 흐려서 터치 반응이 몇 초씩 밀린다.
-     흐림은 방사형 그라데이션으로 대신하고, 움직임(transform)만 남긴다. */
-  background: radial-gradient(closest-side, var(--c), transparent);
-  opacity: var(--glow);
-  animation: ms-drift 26s ease-in-out infinite alternate;
-}
-.ms .aurora i:nth-child(1) {
-  --c: var(--s-ai);
-  left: 10%;
-  top: 0;
-}
-.ms .aurora i:nth-child(2) {
-  --c: var(--s-world);
-  right: 6%;
-  top: 26%;
-  animation-duration: 31s;
-  animation-delay: -8s;
-}
-.ms .aurora i:nth-child(3) {
-  --c: var(--s-gh);
-  left: 34%;
-  bottom: 2%;
-  animation-duration: 37s;
-  animation-delay: -14s;
-}
-@keyframes ms-drift {
-  50% {
-    transform: translate(6vmax, -4vmax) scale(1.1);
-  }
-  100% {
-    transform: translate(-5vmax, 5vmax) scale(0.92);
-  }
-}
-.ms .grid-bg {
   position: fixed;
   inset: 0;
   z-index: 0;
   pointer-events: none;
-  background-image:
-    linear-gradient(var(--border) 1px, transparent 1px),
-    linear-gradient(90deg, var(--border) 1px, transparent 1px);
-  background-size: 48px 48px;
-  -webkit-mask-image: radial-gradient(ellipse at 50% 0%, #000 0%, transparent 65%);
-  mask-image: radial-gradient(ellipse at 50% 0%, #000 0%, transparent 65%);
-  opacity: 0.35;
+  background:
+    radial-gradient(46vmax 40vmax at 8% 0%, rgb(37 99 235 / 0.14), transparent 70%),
+    radial-gradient(40vmax 36vmax at 96% 30%, rgb(8 145 178 / 0.12), transparent 70%),
+    radial-gradient(48vmax 34vmax at 42% 104%, rgb(217 119 6 / 0.1), transparent 70%), var(--bg);
 }
 .ms .wrap {
   position: relative;
   z-index: 1;
-  max-width: 1200px;
+  /* 시안 base.css .wrap — 상단 막대(.top-in)와 같은 폭이라 로고·날짜 칸 가장자리가 카드 가장자리와 맞는다 */
+  max-width: 1320px;
   margin: 0 auto;
   padding-block: 22px 64px;
   padding-left: max(16px, env(safe-area-inset-left, 0px));
@@ -143,190 +115,70 @@
   backdrop-filter: blur(12px);
 }
 
-/* 로고(레일·휴대폰 제목 줄 공용) */
+/* 로고 — 시안 B(SVG 30×30) */
 .ms .logo {
-  position: relative;
-  width: 36px;
-  height: 36px;
-  border-radius: 10px;
-  background: var(--card);
-  border: 1px solid var(--border);
-  display: grid;
-  place-items: center;
-  box-shadow: var(--shadow);
+  display: block;
+  width: 30px;
+  height: 30px;
   flex: none;
 }
-.ms .logo span {
-  display: flex;
-  gap: 3px;
-  align-items: end;
-  height: 16px;
-}
-.ms .logo span i {
-  width: 3px;
-  border-radius: 2px;
-  transform-origin: bottom;
-  animation: ms-eq 1.6s ease-in-out infinite;
-}
-.ms .logo span i:nth-child(1) {
-  background: var(--s-ai);
-  height: 40%;
-}
-.ms .logo span i:nth-child(2) {
-  background: var(--s-world);
+.ms .logo svg {
+  display: block;
+  width: 100%;
   height: 100%;
-  animation-delay: -0.4s;
 }
-.ms .logo span i:nth-child(3) {
-  background: var(--s-gh);
-  height: 65%;
-  animation-delay: -0.8s;
-}
-@keyframes ms-eq {
-  50% {
-    transform: scaleY(0.45);
-  }
-}
-.ms .live {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: var(--ok);
-  box-shadow: 0 0 0 0 var(--ok);
-  animation: ms-ping 2s infinite;
-  flex: none;
-}
-.ms .logo .live {
-  position: absolute;
-  right: -3px;
-  top: -3px;
-  width: 10px;
-  height: 10px;
-  border: 2px solid var(--card);
-}
-@keyframes ms-ping {
-  70% {
-    box-shadow: 0 0 0 7px transparent;
-  }
-  100% {
-    box-shadow: 0 0 0 0 transparent;
-  }
-}
-.ms .theme {
-  all: unset;
-  cursor: pointer;
-  width: 40px;
-  height: 40px;
-  border-radius: 12px;
-  display: grid;
-  place-items: center;
-  color: var(--ink);
-  background: var(--card);
-  border: 1px solid var(--border);
-  box-shadow: var(--shadow);
-  transition: transform 0.2s var(--ease);
-  flex: none;
-}
-.ms .theme:hover {
-  transform: rotate(-8deg) scale(1.05);
-}
-.ms .theme:active {
-  transform: scale(0.92);
-}
-.ms .theme:focus-visible {
-  outline: 2px solid var(--primary);
-  outline-offset: 3px;
-}
-.ms .theme svg {
-  width: 20px;
-  height: 20px;
-  overflow: visible;
-}
-.ms .theme .core {
-  transform-origin: 12px 12px;
-  transition: transform 0.6s var(--ease);
-}
-.ms .theme .bite {
-  transition: transform 0.6s var(--ease);
-}
-.ms .theme .rays {
-  transform-origin: 12px 12px;
-  transition:
-    transform 0.6s var(--ease),
-    opacity 0.4s;
-}
-:root[data-ms-theme="dark"] .ms .theme .core {
-  transform: scale(1);
-}
-:root[data-ms-theme="dark"] .ms .theme .bite {
-  transform: translate(0, 0);
-}
-:root[data-ms-theme="dark"] .ms .theme .rays {
-  transform: rotate(-90deg) scale(0.3);
-  opacity: 0;
-}
-:root:not([data-ms-theme="dark"]) .ms .theme .core {
-  transform: scale(0.6);
-}
-:root:not([data-ms-theme="dark"]) .ms .theme .bite {
-  transform: translate(9px, -9px);
-}
-:root:not([data-ms-theme="dark"]) .ms .theme .rays {
-  transform: rotate(0) scale(1);
-  opacity: 1;
-}
-
-/* 날짜 이동 */
+/* 날짜 이동 — 시안 .datenav(알약 · 40px 원형 버튼) */
 .ms .datenav {
   position: relative;
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: 2px;
   padding: 4px;
-  border-radius: 12px;
-  background: var(--card);
-  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--panel);
+  border: 1px solid var(--line);
   box-shadow: var(--shadow);
 }
 .ms .datenav > button {
   all: unset;
   cursor: pointer;
-  height: 32px;
-  min-width: 32px;
+  width: 40px;
+  height: 40px;
   display: grid;
   place-items: center;
-  border-radius: 8px;
-  color: var(--muted-fg);
-  font: 600 18px / 1 var(--f);
+  border-radius: 50%;
+  color: var(--fg);
+  font: 600 18px / 1 var(--f-body);
   transition:
     background 0.2s,
     color 0.2s,
     transform 0.2s var(--ease);
 }
 .ms .datenav > button:hover:not([disabled]) {
-  background: var(--muted);
-  color: var(--ink);
+  background: var(--hover);
 }
 .ms .datenav > button:active:not([disabled]) {
   transform: scale(0.94);
 }
 .ms .datenav > button[disabled] {
-  opacity: 0.35;
+  color: var(--tick);
   cursor: default;
 }
 .ms .datenav > button:focus-visible {
-  outline: 2px solid var(--primary);
+  outline: 2px solid var(--ai);
   outline-offset: 2px;
 }
+/* 날짜 글자 칸 — 버튼이라 위 「.datenav > button」의 40px 폭을 함께 받는다. 시안 .lab(span)처럼 글자 폭을 따르게 푼다 */
 .ms .datenav .cur {
+  width: auto;
   padding: 0 12px;
   display: flex;
   gap: 8px;
   align-items: center;
   overflow: hidden;
-  font: 600 13px / 1 var(--f);
+  font: 800 14px / 1 var(--f);
   color: var(--ink);
-  min-width: 136px;
+  min-width: 138px;
   justify-content: center;
 }
 .ms .datenav .cur .t {
@@ -380,7 +232,7 @@
   font: 600 16px / 1 var(--f);
 }
 .ms .cal .hd button:hover:not([disabled]) {
-  background: var(--muted);
+  background: var(--surface-muted);
   color: var(--ink);
 }
 .ms .cal .hd button[disabled] {
@@ -435,7 +287,7 @@
   opacity: var(--dot, 0);
 }
 .ms .cal .days button:hover:not([disabled]) {
-  background: var(--muted);
+  background: var(--surface-muted);
 }
 .ms .cal .days button.on {
   background: var(--primary);
@@ -473,608 +325,532 @@
 .ms .state span {
   color: var(--muted-fg);
 }
-.ms .content[hidden] {
-  display: none;
-}
-.ms .content {
-  display: grid;
-  gap: 16px;
-}
 
-/* KPI */
-.ms .kpis {
+/* ── NEWS 격자와 카드 — 2026-11-19 B안 §4 · 시안 grid.css · views.css ──
+   격자: 데스크톱 3열(300 | 가변 | 320) · 1행은 같은 높이로 늘이고 2행은 위끝을 맞춘다. 모든 카드 = 안쪽 20 · 제목 줄 36 · 제목 아래 16.
+   격자 클래스는 check:tw 금지어(Tailwind 의 grid 유틸리티)와 겹쳐 ms- 접두. 줄 높이는 시안 본문(normal)을 따른다 — 시안 실측 제목 위 29px · 왼쪽 21px */
+.ms .ms-grid {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 12px;
+  gap: var(--gap);
+  grid-template-columns: 300px minmax(0, 1fr) 320px;
+  grid-template-areas: "alert head mix" "feed feed trend";
+  padding-bottom: 8px;
+  line-height: normal;
+  word-break: keep-all;
+  overflow-wrap: anywhere;
 }
-.ms .kpi {
-  padding: 14px 16px 12px;
-  display: grid;
-  gap: 8px;
-  animation: ms-rise 0.7s var(--ease) both;
-  animation-delay: var(--d);
+.ms .p {
   position: relative;
-  overflow: hidden;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  padding: var(--pad);
+  box-shadow: var(--shadow);
   min-width: 0;
+  /* 오늘의 한 줄 칸에서 소식 카드로 스크롤할 때 붙어 있는 상단 막대에 가리지 않게 */
+  scroll-margin-top: 84px;
 }
-.ms .kpi .lab {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font: 600 12px / 1 var(--f);
-  color: var(--muted-fg);
-}
-.ms .kpi .lab i {
-  width: 8px;
-  height: 8px;
-  border-radius: 2px;
-  flex: none;
-}
-.ms .kchip {
-  margin-left: auto;
-  font: 600 11px / 1 var(--f);
-  padding: 4px 7px;
-  border-radius: 6px;
-  color: var(--hi);
-  background: color-mix(in srgb, var(--hi) 12%, transparent);
-  animation: ms-pop 0.5s var(--ease) both;
-}
-.ms .kchip[hidden] {
-  display: none;
-}
-.ms .kchip.zero {
-  color: var(--mid);
-  background: color-mix(in srgb, var(--mid) 13%, transparent);
-}
-.ms .kpi .row {
-  display: flex;
-  align-items: end;
-  justify-content: space-between;
-  gap: 8px;
-}
-.ms .kpi .num {
-  font: 700 34px / 1 var(--f);
-  letter-spacing: -0.03em;
-  display: flex;
-  align-items: baseline;
-  gap: 4px;
-}
-.ms .kpi .num small {
-  font: 500 13px / 1 var(--f);
-  color: var(--muted-fg);
-  letter-spacing: 0;
-}
-.ms .delta {
-  font: 600 11px / 1 var(--fm);
-  padding: 5px 7px;
-  border-radius: 999px;
-  background: var(--muted);
-  color: var(--muted-fg);
-  display: inline-flex;
-  gap: 4px;
-  align-items: center;
-  animation: ms-pop 0.5s var(--ease) both;
-  animation-delay: calc(var(--d) + 0.5s);
-  white-space: nowrap;
-}
-.ms .delta svg {
-  width: 9px;
-  height: 9px;
-}
-.ms .delta.down svg {
-  transform: rotate(180deg);
-}
-.ms .delta.flat svg {
-  transform: rotate(90deg);
-}
-@keyframes ms-pop {
-  from {
+/* 카드 위 커서 빛 — 정밀 포인터에서만, 색은 아주 옅게 */
+@media (hover: hover) and (pointer: fine) {
+  .ms .p:not(.lead)::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    pointer-events: none;
     opacity: 0;
-    transform: scale(0.6);
+    transition: opacity 0.3s var(--ease);
+    background: radial-gradient(
+      340px circle at var(--mx, 50%) var(--my, 50%),
+      rgb(37 99 235 / 0.07),
+      transparent 60%
+    );
   }
-}
-.ms .spark {
-  width: 100%;
-  height: 36px;
-  display: block;
-  overflow: visible;
-}
-.ms .spark path.l {
-  fill: none;
-  stroke-width: 2;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  stroke-dasharray: var(--len);
-  stroke-dashoffset: var(--len);
-  animation: ms-draw 1.1s var(--ease) forwards;
-  animation-delay: calc(var(--d) + 0.2s);
-}
-.ms .spark path.a {
-  opacity: 0;
-  animation: ms-fade 0.8s ease forwards;
-  animation-delay: calc(var(--d) + 0.6s);
-}
-.ms .spark-wrap {
-  position: relative;
-}
-/* 끝점 — SVG 밖의 진짜 원이라 카드 폭이 달라져도 둥글다(반지름 3.2 + 카드색 테두리 1.5) */
-.ms .spark-dot {
-  position: absolute;
-  box-sizing: content-box;
-  width: 4.9px;
-  height: 4.9px;
-  margin: -3.95px 0 0 -3.95px;
-  border: 1.5px solid var(--card);
-  border-radius: 50%;
-  animation: ms-pulseDot 2s ease-in-out infinite;
-}
-@keyframes ms-draw {
-  to {
-    stroke-dashoffset: 0;
-  }
-}
-@keyframes ms-fade {
-  to {
+  .ms .p:not(.lead):hover::before {
     opacity: 1;
   }
 }
-@keyframes ms-pulseDot {
-  50% {
-    transform: scale(1.6);
-  }
+.ms .p > .ph {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  min-height: var(--head);
+  margin-bottom: 16px;
 }
-.ms .kpi .sub {
-  font: 500 11px / 1.3 var(--f);
-  color: var(--muted-fg);
+.ms .p > .ph h2 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
 }
-@keyframes ms-rise {
-  from {
-    opacity: 0;
-    transform: translateY(16px);
-  }
+.ms .ph .aux {
+  margin-left: auto;
+  font-size: 13px;
+  color: var(--muted);
 }
-
-/* 숫자 롤링 */
-.ms .odo {
-  display: inline-flex;
+.ms .ph .cnt {
+  margin-left: auto;
+  font-family: var(--f-num);
+  font-weight: 700;
+  font-size: 15px;
+}
+.ms .ph .cnt.big {
+  font-size: 28px;
+  line-height: 1;
+  letter-spacing: -0.02em;
+}
+.ms .ph .cnt.big small {
+  font-size: 13px;
+  margin-left: 2px;
+  color: var(--muted);
+  font-family: var(--f-body);
+}
+.ms .top-r {
+  align-self: start;
+}
+.ms .ms-grid .num {
+  font-family: var(--f-num);
   font-variant-numeric: tabular-nums;
 }
-.ms .odo .d {
-  display: inline-block;
-  height: 1em;
-  overflow: hidden;
-  line-height: 1;
-}
-.ms .odo .reel {
-  display: block;
-  transition: transform 1.2s var(--ease);
-}
-.ms .odo .reel i {
-  display: block;
-  height: 1em;
-  font-style: normal;
+.ms .p .empty {
+  margin: 0;
+  padding: 20px 0;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.6;
 }
 
-/* 벤토 */
-.ms .bento {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 12px;
-}
-.ms .panel {
-  padding: 16px;
-  display: grid;
-  gap: 12px;
-  align-content: start;
-  position: relative;
-  overflow: hidden;
-  min-width: 0;
-  animation: ms-rise 0.8s var(--ease) both;
-  animation-delay: var(--d);
-  transform: perspective(1000px) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg));
-  transition: transform 0.5s var(--ease);
-}
-.ms .panel::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  background: radial-gradient(
-    380px circle at var(--mx, 50%) var(--my, 50%),
-    color-mix(in srgb, var(--primary) 12%, transparent),
-    transparent 50%
-  );
-  opacity: 0;
-  transition: opacity 0.3s;
-}
-.ms .panel:hover::after {
-  opacity: 1;
-}
-.ms .panel > h2 {
-  margin: 0;
-  font: 600 13px / 1.2 var(--f);
-  color: var(--muted-fg);
-  display: flex;
+/* 공통 조각 — 칩 */
+.ms .chip {
+  display: inline-flex;
   align-items: center;
-  gap: 8px;
-}
-.ms .panel > h2 i,
-.ms .p-gh .hd h2 i {
-  width: 8px;
-  height: 8px;
-  border-radius: 2px;
-  flex: none;
-}
-/* Tailwind preflight 가 p 의 UA 여백(1em)을 지운다 — 레퍼런스는 기본 여백 그대로였다 */
-.ms .pempty {
-  margin: 1em 0;
-  font-size: 12.5px;
-  color: var(--muted-fg);
-}
-.ms .pempty[hidden] {
-  display: none;
-}
-.ms .p-line {
-  grid-column: span 2;
-  grid-row: span 2;
-  align-content: space-between;
-  padding: 20px;
-}
-.ms .eyebrow {
-  font: 500 12px / 1 var(--fm);
-  color: var(--muted-fg);
-  letter-spacing: 0.04em;
-}
-.ms .panel .line {
-  margin: 0;
-  font: 700 clamp(24px, 2.8vw, 34px) / 1.32 var(--f);
-  letter-spacing: -0.025em;
-  text-wrap: balance;
-  color: var(--ink);
-  display: block;
-}
-.ms .panel .line.none {
-  font-size: 18px;
-  color: var(--muted-fg);
-  font-weight: 600;
-}
-.ms .line .w {
-  display: inline-block;
-  animation: ms-wIn 0.7s var(--ease) both;
-}
-.ms .line .w.out {
-  animation: ms-wOut 0.22s ease-in both;
-}
-@keyframes ms-wIn {
-  from {
-    opacity: 0;
-    transform: translateY(0.55em);
-    filter: blur(6px);
-  }
-}
-@keyframes ms-wOut {
-  to {
-    opacity: 0;
-    transform: translateY(-0.35em);
-    filter: blur(4px);
-  }
-}
-.ms .line mark {
-  color: inherit;
-  background:
-    linear-gradient(
-      90deg,
-      color-mix(in srgb, var(--s-ai) 40%, transparent),
-      color-mix(in srgb, var(--s-world) 35%, transparent)
-    )
-    no-repeat 0 90% / 0% 36%;
-  animation: ms-sweep 0.9s 0.9s var(--ease) forwards;
-  border-radius: 3px;
-}
-@keyframes ms-sweep {
-  to {
-    background-size: 100% 36%;
-  }
-}
-.ms .tops {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: grid;
-  gap: 2px;
-}
-.ms .tops li {
-  display: grid;
-  grid-template-columns: 78px minmax(0, 1fr);
-  gap: 10px;
-  align-items: baseline;
-  padding: 9px 0;
-  border-top: 1px solid var(--border);
-  animation: ms-slideIn 0.6s var(--ease) both;
-  animation-delay: var(--d);
-}
-.ms .tops li b {
-  font: 600 11px / 1 var(--fm);
-  color: var(--k);
-  display: flex;
   gap: 6px;
-  align-items: center;
+  padding: 3px 8px;
+  border-radius: 999px;
+  font-size: 11.5px;
+  font-weight: 700;
+  white-space: nowrap;
+  background: var(--panel2);
+  color: var(--muted);
 }
-.ms .tops li b::before {
-  content: "";
-  width: 6px;
-  height: 6px;
-  border-radius: 2px;
-  background: var(--k);
+.ms .chip.ai {
+  background: var(--ai-soft);
+  color: var(--ai-ink);
 }
-.ms .tops li span {
-  font-size: 14px;
-  line-height: 1.45;
-  min-width: 0;
+.ms .chip.world {
+  background: var(--world-soft);
+  color: var(--world-ink);
 }
-@keyframes ms-slideIn {
-  from {
-    opacity: 0;
-    transform: translateX(-14px);
-  }
+.ms .chip.gh,
+.ms .chip.due {
+  background: var(--gh-soft);
+  color: var(--gh-ink);
 }
-.ms .donut {
+.ms .chip.h {
   position: relative;
-  width: 128px;
-  height: 128px;
-  margin: 0 auto;
+  background: var(--hot-soft);
+  color: var(--hot-ink);
 }
-.ms .donut svg {
-  width: 100%;
-  height: 100%;
-  transform: rotate(-90deg);
-}
-.ms .donut .trk {
-  fill: none;
-  stroke: var(--muted);
-  stroke-width: 11;
-}
-.ms .donut .seg {
-  fill: none;
-  stroke-width: 11;
-  stroke-linecap: butt;
-  transition:
-    stroke-dasharray 1.1s var(--ease),
-    stroke-dashoffset 1.1s var(--ease);
-}
-.ms .donut .ctr {
+/* FE 높음 칩 — 테두리 고리(시안 .chip.hot::after). 기본 정지, 화면에 들어온 카드(.live — useLive)에서만 돈다 */
+.ms .chip.h::after {
+  content: "";
   position: absolute;
   inset: 0;
-  display: grid;
-  place-items: center;
-  text-align: center;
+  border-radius: inherit;
+  border: 1px solid var(--hot);
+  opacity: 0;
+  animation: ms-ring 2.4s ease-out infinite;
+  animation-play-state: paused;
 }
-.ms .donut .ctr b {
-  font: 700 30px / 1 var(--f);
+.ms .live .chip.h::after {
+  animation-play-state: running;
 }
-.ms .donut .ctr small {
-  display: block;
-  font: 500 11px / 1.2 var(--f);
-  color: var(--muted-fg);
-  margin-top: 4px;
+@keyframes ms-ring {
+  0% {
+    opacity: 0.6;
+    transform: scale(1);
+  }
+  70%,
+  100% {
+    opacity: 0;
+    transform: scale(1.3, 1.6);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ms .chip.h::after {
+    animation: none;
+    opacity: 0.45;
+  }
+}
+
+/* 눈금 — 한 칸이 한 건. 카드가 처음 화면에 들어오면(.in) 칸마다 켜진다 */
+.ms .ticks {
+  display: flex;
+  gap: var(--tick-gap, 3px);
+  height: 28px;
+}
+.ms .ticks i {
+  flex: 1 1 0;
+  min-width: 0;
+  border-radius: 2px;
+  background: var(--c, var(--tick));
+  transform-origin: bottom;
+}
+.ms .in .ticks i {
+  animation: ms-tick 0.45s var(--ease) both;
+  animation-delay: calc(var(--i, 0) * 26ms);
+}
+@keyframes ms-tick {
+  from {
+    opacity: 0.15;
+    transform: scaleY(0.35);
+  }
+  to {
+    opacity: 1;
+    transform: scaleY(1);
+  }
 }
 .ms .legend {
+  margin: 14px 0 0;
+  padding: 0;
+  list-style: none;
   display: grid;
-  gap: 6px;
-}
-.ms .legend div {
-  display: grid;
-  grid-template-columns: 10px 1fr auto;
   gap: 8px;
-  align-items: center;
-  font-size: 12.5px;
-  color: var(--muted-fg);
+  font-size: 13px;
 }
-.ms .legend i {
+.ms .legend li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.ms .legend li i {
   width: 10px;
   height: 10px;
   border-radius: 3px;
+  background: var(--c);
 }
-.ms .legend b {
-  font: 600 12px / 1 var(--fm);
-  color: var(--ink);
+.ms .legend li b {
+  margin-left: auto;
+  font-family: var(--f-num);
 }
-.ms .catbar {
-  display: flex;
-  height: 12px;
-  border-radius: 6px;
-  overflow: hidden;
-  gap: 3px;
-  background: var(--muted);
-}
-.ms .catbar span {
-  display: block;
-  height: 100%;
-  border-radius: 3px;
-  transform-origin: left;
-  transform: scaleX(0);
-  transition: transform 0.9s var(--ease);
-}
-.ms .p-gh {
-  grid-column: span 2;
-}
-.ms .p-gh .hd {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-.ms .p-gh .hd h2 {
-  margin: 0;
-  font: 600 13px / 1.2 var(--f);
-  color: var(--muted-fg);
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-.ms .pick {
-  display: flex;
-  gap: 6px;
-  flex-wrap: wrap;
-}
-.ms .pick span {
-  font: 600 11px / 1 var(--fm);
-  padding: 5px 7px;
-  border-radius: 6px;
-  color: var(--hi);
-  background: color-mix(in srgb, var(--hi) 12%, transparent);
-}
-.ms .barlist {
-  position: relative;
-  height: calc(5 * 32px);
-}
-.ms .barlist .empty {
-  position: absolute;
-  inset: 0;
-  display: grid;
-  place-items: center;
-  color: var(--muted-fg);
+.ms .p .sub {
+  margin: 20px 0 12px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line2);
   font-size: 13px;
-  border: 1px dashed var(--border);
-  border-radius: 10px;
+  font-weight: 800;
 }
-.ms .barlist .row {
-  position: absolute;
-  left: 0;
-  right: 0;
-  height: 26px;
+.ms .meter {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 72px;
+  grid-template-columns: 40px minmax(0, 1fr) 24px;
   gap: 10px;
   align-items: center;
-  transition:
-    top 0.9s var(--ease),
-    opacity 0.4s;
+  font-size: 13px;
 }
-.ms .barlist .nm {
-  position: relative;
-  height: 26px;
-  display: flex;
-  align-items: center;
-  padding: 0 9px;
-  font: 500 12.5px / 1 var(--f);
-  white-space: nowrap;
-  overflow: hidden;
-  border-radius: 6px;
+.ms .meter + .meter {
+  margin-top: 10px;
 }
-.ms .barlist .nm .f {
-  position: absolute;
-  inset: 0;
-  border-radius: 6px;
-  background: color-mix(in srgb, var(--s-gh) 28%, transparent);
-  transform-origin: left;
-  transform: scaleX(var(--s, 0));
-  transition: transform 1.1s var(--ease);
+.ms .meter .ticks {
+  height: 14px;
 }
-.ms .barlist .nm span {
-  position: relative;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.ms .barlist .v {
-  font: 600 12px / 1 var(--fm);
+.ms .meter b {
+  font-family: var(--f-num);
   text-align: right;
 }
-.ms .barlist .row.first .nm .f {
-  background: linear-gradient(
-    90deg,
-    color-mix(in srgb, var(--s-gh) 55%, transparent),
-    color-mix(in srgb, var(--s-gh) 22%, transparent)
-  );
-}
-.ms .barlist .row.first .nm .f::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(
-    100deg,
-    transparent 30%,
-    rgba(255, 255, 255, 0.35) 50%,
-    transparent 70%
-  );
-  transform: translateX(-100%);
-  animation: ms-gleam 2.8s 1.4s ease-in-out infinite;
-}
-@keyframes ms-gleam {
-  55%,
-  100% {
-    transform: translateX(100%);
-  }
-}
 
-/* 피드 */
-.ms .feed {
+/* 챙길 것 */
+.ms .rows {
+  margin: 0;
+  padding: 0;
+  list-style: none;
   display: grid;
-  gap: 10px;
+  gap: 8px;
 }
-.ms .seg-tabs {
-  position: relative;
-  display: inline-flex;
-  gap: 2px;
-  padding: 4px;
-  border-radius: 12px;
-  background: var(--muted);
-  width: max-content;
-  max-width: 100%;
-  overflow-x: auto;
-}
-.ms .seg-tabs button {
-  all: unset;
-  cursor: pointer;
-  position: relative;
-  z-index: 1;
-  padding: 8px 14px;
-  border-radius: 9px;
-  font: 600 13px / 1 var(--f);
-  color: var(--muted-fg);
-  display: flex;
-  gap: 7px;
+.ms .rows > li {
+  display: grid;
+  grid-template-columns: 36px minmax(0, 1fr);
+  gap: 2px 12px;
   align-items: center;
-  white-space: nowrap;
-  transition: color 0.25s;
+  padding: 12px;
+  border-radius: var(--r-sm);
+  background: var(--panel2);
+  border: 1px solid var(--line2);
 }
-/* biome-ignore lint/style/noDescendingSpecificity: 달력·날짜 버튼과 다른 요소다 — 규칙 순서는 레퍼런스를 따른다 */
-.ms .seg-tabs button.on {
-  color: var(--ink);
+.ms .ico {
+  box-sizing: content-box;
+  grid-row: span 2;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  color: var(--muted);
 }
-.ms .seg-tabs button:focus-visible {
-  outline: 2px solid var(--primary);
+.ms .ico svg {
+  width: 17px;
+  height: 17px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
-/* biome-ignore lint/style/noDescendingSpecificity: 달력·날짜 버튼과 다른 요소다 — 규칙 순서는 레퍼런스를 따른다 */
-.ms .seg-tabs button em {
-  font: 600 11px / 1 var(--fm);
-  font-style: normal;
-  color: var(--muted-fg);
+.ms .ico.t-ai {
+  background: var(--ai-soft);
+  color: var(--ai-ink);
+  border-color: transparent;
 }
-.ms .seg-tabs button em.bad {
-  color: var(--hi);
+.ms .ico.t-world {
+  background: var(--world-soft);
+  color: var(--world-ink);
+  border-color: transparent;
 }
-.ms .seg-tabs .ind {
-  position: absolute;
-  top: 4px;
-  bottom: 4px;
-  border-radius: 9px;
-  background: var(--card);
-  box-shadow:
-    0 1px 3px rgba(15, 23, 42, 0.12),
-    inset 0 -2px 0 var(--k, var(--s-ai));
-  transition:
-    left 0.45s var(--ease),
-    width 0.45s var(--ease);
+.ms .ico.t-gh {
+  background: var(--gh-soft);
+  color: var(--gh-ink);
+  border-color: transparent;
 }
-.ms .list {
+.ms .ico.t-ok {
+  background: var(--ok-soft);
+  color: var(--ok);
+  border-color: transparent;
+}
+.ms .rows strong {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  font-size: 14px;
+}
+/* 부제는 원본 요약 문단이라 시안의 짧은 문구보다 길다 — 두 줄에서 자른다 */
+.ms .rows .s {
+  font-size: 12.5px;
+  color: var(--muted);
+  line-height: 1.5;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
   overflow: hidden;
 }
-.ms .list.sl {
+
+/* 오늘의 한 줄 — 편집형(남색 큰 제목 + 호박색 짧은 선) + 아래 3칸 「테마별 첫 소식」 */
+.ms .p.lead {
+  display: flex;
+  flex-direction: column;
+}
+.ms .headline {
+  margin: 0;
+  font-size: clamp(24px, 2.4vw, 32px);
+  line-height: 1.28;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  text-wrap: balance;
+}
+.ms .p.lead .headline {
+  color: var(--navy);
+  font-size: clamp(26px, 2.6vw, 36px);
+  line-height: 1.24;
+}
+.ms .p.lead .headline::before {
+  content: "";
+  display: block;
+  width: 40px;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--gh);
+  margin-bottom: 18px;
+}
+.ms .p.lead .headline mark {
+  color: inherit;
+  padding: 0 2px;
+  background: linear-gradient(transparent 60%, rgb(251 191 36 / 0.55) 0);
+}
+.ms .p.lead .headline.none {
+  font-size: 18px;
+  color: var(--muted);
+}
+.ms .tops {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin-top: auto;
+  padding-top: 22px;
+}
+.ms .top-cell {
+  display: grid;
+  gap: 8px;
+  align-content: start;
+  min-height: 44px;
+  padding: 14px 16px 2px;
+  border: 0;
+  border-top: 1px solid var(--line2);
+  background: none;
+  text-align: left;
+  color: inherit;
+  cursor: pointer;
+}
+.ms .top-cell + .top-cell {
+  border-left: 1px solid var(--line2);
+}
+.ms .top-cell:first-child {
+  padding-left: 0;
+}
+.ms .top-cell:focus-visible {
+  outline: 2px solid var(--ai);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+.ms .top-cell .tl {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--muted);
+  letter-spacing: 0.02em;
+}
+.ms .top-cell .tl i {
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  background: var(--c);
+}
+.ms .top-cell .tl b {
+  margin-left: auto;
+  font-weight: 700;
+}
+.ms .top-cell .tt {
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.5;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.ms .top-cell .tt.none {
+  color: var(--muted);
+  font-weight: 600;
+}
+.ms .top-cell:hover .tt {
+  color: var(--ai-ink);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+/* 소식 — 탭(AI · World · GitHub) + 줄 목록 */
+.ms .seg {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-left: auto;
+}
+.ms .seg button {
+  min-height: 36px;
+  padding: 0 12px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.ms .seg button:hover {
+  color: var(--fg);
+}
+.ms .seg button[aria-selected="true"],
+.ms .seg button[aria-pressed="true"] {
+  background: var(--fg);
+  border-color: var(--fg);
+  color: var(--panel);
+}
+.ms .seg button:focus-visible {
+  outline: 2px solid var(--ai);
+  outline-offset: 2px;
+}
+/* biome-ignore lint/style/noDescendingSpecificity: 날짜 칸(.datenav .cur em)과 다른 요소다 */
+.ms .seg button em {
+  font-style: normal;
+}
+/* 수집 실패 · 0건 — 고르지 않은 탭에서만 붉게(고른 탭은 어두운 바탕이라 색을 바꾸지 않는다) */
+.ms .seg button[aria-selected="false"] em.bad {
+  color: var(--hot-ink);
+}
+.ms .lines {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.ms .lines > li {
+  border-top: 1px solid var(--line2);
+}
+.ms .lines > li:first-child {
+  border-top: 0;
+}
+/* 시안은 box-sizing 리셋이 없다 — 최소 높이 48 은 패딩 바깥 값(줄 간격 61px)이라 content-box 로 맞춘다 */
+.ms .lines details > summary {
+  box-sizing: content-box;
+  list-style: none;
+  cursor: pointer;
+  display: grid;
+  grid-template-columns: 72px minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+  min-height: 48px;
+  padding: 6px 8px;
+  border-radius: 8px;
+}
+.ms .lines summary::-webkit-details-marker {
+  display: none;
+}
+.ms .lines summary > .chip {
+  justify-self: start;
+}
+.ms .lines summary:hover {
+  background: var(--hover);
+}
+.ms .lines summary:focus-visible {
+  outline: 2px solid var(--ai);
+  outline-offset: 2px;
+}
+/* biome-ignore lint/style/noDescendingSpecificity: 날짜 칸(.datenav .cur .t)과 다른 요소다 */
+.ms .lines .t {
+  font-size: 14.5px;
+  font-weight: 700;
+  line-height: 1.45;
+}
+.ms .lines .m {
+  font-size: 12.5px;
+  color: var(--muted);
+  white-space: nowrap;
+}
+.ms .lines .more {
+  padding: 4px 8px 16px 92px;
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--muted);
+  max-width: 72ch;
+}
+.ms .lines .more p {
+  margin: 0 0 8px;
+}
+.ms .lines .more b {
+  color: var(--fg);
+}
+/* Tailwind preflight 가 a 의 밑줄을 지운다 — 시안은 기본 밑줄 */
+.ms .lines .more a {
+  color: var(--ai-ink);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+/* 날짜·탭을 옮긴 방향으로 목록이 미끄러진다 */
+.ms .lines.sl {
   animation: ms-slL 0.45s var(--ease);
 }
-.ms .list.sr {
+.ms .lines.sr {
   animation: ms-slR 0.45s var(--ease);
 }
 @keyframes ms-slL {
@@ -1089,142 +865,196 @@
     transform: translateX(30px);
   }
 }
-.ms .list .none {
-  padding: 22px 16px;
-  color: var(--muted-fg);
-  text-align: center;
-}
-.ms .item {
-  border-top: 1px solid var(--border);
-  animation: ms-rise 0.5s var(--ease) both;
-  animation-delay: var(--d);
-}
-.ms .item:first-child {
-  border-top: 0;
-}
-.ms .item > button {
-  all: unset;
-  cursor: pointer;
-  box-sizing: border-box;
-  width: 100%;
-  display: grid;
-  grid-template-columns: 28px minmax(0, 1fr) auto auto 14px;
-  gap: 12px;
-  align-items: center;
-  padding: 12px 16px;
-  transition: background 0.2s;
-}
-.ms .item > button:hover {
-  background: color-mix(in srgb, var(--k) 6%, transparent);
-}
-.ms .item > button:focus-visible {
-  outline: 2px solid var(--k);
-  outline-offset: -2px;
-}
-.ms .item .no {
-  font: 500 12px / 1 var(--fm);
-  color: var(--muted-fg);
-}
-.ms .item .tt {
-  font-weight: 600;
-  font-size: 14px;
-  line-height: 1.45;
-  min-width: 0;
-  overflow-wrap: anywhere;
-}
-.ms .item .tag {
-  display: inline-block;
-  margin-left: 6px;
-  font: 600 11px / 1 var(--f);
-  padding: 3px 6px;
-  border-radius: 5px;
-  color: var(--mid);
-  background: color-mix(in srgb, var(--mid) 13%, transparent);
-  vertical-align: 2px;
-}
-.ms .item .meta {
-  font: 500 12px / 1 var(--fm);
-  color: var(--muted-fg);
-  white-space: nowrap;
-}
-.ms .chip {
-  font: 600 11px / 1 var(--f);
-  padding: 5px 8px;
-  border-radius: 6px;
-  white-space: nowrap;
-  display: inline-flex;
-  gap: 5px;
-  align-items: center;
-}
-.ms .chip::before {
-  content: "";
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: currentColor;
-}
-.ms .chip.h {
-  color: var(--hi);
-  background: color-mix(in srgb, var(--hi) 12%, transparent);
-}
-.ms .chip.m {
-  color: var(--mid);
-  background: color-mix(in srgb, var(--mid) 13%, transparent);
-}
-.ms .chip.l {
-  color: var(--muted-fg);
-  background: var(--muted);
-}
-.ms .chip.c {
-  color: var(--s-world);
-  background: color-mix(in srgb, var(--s-world) 12%, transparent);
-}
-.ms .chev {
-  width: 8px;
-  height: 8px;
-  border-right: 2px solid var(--muted-fg);
-  border-bottom: 2px solid var(--muted-fg);
-  transform: rotate(45deg);
-  transition: transform 0.35s var(--ease);
-}
-.ms .item.open .chev {
-  transform: rotate(225deg);
-}
-.ms .more {
-  display: grid;
-  grid-template-rows: 0fr;
-  transition: grid-template-rows 0.45s var(--ease);
-}
-.ms .item.open .more {
-  grid-template-rows: 1fr;
-}
-.ms .more > div {
-  overflow: hidden;
-}
-.ms .more .in {
-  padding: 0 16px 14px 56px;
-  display: grid;
-  gap: 6px;
-  color: var(--muted-fg);
-  font-size: 13.5px;
-  max-width: 80ch;
-}
-.ms .more .in p {
+
+/* FE에 쓸 레포 */
+.ms .picks {
   margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 10px;
 }
-.ms .more .in strong {
-  color: var(--ink);
-  font-weight: 600;
+.ms .picks li {
+  display: grid;
+  gap: 8px;
+  padding: 14px 16px;
+  border-radius: var(--r-sm);
+  background: var(--panel2);
+  border: 1px solid var(--line2);
 }
-/* Tailwind preflight 가 a 의 UA 밑줄을 지운다 — 레퍼런스는 밑줄이 있었다 */
-.ms .more a {
-  color: var(--k);
-  font: 500 12px / 1.3 var(--fm);
-  overflow-wrap: anywhere;
+.ms .pk-h {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+/* biome-ignore lint/style/noDescendingSpecificity: 소식 펼침 링크(.lines .more a)와 다른 요소다 */
+.ms .pk-h a {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--fg);
+  text-decoration: none;
+}
+.ms .pk-h a:hover {
+  color: var(--ai-ink);
   text-decoration: underline;
 }
+.ms .picks p {
+  margin: 0;
+  font-size: 13.5px;
+  line-height: 1.6;
+  color: var(--muted);
+}
+.ms .pk-f {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 12px;
+  font-size: 12.5px;
+  color: var(--muted);
+}
+.ms .pk-f .up {
+  color: var(--ok);
+  font-weight: 700;
+}
+/* 버튼(시안 grid.css .btn · .btn.ghost) — TO-DO 담기 · PIN 창 · TO-DO 보드 Add 가 같이 쓴다 */
+.ms .btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 36px;
+  padding: 0 14px;
+  border-radius: var(--r-sm);
+  border: 1px solid var(--fg);
+  background: var(--fg);
+  color: var(--panel);
+  font: 700 13px var(--f-body);
+  cursor: pointer;
+}
+.ms .btn.ghost {
+  background: var(--panel);
+  color: var(--fg);
+  border-color: var(--line);
+}
+.ms .btn svg {
+  width: 17px;
+  height: 17px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.ms .btn:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--navy) 45%, transparent);
+  outline-offset: 2px;
+}
+.ms .btn.ghost[aria-pressed="true"] {
+  background: var(--ok-soft);
+  color: var(--ok);
+  border-color: transparent;
+}
+/* TO-DO 담기 버튼(views.css .pk-f .btn) */
+.ms .pk-f .btn {
+  margin-left: auto;
+}
+/* PIN 창(시안 base.css .pin) — 최상위 레이어라 상단 막대까지 덮는다 */
+.ms .pin-dlg {
+  border: 0;
+  border-radius: var(--r);
+  /* Tailwind preflight 의 margin:0 이 UA 기본 margin:auto 를 덮는다 — 가운데로 되돌린다 */
+  margin: auto;
+  padding: 0;
+  width: min(360px, calc(100vw - 32px));
+  background: var(--panel);
+  color: var(--fg);
+  box-shadow: 0 20px 40px -16px rgb(15 23 42 / 0.35);
+}
+.ms .pin-dlg::backdrop {
+  background: rgb(15 23 42 / 0.45);
+}
+.ms .pin-dlg .pin-in {
+  padding: 24px;
+}
+.ms .pin-dlg h2 {
+  margin: 0 0 8px;
+  font-size: 18px;
+  font-weight: 800;
+}
+.ms .pin-dlg .pin-in > p {
+  margin: 0;
+  font-size: 13.5px;
+  line-height: 1.6;
+  color: var(--muted);
+}
+.ms .pin-dlg .pin {
+  margin-top: 4px;
+}
+.ms .pin-dlg .acts {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 16px;
+}
+.ms .pin-dlg .btn {
+  min-height: 44px;
+  padding: 0 16px;
+}
+.ms .lang {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.ms .lang i {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--c);
+}
 
-/* TO-DO 다시 잠그기(레일 아래 · 휴대폰 제목 줄) */
+@media (max-width: 1180px) {
+  .ms .ms-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-areas: "head head" "alert mix" "feed feed" "trend trend";
+  }
+}
+@media (max-width: 760px) {
+  .ms .ms-grid {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas: "head" "alert" "feed" "mix" "trend";
+  }
+  .ms .p {
+    padding: 16px;
+  }
+  .ms .seg {
+    margin-left: 0;
+    width: 100%;
+  }
+  .ms .seg button {
+    min-height: 40px;
+  }
+  .ms .lines details > summary {
+    grid-template-columns: 56px minmax(0, 1fr);
+  }
+  .ms .lines .m {
+    grid-column: 2;
+    white-space: normal;
+  }
+  .ms .lines .more {
+    padding-left: 64px;
+  }
+  .ms .tops {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .ms .top-cell,
+  .ms .top-cell:first-child {
+    padding: 12px 0;
+  }
+  .ms .top-cell + .top-cell {
+    border-left: 0;
+  }
+}
+
+/* TO-DO 다시 잠그기(상단 막대 오른쪽 칸) */
 .ms .lockbtn {
   all: unset;
   cursor: pointer;
@@ -1248,235 +1078,105 @@
   outline-offset: 2px;
 }
 
-/* ── 왼쪽 레일(768px 이상) · 휴대폰 하단 탭 바(768px 미만) · 본문 제목 줄 — 2026-11-05 사이드 레일 설계 §5.2·§5.3·§6.1 ──
-   레일은 늘 56px로 접혀 있고, 마우스를 0.12초 머물거나 키보드로 들어가면 220px로 본문 위에 겹쳐 펼친다(Nav.tsx useRailOpen).
-   폭이 아니라 clip-path 로 드러낸다(레이아웃 불변). 링크 자체는 40×40 이라 접힌 상태에서도 아이콘으로 다 눌린다. */
-.ms {
-  --rail: 56px;
-  --rail-x: 220px;
-}
-.ms .rail {
-  position: fixed;
+/* ── 상단 막대(데스크톱) · 하단 탭 바(≤760px) — 2026-11-19 B안 §4 · 시안 base.css ── */
+.ms .top {
+  position: sticky;
+  top: env(safe-area-inset-top, 0px);
   z-index: 40;
-  inset: 0 auto 0 0;
-  width: var(--rail);
-  transition: filter 0.2s;
-}
-.ms .rail.open {
-  filter: drop-shadow(14px 0 22px rgba(15, 23, 42, 0.16));
-}
-:root[data-ms-theme="dark"] .ms .rail.open {
-  filter: drop-shadow(14px 0 26px rgba(0, 0, 0, 0.55));
-}
-.ms .rail::after {
-  content: "";
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  left: calc(var(--rail) - 1px);
-  width: 1px;
-  background: var(--border);
-  transition: opacity 0.2s;
-}
-.ms .rail.open::after {
-  opacity: 0;
-}
-.ms .rail-in {
-  width: var(--rail-x);
-  height: 100%;
-  padding: 16px 8px;
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-  white-space: nowrap;
-  background: color-mix(in srgb, var(--card) 94%, transparent);
-  -webkit-backdrop-filter: blur(14px);
-  backdrop-filter: blur(14px);
-  border-right: 1px solid var(--border);
-  clip-path: inset(0 calc(var(--rail-x) - var(--rail)) 0 0);
-  transition: clip-path 0.2s var(--ease);
-}
-.ms .rail.open .rail-in {
-  clip-path: inset(0 0 0 0);
-  transition-duration: 0.3s;
-  background: var(--card);
-}
-.ms .rlb {
-  opacity: 0;
-  transform: translateX(-6px);
+  background: transparent;
   transition:
-    opacity 0.15s,
-    transform 0.15s;
+    background 0.2s var(--ease),
+    box-shadow 0.2s var(--ease);
 }
-.ms .rail.open .rlb {
-  opacity: 1;
-  transform: none;
-  transition:
-    opacity 0.25s var(--ease) calc(0.04s + var(--i, 0) * 30ms),
-    transform 0.3s var(--ease) calc(0.04s + var(--i, 0) * 30ms);
+.ms .top.scrolled {
+  background: rgb(246 248 252 / 0.86);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 1px 0 var(--line);
 }
-.ms .rbrand {
+/* 3칸 격자 — 오른쪽(날짜 이동)이 TO-DO 에서 비어도 가운데 탭 자리는 그대로. 폭은 본문(.wrap)과 같은 1320 */
+.ms .top-in {
+  max-width: 1320px;
+  margin: 0 auto;
+  padding-inline: max(16px, env(safe-area-inset-left, 0px))
+    max(16px, env(safe-area-inset-right, 0px));
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: 12px 20px;
+  padding-block: 14px;
+}
+.ms .top-in .brand {
+  justify-self: start;
+}
+.ms .top-slot {
+  justify-self: end;
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding-left: 2px;
-  height: 40px;
+  gap: 8px;
+  min-width: 0;
 }
-.ms .rbrand b {
-  font: 700 15px / 1 var(--f);
-  letter-spacing: -0.02em;
-  color: var(--ink);
+.ms .brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 800;
+  font-size: 16px;
+  letter-spacing: -0.01em;
 }
-.ms .rnav {
-  position: relative;
-  display: grid;
+.ms .brand .bn {
+  margin: 0;
+  font: inherit;
+  letter-spacing: inherit;
+}
+.ms .views {
+  display: flex;
   gap: 4px;
+  padding: 4px;
+  border-radius: 999px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  justify-self: center;
+  box-shadow: var(--shadow);
 }
-.ms .rind {
-  position: absolute;
-  left: 0;
-  top: 0;
-  width: calc(var(--rail-x) - 16px);
-  height: 40px;
-  border-radius: 10px;
-  background: color-mix(in srgb, var(--primary) 12%, transparent);
-  box-shadow: inset 3px 0 0 var(--primary);
-  transition: transform 0.25s var(--ease);
-  pointer-events: none;
-}
-.ms .rnav a {
-  all: unset;
-  box-sizing: border-box;
-  position: relative;
-  cursor: pointer;
-  width: 40px;
-  height: 40px;
-  display: grid;
+.ms .views a {
+  display: inline-grid;
   place-items: center;
-  color: var(--muted-fg);
-  border-radius: 10px;
-  transition:
-    color 0.2s,
-    transform 0.2s var(--ease);
-}
-/* 펼쳤을 때 줄 전체가 눌리고 호버된다(접힌 상태에선 clip 밖이라 안 눌린다) */
-.ms .rnav a::before {
-  content: "";
-  position: absolute;
-  left: 0;
-  top: 0;
-  width: calc(var(--rail-x) - 16px);
-  height: 40px;
-  border-radius: 10px;
-  transition: background 0.2s;
-}
-.ms .rnav a:hover:not(.on)::before {
-  background: var(--muted);
-}
-.ms .rnav a:hover {
-  color: var(--ink);
-}
-.ms .rnav a:active {
-  transform: scale(0.94);
-}
-.ms .rnav a.on {
-  color: var(--primary);
-}
-.ms .rnav a:focus-visible {
-  outline: 2px solid var(--primary);
-  outline-offset: -2px;
-}
-.ms .rnav a svg {
-  position: relative;
-}
-.ms .rnav a .rlb:not(.rcnt) {
-  position: absolute;
-  left: 48px;
-  top: 0;
-  font: 600 13px / 40px var(--f);
+  min-height: 40px;
+  min-width: 76px;
+  padding: 0 16px;
+  box-sizing: border-box;
+  border-radius: 999px;
+  color: var(--muted);
+  text-decoration: none;
+  font-weight: 700;
+  font-size: 13px;
   letter-spacing: 0.02em;
 }
-.ms .rcnt {
-  position: absolute;
-  left: calc(var(--rail-x) - 16px - 10px);
-  top: 11px;
-  translate: -100% 0;
-  font: 600 11px / 1 var(--fm);
-  font-style: normal;
-  padding: 4px 7px;
-  border-radius: 6px;
-  background: var(--muted);
-  color: var(--muted-fg);
-  pointer-events: none;
+.ms .views a:hover {
+  color: var(--fg);
+  background: var(--hover);
 }
-.ms .rnav a.on .rcnt {
-  background: color-mix(in srgb, var(--primary) 16%, transparent);
-  color: var(--primary);
+.ms .views a[aria-current="page"] {
+  background: var(--ai);
+  color: var(--on-lead);
+  box-shadow: 0 6px 16px -6px rgb(37 99 235 / 0.6);
 }
-.ms .rfoot {
-  margin-top: auto;
-  display: grid;
-  gap: 8px;
-  justify-items: start;
+.ms .views a:focus-visible {
+  outline: 2px solid var(--ai);
+  outline-offset: 2px;
 }
-
-/* 본문 제목 줄(예전 헤더 자리) */
-.ms .ptitle {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px 16px;
-  flex-wrap: wrap;
-}
-.ms .pt-row {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  min-width: 0;
-}
-.ms .pt-l {
-  min-width: 0;
-}
-.ms .ptitle h1 {
-  margin: 0;
-  font: 700 22px / 1.15 var(--f);
-  letter-spacing: -0.02em;
-}
-.ms .psub {
-  margin: 4px 0 0;
-  font: 500 12px / 1.2 var(--fm);
-  color: var(--muted-fg);
-  display: flex;
-  align-items: center;
-  gap: 7px;
-}
-.ms .pt-logo,
-.ms .pt-tools {
-  display: none;
-}
-
-/* 하단 탭 바(휴대폰) */
 .ms .tabbar {
   display: none;
 }
 
-/* 보기 전환은 본문만 0.2초 겹쳐 바꾼다(React Router viewTransition 링크). 테마 전환 중에는 이름을 떼어 원형 효과가 본문까지 덮게 한다 */
+/* 보기 전환은 본문만 0.2초 겹쳐 바꾼다(React Router viewTransition 링크). 탭 바는 따로 이름을 붙여 본문 스냅숏에서 뺀다 */
 .ms .wrap {
   view-transition-name: msmain;
-}
-/* 레일·탭 바는 따로 이름을 붙여 본문 스냅숏에서 빼고, 겹침 없이 바로 바꾼다 */
-.ms .rail {
-  view-transition-name: msrail;
 }
 .ms .tabbar {
   view-transition-name: mstab;
 }
-html.vt-theme .ms .wrap,
-html.vt-theme .ms .rail,
-html.vt-theme .ms .tabbar {
-  view-transition-name: none;
-}
-
 /* biome-ignore lint/correctness/noUnknownTypeSelector: msmain 은 view-transition-name 이다(타입 선택자가 아니다) */
 ::view-transition-old(msmain) {
   animation: ms-vt-out 0.14s ease-in both;
@@ -1497,131 +1197,117 @@ html.vt-theme .ms .tabbar {
   }
 }
 
-@media (min-width: 768px) {
-  .ms {
-    padding-left: var(--rail);
-  }
-}
-@media (max-width: 767.98px) {
-  .ms .rail {
-    display: none;
-  }
-  .ms .ptitle .pt-row {
-    flex: 1 1 100%;
-  }
-  .ms .pt-logo {
-    display: block;
-  }
-  .ms .pt-l {
-    flex: 1;
-  }
-  .ms .pt-tools {
+/* 휴대폰: 화면 전환 = 하단 탭 바(엄지 닿는 곳), 날짜 = 상단 막대 오른쪽 */
+@media (max-width: 760px) {
+  .ms .top-in {
     display: flex;
-    gap: 8px;
+    flex-wrap: nowrap;
+    padding-block: 10px;
   }
-  .ms .ptitle h1 {
-    font-size: 19px;
+  .ms .brand {
+    font-size: 15px;
+  }
+  .ms .brand .bn {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+  /* 흐림(backdrop-filter)은 고정 자식의 기준점을 바꿔 하단 탭 바를 머리줄로 끌어올린다 — 휴대폰은 불투명 배경만 */
+  .ms .top.scrolled {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    background: var(--bg);
+  }
+  .ms .top-slot {
+    margin-left: auto;
+  }
+  .ms .datenav .cur {
+    min-width: 0;
+    font-size: 13px;
+    white-space: nowrap;
+    gap: 6px;
+  }
+  .ms .views {
+    display: none;
   }
   .ms .tabbar {
     display: block;
     position: fixed;
-    z-index: 40;
+    z-index: 50;
     left: 0;
     right: 0;
     bottom: 0;
-    background: color-mix(in srgb, var(--card) 94%, transparent);
-    -webkit-backdrop-filter: blur(14px);
-    backdrop-filter: blur(14px);
-    border-top: 1px solid var(--border);
+    background: rgb(255 255 255 / 0.94);
+    -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: blur(12px);
+    border-top: 1px solid var(--line);
+    box-shadow: 0 -4px 12px -8px rgb(15 23 42 / 0.18);
     padding: 6px max(12px, env(safe-area-inset-right, 0px))
       calc(6px + env(safe-area-inset-bottom, 0px)) max(12px, env(safe-area-inset-left, 0px));
   }
   .ms .tabbar nav {
-    position: relative;
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-  }
-  .ms .tind {
-    position: absolute;
-    left: 0;
-    top: 0;
-    width: 50%;
-    height: 100%;
-    border-radius: 12px;
-    background: color-mix(in srgb, var(--primary) 12%, transparent);
-    transition: transform 0.25s var(--ease);
-    pointer-events: none;
+    display: flex;
+    gap: 4px;
   }
   .ms .tabbar a {
     all: unset;
     position: relative;
     cursor: pointer;
+    flex: 1;
+    min-width: 0;
     min-height: 52px;
     display: grid;
     justify-items: center;
     align-content: center;
     gap: 3px;
-    font: 600 11px / 1 var(--f);
-    color: var(--muted-fg);
+    border-radius: 12px;
+    font: 700 11px / 1 var(--f-body);
+    color: var(--muted);
     -webkit-tap-highlight-color: transparent;
     transition:
       color 0.2s,
       transform 0.12s;
   }
+  .ms .tabbar a svg {
+    width: 22px;
+    height: 22px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
   .ms .tabbar a:active {
     transform: scale(0.94);
   }
-  .ms .tabbar a.on {
-    color: var(--primary);
+  .ms .tabbar a[aria-current="page"] {
+    background: var(--ai-soft);
+    color: var(--ai-ink);
   }
   .ms .tabbar a:focus-visible {
-    outline: 2px solid var(--primary);
+    outline: 2px solid var(--ai);
     outline-offset: -2px;
-    border-radius: 12px;
   }
-  /* 탭 바에 마지막 내용이 가리지 않게 */
+  .ms .tab-badge {
+    position: absolute;
+    top: 4px;
+    left: calc(50% + 8px);
+    min-width: 16px;
+    padding: 2px 4px;
+    border-radius: 999px;
+    background: var(--hot);
+    color: #fff;
+    font: 700 10px / 1 var(--f-num);
+    font-style: normal;
+    text-align: center;
+  }
+  /* 탭 바에 마지막 내용이 가리지 않게 — 탭 바 높이(약 64px) + 홈 표시줄 */
   .ms .wrap {
-    padding-bottom: calc(64px + 64px + env(safe-area-inset-bottom, 0px));
+    padding-bottom: calc(64px + 24px + env(safe-area-inset-bottom, 0px));
   }
-}
-
-/* 목록 빨간 칩(FE 높음·FE 주목) 전류 — 도넛 카드 전류의 작은 판.
-   칩마다 캔버스를 띄우지 않고 Shell 의 SVG 필터 #ms-zap 하나를 함께 쓴다(아티팩트판 fx.css 와 같은 값) */
-.ms .ms-defs {
-  position: absolute;
-  width: 0;
-  height: 0;
-  overflow: hidden;
-}
-.ms .list .item .chip.h {
-  position: relative;
-  isolation: isolate;
-}
-.ms .list .item .chip.h::after {
-  content: "";
-  position: absolute;
-  inset: -3px;
-  border: 1.5px solid var(--hi);
-  border-radius: 8px;
-  pointer-events: none;
-  filter: url(#ms-zap) drop-shadow(0 0 3px var(--hi));
-}
-@media (prefers-reduced-motion: reduce) {
-  .ms .list .item .chip.h::after {
-    filter: none;
-    box-shadow: 0 0 6px color-mix(in srgb, var(--hi) 55%, transparent);
-  }
-}
-
-/* FE 높음 경고 전류 테두리 — 감싼 래퍼가 벤토 칸을 대신 차지하고 카드는 그 칸을 꽉 채운다.
-   캔버스가 카드 밖 64px까지 번지므로 벤토에서 가로로만 잘라 가로 스크롤을 막는다 */
-.ms .bento .ms-electric {
-  display: grid;
-  border-radius: 16px;
-  min-width: 0;
-}
-.ms .bento {
-  overflow-x: clip;
 }
 
 /* 신호 수신 중(react-bits LatticeLoader) */
@@ -1641,41 +1327,6 @@ html.vt-theme .ms .tabbar {
   color: var(--muted-fg);
 }
 
-@media (max-width: 1000px) {
-  .ms .kpis {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-  .ms .bento {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
-@media (max-width: 640px) {
-  .ms .ptitle .datenav {
-    flex: 1 1 100%;
-    justify-content: space-between;
-  }
-}
-@media (max-width: 600px) {
-  .ms .kpis,
-  .ms .bento {
-    grid-template-columns: 1fr;
-  }
-  .ms .p-line,
-  .ms .p-gh {
-    grid-column: auto;
-    grid-row: auto;
-  }
-  .ms .item > button {
-    grid-template-columns: 22px minmax(0, 1fr) 14px;
-  }
-  .ms .item .chip,
-  .ms .item .meta {
-    grid-column: 2;
-  }
-  .ms .more .in {
-    padding-left: 16px;
-  }
-}
 @media (prefers-reduced-motion: reduce) {
   .ms *,
   .ms *::before,
@@ -1690,8 +1341,5 @@ html.vt-theme .ms .tabbar {
     animation-delay: 0s !important;
     /* biome-ignore lint/complexity/noImportantStyles: 위와 같은 이유 */
     transition-delay: 0s !important;
-  }
-  .ms .aurora {
-    display: none;
   }
 }

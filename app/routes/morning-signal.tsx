@@ -1,17 +1,24 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { useNavigate } from 'react-router'
 import LatticeLoader from '@/components/react-bits/LatticeLoader'
 import { useMsDay, useMsDays } from '@/hooks/use-morning-signal'
+import { useTodoList, useTodoSession } from '@/hooks/use-morning-signal-todo'
+import type { Theme } from '../../api/morning-signal'
 import type { Route } from './+types/morning-signal'
-import Bento from './morning-signal/Bento'
+import AddToTodo from './morning-signal/AddToTodo'
+import Alerts from './morning-signal/Alerts'
 import Feed from './morning-signal/Feed'
+import FePicks from './morning-signal/FePicks'
 import { DateNav } from './morning-signal/Header'
-import Kpis from './morning-signal/Kpis'
-import { countsFor, pickInitialDate, stampText } from './morning-signal/model'
-import { TitleBar } from './morning-signal/Nav'
+import Lead from './morning-signal/Lead'
+import Mix from './morning-signal/Mix'
+import { alertItems, pickInitialDate } from './morning-signal/model'
+import { dueWithin, kstToday } from './morning-signal/todo/todo-model'
 import { useMsLayout } from './morning-signal-layout'
 
 const EMPTY = { title: '아직 저장된 뉴스가 없어요', text: '매일 아침 8시에 첫 브리핑이 들어와요.' }
+const TOAST_MS = 3000
 const ERROR = { title: '데이터를 불러오지 못했어요', text: '잠시 뒤 새로고침해 주세요.' }
 
 export function meta(_: Route.MetaArgs) {
@@ -65,18 +72,52 @@ export default function MorningSignal() {
   // 보여 줄 데이터가 없을 때만 오류 카드를 띄우고, 이미 그린 화면은 그대로 둔다.
   const failed = (daysQ.isError && !days) || (dayQ.isError && !view)
   const state = failed ? ERROR : days?.length === 0 ? EMPTY : null
-  const stamp = view ? stampText(view.day, view.feeds) : '불러오는 중'
 
-  // 레일 News 칩 — 그날 전체 건수(레이아웃이 그린다)
-  const { setNewsCount } = useMsLayout()
-  const newsTotal = curDay ? countsFor(curDay, view?.feeds ?? null).total : null
-  useEffect(() => setNewsCount(newsTotal), [newsTotal, setNewsCount])
+  // 날짜 이동은 상단 막대 오른쪽 칸으로 포털
+  const { dateSlot, setTodoCount } = useMsLayout()
+
+  // 소식 탭 — 날짜를 옮겨도 남는다. 오늘의 한 줄 칸을 누르면 그 테마로 바꾸고 소식 카드로 스크롤한다
+  const [tab, setTab] = useState<Theme>('ai')
+  const pickTheme = (t: Theme) => {
+    setTab(t)
+    const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches
+    document
+      .querySelector('.ms-grid > [data-area="feed"]')
+      ?.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' })
+  }
+
+  // 챙길 것의 마감 임박 할 일 — 세션이 풀려 있을 때만(잠겨 있으면 PIN 을 묻지 않고 그냥 뺀다)
+  const unlocked = useTodoSession().data?.unlocked === true
+  const todos = useTodoList(unlocked)
+  const pendingTodos = todos.data?.pages[0]?.pending
+  const dueSoon = useMemo(() => {
+    const today = kstToday(new Date())
+    return (pendingTodos ?? []).filter((t) => dueWithin(t, today, 1))
+  }, [pendingTodos])
+
+  // 하단 탭 TO-DO 배지 — 목록을 받은 뒤에만(모르는 동안 낡은 값·0 을 보이지 않게), 잠기면 뺀다
+  const pendingCount = pendingTodos ? pendingTodos.filter((t) => t.status !== 'done').length : null
+  useEffect(
+    () => setTodoCount(unlocked && pendingCount !== null ? pendingCount : null),
+    [unlocked, pendingCount, setTodoCount]
+  )
+
+  // 「TO-DO에 담았어요」·저장 실패 토스트(TO-DO 화면과 같은 todo-toast)
+  const [toast, setToast] = useState<{ message: string; key: number } | null>(null)
+  const notify = useCallback((message: string) => setToast({ message, key: Date.now() }), [])
+  useEffect(() => {
+    if (!toast) return
+    const t = setTimeout(() => setToast(null), TOAST_MS)
+    return () => clearTimeout(t)
+  }, [toast])
 
   return (
     <>
-      <TitleBar title="News" sub={stamp}>
-        <DateNav days={days ?? []} cur={cur} dir={sel?.dir ?? 0} onGo={go} />
-      </TitleBar>
+      {dateSlot &&
+        createPortal(
+          <DateNav days={days ?? []} cur={cur} dir={sel?.dir ?? 0} onGo={go} />,
+          dateSlot
+        )}
       {state && (
         <section className="card state">
           <b>{state.title}</b>
@@ -89,13 +130,29 @@ export default function MorningSignal() {
           <LatticeLoader label="신호 수신 중" grid={4} pattern="sweep" cellSize={6} gap={3} />
         </section>
       )}
+      {/* NEWS 격자(B안 §4) — 데스크톱 1행 챙길 것 | 오늘의 한 줄 | 오늘의 구성, 2행 소식(2칸) | FE에 쓸 레포.
+          DOM 은 오늘의 한 줄을 먼저 둔다(휴대폰 첫 카드 · 화면 읽기 순서) — 자리는 grid-area 가 정한다 */}
       {!state && days && view && (
-        <div className="content">
-          <Kpis days={days} day={view.day} feeds={view.feeds} />
-          <Bento day={view.day} feeds={view.feeds} />
-          <Feed feeds={view.feeds} date={view.day.date} dir={sel?.dir ?? 0} />
+        <div className="ms-grid">
+          <Lead day={view.day} feeds={view.feeds} onPick={pickTheme} />
+          <Alerts items={alertItems(view.feeds, dueSoon)} />
+          <Mix feeds={view.feeds} />
+          <Feed
+            feeds={view.feeds}
+            date={view.day.date}
+            dir={sel?.dir ?? 0}
+            tab={tab}
+            onTab={setTab}
+          />
+          <FePicks
+            feed={view.feeds.gh}
+            renderAdd={(g) => <AddToTodo item={g} onNotify={notify} />}
+          />
         </div>
       )}
+      <div className={`todo-toast${toast ? ' show' : ''}`} role="status" aria-live="polite">
+        {toast?.message}
+      </div>
     </>
   )
 }

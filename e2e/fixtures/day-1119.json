@@ -1,0 +1,331 @@
+{
+  "day": {
+    "date": "2026-11-19",
+    "weekday": "목",
+    "counts": {
+      "ai": 3,
+      "world": 5,
+      "gh": 15
+    },
+    "status": {
+      "ai": "ok",
+      "world": "ok",
+      "gh": "ok"
+    },
+    "fe": {
+      "high": 3,
+      "picks": ["dream-num/univer", "ag-ui-protocol/ag-ui", "sveltejs/svelte"]
+    },
+    "tops": [],
+    "headline": "APEC 정상들은 선전에, 코스피는 다시 5,000선 위로",
+    "highlight": "5,000선 위로",
+    "updatedAt": "2026-11-18T23:03:00Z"
+  },
+  "feeds": {
+    "ai": {
+      "date": "2026-11-19",
+      "theme": "ai",
+      "generatedAt": "2026-11-18T23:03:00Z",
+      "model": "fixture",
+      "status": "ok",
+      "items": [
+        {
+          "title": "Google, Gemini 4 Neon 출시 · 한 달 새 네 번째 Gemini 모델",
+          "summary": "Google이 11월 18일 Gemini 4 Neon을 공개했습니다. Gemini 앱(AI Pro·Ultra), Antigravity, Gemini API 유료 티어로 제공되며, 보도된 가격은 입력 100만 토큰당 $3, 출력 $15입니다. 벤치마크 수치는 Google 자체 주장입니다.",
+          "publishedAt": "11/18",
+          "impact": "mid",
+          "impactNote": "Antigravity·Gemini API로 바로 쓸 수 있어 UI 구현·리팩터링 같은 프론트엔드 에이전트 코딩의 모델 선택지가 하나 늘었습니다. 실제 품질은 직접 비교가 필요합니다.",
+          "url": "https://the-decoder.com/google-ships-gemini-4-neon-its-fourth-new-gemini-model-in-a-month/",
+          "grade": "B"
+        },
+        {
+          "title": "Microsoft, Ignite에서 코딩·사이버보안 AI 모델 공개",
+          "summary": "Reuters 보도에 따르면 Microsoft가 11월 17일 Ignite에서 MAI Code 2를 공개했으며, 경쟁 모델에 근접한 성능을 훨씬 낮은 비용으로 제공한다고 밝혔습니다. 성능 수치는 Microsoft 자체 주장입니다.",
+          "publishedAt": "11/17",
+          "impact": "mid",
+          "impactNote": "저비용 코딩 모델이 늘면 팀의 AI 코딩 도구 비용 구조와 모델 선택이 달라질 수 있습니다.",
+          "url": "https://www.investing.com/news/stock-market-news/microsoft-unveils-ai-models-for-coding-cybersecurity-as-it-takes-on-anthropic-openai-5033766",
+          "grade": "B"
+        },
+        {
+          "title": "Anthropic, IPO 공모가 $83로 책정(보도) · Nasdaq 'ANT' 거래 개시 예정",
+          "summary": "CNBC 등은 Anthropic이 11월 18일 공모가를 $83로 책정했다고 제보자를 인용해 보도했습니다(제시 범위 $70~78 상회). 거래는 다음 날 Nasdaq 'ANT'로 시작될 예정입니다.",
+          "publishedAt": "11/18",
+          "impact": "low",
+          "impactNote": "프론트엔드 업무에 직접 영향은 작습니다. Claude 계열 도구에 의존하는 팀은 중장기 가격·제품 전략 변화를 지켜볼 만합니다.",
+          "url": "https://www.cnbc.com/2026/11/18/anthropic-ipo-ai-offering-price.html",
+          "grade": "B",
+          "tags": ["예정"]
+        }
+      ]
+    },
+    "world": {
+      "date": "2026-11-19",
+      "theme": "world",
+      "generatedAt": "2026-11-18T23:03:00Z",
+      "model": "fixture",
+      "status": "ok",
+      "items": [
+        {
+          "title": "트럼프, 선전 APEC 참석차 중국 도착 · 시진핑·푸틴과 3자 회동 예정",
+          "summary": "트럼프 대통령이 APEC 정상회의 참석차 중국 선전에 도착했습니다. 백악관은 시진핑·푸틴과의 첫 3자 회동 계획을 확인했으며, 이란 전쟁이 주요 의제로 거론됩니다. 회담 결과는 확인되지 않았습니다.",
+          "publishedAt": "11/18",
+          "category": "시사·국제",
+          "url": "https://www.cnbc.com/2026/11/18/trump-xi-putin-china-apec.html",
+          "grade": "B"
+        },
+        {
+          "title": "이재명 대통령, APEC 참석차 선전 도착 · 한·중 정상회담 보도",
+          "summary": "이 대통령이 시진핑 주석과 한·중 정상회담을 갖는다고 보도됐습니다. 18일 선전 도착 후 CEO 서밋·환영만찬, 19일 정상회의 본회의 일정입니다. 회담 결과는 확인되지 않았습니다.",
+          "publishedAt": "11/18",
+          "category": "시사·국제",
+          "url": "https://www.newspim.com/news/view/20261118000270",
+          "grade": "B"
+        },
+        {
+          "title": "코스피 5,000선 회복 · 1.99% 오른 5,067.44 마감",
+          "summary": "코스피는 18일 5,067.44로 마감해 5,000선을 되찾았고, 원·달러 환율은 5.2원 하락 마감했습니다. 외국인은 순매도세가 이어졌다고 보도됐습니다.",
+          "publishedAt": "11/18",
+          "category": "경제",
+          "url": "https://www.namdonews.com/news/articleView.html?idxno=929699",
+          "grade": "B"
+        },
+        {
+          "title": "2027학년도 수능 오늘 시행 · AI 기기 부정행위 응시제한 강화 논의",
+          "summary": "수능은 11월 19일(목) 치러집니다. AI 안경 등 부정행위에 대한 응시 제한을 최대 10년으로 늘리는 방안이 검토 중이며, 아직 확정된 제도는 아니라고 보도됐습니다.",
+          "publishedAt": "11/16",
+          "category": "상식·교양",
+          "url": "https://www.wikitree.co.kr/articles/1175078",
+          "grade": "B"
+        },
+        {
+          "title": "튀르키예 안탈리아 COP31 진행 중 · 기후재원 의제 쟁점",
+          "summary": "COP31은 11월 9일 안탈리아에서 개막해 20일까지 열립니다. 개도국은 기후재원 의제를 요구하고 있고, 구테흐스 유엔 사무총장은 기후위기에 더 진지하게 임하라고 촉구했습니다.",
+          "publishedAt": "11/09",
+          "category": "상식·교양",
+          "url": "https://www.khaleejtimes.com/world/cop31-opens-leaders-pressure-tackle-climate-crisis",
+          "grade": "B"
+        }
+      ]
+    },
+    "gh": {
+      "date": "2026-11-19",
+      "theme": "gh",
+      "generatedAt": "2026-11-18T23:03:00Z",
+      "model": "fixture",
+      "status": "ok",
+      "items": [
+        {
+          "rank": 1,
+          "repo": "elementalsouls/Claude-BugHunter",
+          "url": "https://github.com/elementalsouls/Claude-BugHunter",
+          "description": "버그 헌팅·레드팀용 Claude Code 스킬 번들",
+          "language": "Python",
+          "stars": "9,163",
+          "starsToday": "+1,007",
+          "starsTodayNum": 1007,
+          "impact": "low",
+          "impactNote": "",
+          "fePick": false,
+          "grade": "B"
+        },
+        {
+          "rank": 2,
+          "repo": "mvanhorn/last30days-skill",
+          "url": "https://github.com/mvanhorn/last30days-skill",
+          "description": "여러 플랫폼에서 주제를 조사해 요약하는 에이전트 스킬",
+          "language": "Python",
+          "stars": "68,997",
+          "starsToday": "+772",
+          "starsTodayNum": 772,
+          "impact": "low",
+          "impactNote": "",
+          "fePick": false,
+          "grade": "B"
+        },
+        {
+          "rank": 3,
+          "repo": "alibaba/open-code-review",
+          "url": "https://github.com/alibaba/open-code-review",
+          "description": "결정론적 파이프라인과 LLM 에이전트를 결합한 코드 리뷰 도구",
+          "language": "Go",
+          "stars": "53,694",
+          "starsToday": "+764",
+          "starsTodayNum": 764,
+          "impact": "mid",
+          "impactNote": "",
+          "fePick": false,
+          "grade": "B"
+        },
+        {
+          "rank": 4,
+          "repo": "Tencent/LoopForge",
+          "url": "https://github.com/Tencent/LoopForge",
+          "description": "사람 승인 단계를 둔 코딩 에이전트 워크플로 셀프호스팅",
+          "language": "Go",
+          "stars": "3,087",
+          "starsToday": "+590",
+          "starsTodayNum": 590,
+          "impact": "low",
+          "impactNote": "",
+          "fePick": false,
+          "grade": "B"
+        },
+        {
+          "rank": 5,
+          "repo": "dream-num/univer",
+          "url": "https://github.com/dream-num/univer",
+          "description": "AI 기능을 갖춘 오피스 스위트를 만드는 오픈소스 SDK",
+          "language": "TypeScript",
+          "stars": "28,878",
+          "starsToday": "+1,776",
+          "starsTodayNum": 1776,
+          "impact": "high",
+          "impactNote": "TypeScript SDK로 웹에서 스프레드시트·문서 UI를 만드는 프론트엔드 작업에 바로 쓸 수 있습니다.",
+          "fePick": true,
+          "grade": "B"
+        },
+        {
+          "rank": 6,
+          "repo": "getarcaneapp/arcane",
+          "url": "https://github.com/getarcaneapp/arcane",
+          "description": "Docker 관리 애플리케이션",
+          "language": "Go",
+          "stars": "9,295",
+          "starsToday": "+654",
+          "starsTodayNum": 654,
+          "impact": "low",
+          "impactNote": "",
+          "fePick": false,
+          "grade": "B"
+        },
+        {
+          "rank": 7,
+          "repo": "google-labs-code/stitch-skills",
+          "url": "https://github.com/google-labs-code/stitch-skills",
+          "description": "Stitch MCP 서버용 에이전트 스킬 라이브러리",
+          "language": "TypeScript",
+          "stars": "10,077",
+          "starsToday": "+350",
+          "starsTodayNum": 350,
+          "impact": "mid",
+          "impactNote": "",
+          "fePick": false,
+          "grade": "B"
+        },
+        {
+          "rank": 8,
+          "repo": "cursor/plugins",
+          "url": "https://github.com/cursor/plugins",
+          "description": "Cursor 플러그인 스펙과 공식 플러그인 모음",
+          "language": "TypeScript",
+          "stars": "16,879",
+          "starsToday": "+196",
+          "starsTodayNum": 196,
+          "impact": "mid",
+          "impactNote": "",
+          "fePick": false,
+          "grade": "B"
+        },
+        {
+          "rank": 9,
+          "repo": "obra/superpowers",
+          "url": "https://github.com/obra/superpowers",
+          "description": "에이전트 스킬 프레임워크이자 개발 방법론",
+          "language": "Shell",
+          "stars": "319,292",
+          "starsToday": "+598",
+          "starsTodayNum": 598,
+          "impact": "mid",
+          "impactNote": "",
+          "fePick": false,
+          "grade": "B"
+        },
+        {
+          "rank": 10,
+          "repo": "ag-ui-protocol/ag-ui",
+          "url": "https://github.com/ag-ui-protocol/ag-ui",
+          "description": "에이전트를 프론트엔드 앱에 연결하는 프로토콜",
+          "language": "TypeScript",
+          "stars": "19,971",
+          "starsToday": "+1,444",
+          "starsTodayNum": 1444,
+          "impact": "high",
+          "impactNote": "에이전트와 프론트 앱을 잇는 프로토콜이라 AI 기능 UI를 만들 때 직접 쓰입니다.",
+          "fePick": true,
+          "grade": "B"
+        },
+        {
+          "rank": 11,
+          "repo": "backnotprop/plannotator",
+          "url": "https://github.com/backnotprop/plannotator",
+          "description": "계획·주석·코드 리뷰 뒤 에이전트에 피드백을 보내는 워크스페이스",
+          "language": "TypeScript",
+          "stars": "13,049",
+          "starsToday": "+691",
+          "starsTodayNum": 691,
+          "impact": "mid",
+          "impactNote": "",
+          "fePick": false,
+          "grade": "B"
+        },
+        {
+          "rank": 12,
+          "repo": "sveltejs/svelte",
+          "url": "https://github.com/sveltejs/svelte",
+          "description": "웹 개발 프레임워크",
+          "language": "JavaScript",
+          "stars": "89,572",
+          "starsToday": "+533",
+          "starsTodayNum": 533,
+          "impact": "high",
+          "impactNote": "프론트엔드 프레임워크 자체라 UI 개발 방식과 생태계에 직접 영향을 줍니다.",
+          "fePick": true,
+          "grade": "B"
+        },
+        {
+          "rank": 13,
+          "repo": "affaan-m/ECC",
+          "url": "https://github.com/affaan-m/ECC",
+          "description": "여러 코딩 에이전트용 스킬·메모리·보안 하네스",
+          "language": "JavaScript",
+          "stars": "305,455",
+          "starsToday": "+902",
+          "starsTodayNum": 902,
+          "impact": "mid",
+          "impactNote": "",
+          "fePick": false,
+          "grade": "B"
+        },
+        {
+          "rank": 14,
+          "repo": "jingyaogong/minimind",
+          "url": "https://github.com/jingyaogong/minimind",
+          "description": "작은 LLM을 처음부터 학습시키는 프로젝트",
+          "language": "Python",
+          "stars": "65,918",
+          "starsToday": "+188",
+          "starsTodayNum": 188,
+          "impact": "low",
+          "impactNote": "",
+          "fePick": false,
+          "grade": "B"
+        },
+        {
+          "rank": 15,
+          "repo": "google-research/paper-orchestra",
+          "url": "https://github.com/google-research/paper-orchestra",
+          "description": "AI 연구 논문 작성을 자동화하는 멀티 에이전트 프레임워크",
+          "language": "Python",
+          "stars": "2,919",
+          "starsToday": "+1,175",
+          "starsTodayNum": 1175,
+          "impact": "low",
+          "impactNote": "",
+          "fePick": false,
+          "grade": "B"
+        }
+      ]
+    }
+  }
+}

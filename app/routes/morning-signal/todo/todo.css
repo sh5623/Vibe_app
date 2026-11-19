@@ -15,16 +15,6 @@
   --td-imp-bg: #f4f1fd;
   --td-imp-line: color-mix(in srgb, var(--td-imp) 22%, transparent);
 }
-:root[data-ms-theme="dark"] {
-  --td-todo: #60a5fa;
-  --td-prog: #fbbf24;
-  --td-tint: rgba(148, 163, 184, 0.07);
-  --td-line: rgba(148, 163, 184, 0.12);
-  --td-imp: #a78bfa;
-  --td-imp-3: #e879f9;
-  --td-imp-bg: rgba(139, 92, 246, 0.08);
-  --td-imp-line: rgba(167, 139, 250, 0.2);
-}
 
 .ms .todo-view {
   display: grid;
@@ -57,6 +47,22 @@
     transform 0.6s var(--ease),
     opacity 0.45s,
     filter 0.45s;
+}
+/* 창 안(compact) — 카드 껍데기·큰 제목·자물쇠·확인 막대를 걷고 숫자칸·오류·잠금 시간만 */
+.ms .pin.compact {
+  max-width: none;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+.ms .pin.compact .eye,
+.ms .pin.compact .lock,
+.ms .pin.compact .pin-title,
+.ms .pin.compact .cta {
+  display: none;
 }
 .ms .pin.out {
   transform: translateY(-14px) scale(0.96);
@@ -500,7 +506,7 @@
   width: 100%;
   height: 48px;
   border-radius: 14px;
-  background: var(--muted);
+  background: var(--surface-muted);
   overflow: hidden;
   font: 600 14px var(--f);
 }
@@ -549,52 +555,150 @@
 }
 /* 모션 줄이기는 morning-signal.css 의 `.ms *` 규칙이 TO-DO 까지 덮는다 */
 
-/* ── 목록(시안 v2 — 줄 목록, 카드·테두리·태그 상자 없음) ─────────────── */
-.ms .todo-view {
-  gap: 22px;
-  padding-bottom: 96px;
+/* ── 보드(B안 2026-11-19) — 시안 grid.css(TO-DO 격자) · views.css(.tasks · .task · .tick-btn · .star · .done) ── */
+.ms .ms-grid.todo-board {
+  grid-template-areas: "stat imp due" "list list done";
 }
-.ms .todo-pending-h {
-  display: flex;
-  align-items: baseline;
-  gap: 8px;
-  margin: 6px 2px 6px;
-  font: 700 13px / 1.4 var(--f);
-  letter-spacing: -0.01em;
-  color: var(--ink);
+@media (min-width: 1181px) {
+  .ms .ms-sticky {
+    align-self: start;
+    position: sticky;
+    top: 84px;
+  }
 }
-.ms .todo-pending-h span {
-  font: 600 12px var(--fm);
-  color: var(--muted-fg);
+@media (max-width: 1180px) {
+  /* 시안 grid.css 82행 — 중요 | 마감 임박 / 남은 일 / 상태 | 완료 기록 */
+  .ms .ms-grid.todo-board {
+    grid-template-areas: "imp due" "list list" "stat done";
+  }
 }
+/* 다시 잠그기 — 제목 줄(36)에 맞춘 아이콘 버튼(.btn.ghost 모양) */
+.ms .todo-board .ph .lockbtn {
+  /* .lockbtn 의 all: unset 이 box-sizing 을 되돌려 테두리만큼 커진다 — 제목 줄 높이를 넘지 않게 */
+  box-sizing: border-box;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--r-sm);
+  border-color: var(--line);
+  background: var(--panel);
+  color: var(--fg);
+  box-shadow: none;
+}
+.ms .todo-board .ph .lockbtn:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--navy) 45%, transparent);
+  outline-offset: 2px;
+}
+@media (max-width: 760px) {
+  /* 휴대폰 카드 순서(설계 §4): 중요 → 남은 일 → 마감 임박 → 상태 → 완료 기록 */
+  .ms .ms-grid.todo-board {
+    grid-template-areas: "imp" "list" "due" "stat" "done";
+  }
+  /* 「남은 일」 제목과 같은 줄 오른쪽에 자물쇠 · Add, 거르기는 그 아래 한 줄(시안 views.css 104-106행) */
+  .ms .todo-board .ph #tAdd {
+    order: 2;
+    min-height: 44px;
+  }
+  .ms .todo-board .ph .lockbtn {
+    order: 2;
+    margin-left: auto;
+    width: 44px;
+    height: 44px;
+  }
+  .ms .todo-board .ph .seg {
+    order: 3;
+  }
+}
+.ms .chip.ok {
+  background: var(--ok-soft);
+  color: var(--ok);
+}
+/* 중요 별(제목 옆 · 중요 카드 아이콘) */
+.ms .star,
+.ms .star-ico {
+  color: var(--gh);
+}
+.ms .star {
+  display: inline-flex;
+  vertical-align: -2px;
+  margin-left: 6px;
+}
+.ms .p .star svg,
+.ms .p .star-ico svg {
+  width: 15px;
+  height: 15px;
+  fill: currentColor;
+  stroke: none;
+}
+/* 중요·마감 임박·완료 기록 줄의 제목 — 누르면 상세 */
+.ms .todo-board .lk {
+  all: unset;
+  cursor: pointer;
+  overflow-wrap: anywhere;
+}
+.ms .todo-board .lk:hover {
+  color: var(--ai-ink);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.ms .todo-board .lk:focus-visible {
+  outline: 2px solid var(--ai);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+/* 완료 기록 — 날짜 소제목 + 초록 점 목록 */
+.ms .p .sub.first {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: 0;
+  color: var(--muted);
+}
+.ms .p ul.done {
+  margin: 0 0 16px;
+  padding: 0 0 0 18px;
+  list-style: disc;
+  display: grid;
+  gap: 6px;
+  font-size: 14px;
+  color: var(--muted);
+}
+.ms .p ul.done li::marker {
+  color: var(--ok);
+}
+
+/* 거르기 묶음은 fieldset(이름 있는 group) — 기본 테두리·여백을 걷는다 */
+.ms fieldset.seg {
+  margin-block: 0;
+  margin-right: 0;
+  padding: 0;
+  border: 0;
+  min-inline-size: 0;
+}
+/* 남은 일 목록 — 별빛 상자의 번짐(48px)을 가로로만 자른다(휴대폰 가로 스크롤 방지). 상자가 -8px 로 나가므로 그만큼 안쪽 여백을 둔다 */
 .ms .todo-pending {
-  background: var(--td-tint);
-  border-radius: 18px;
-  padding: 4px 14px;
-  /* IMPORTANT 별빛 캔버스가 상자 밖 48px까지 번진다 — 가로만 잘라 휴대폰 가로 스크롤을 막는다(전류 테두리와 같은 방식) */
+  margin-inline: -8px;
+  padding-inline: 8px;
   overflow-x: clip;
+}
+.ms .tasks {
+  margin: 0;
+  padding: 0;
+  list-style: none;
 }
 .ms .todo-sub {
   margin: 0;
-  padding: 10px 0 0 32px;
+  padding: 10px 0 0 56px;
   font: 600 10px var(--fm);
   letter-spacing: 0.1em;
-}
-.ms .todo-sub.progress {
-  color: var(--td-prog);
-}
-.ms .todo-sub.todo {
-  color: var(--td-todo);
 }
 
 /* ── 중요(IMPORTANT) — 「남은 일」 맨 위 보라 상자 ─────────────────────
    테두리 별빛은 react-bits StarBorder(캔버스, 화면 밖·동작 줄이기면 스스로 멈춤).
    제목 글자색은 react-bits GradientText 의 linear·yoyo 를 CSS 키프레임으로 옮겼다 —
    원본은 줄마다 requestAnimationFrame 으로 그라데이션 문자열을 다시 쓰므로, 휴대폰 부담을 줄이려고 JS 없이 돌린다.
-   흐름은 이 상자 안에서만, 날짜별 기록에서는 같은 색을 멈춘 채로 둔다(줄이 계속 늘어나는 목록이라). */
+   흐름은 이 상자 안에서만 — 상자 밖 중요 줄(거를 때 등)은 같은 색을 멈춘 채로 둔다. */
 .ms .todo-imp.star-border {
   display: block;
-  margin: 8px -8px 6px;
+  margin: 0 -8px 8px;
   padding: 0 8px;
   font-weight: inherit;
   line-height: inherit;
@@ -611,47 +715,17 @@
   color: var(--td-imp);
 }
 
-.ms .todo-clear {
-  margin: 0;
-  padding: 16px 0;
-  text-align: center;
-  font-size: 13px;
-  color: var(--muted-fg);
-}
-.ms .todo-more {
-  all: unset;
-  display: block;
-  width: 100%;
-  box-sizing: border-box;
-  padding: 10px 0 10px 32px;
-  border-top: 1px solid var(--td-line);
-  font: 600 12.5px var(--f);
-  color: var(--td-b1);
-  cursor: pointer;
-}
-.ms .todo-more:focus-visible {
-  outline: 2px solid var(--td-b1);
-  outline-offset: 2px;
-  border-radius: 6px;
-}
-
-/* 줄 — 앞 원이 상태이자 버튼, 정보는 작은 표시 한 줄 */
+/* 줄 — 시안 views.css .task: 동그라미(44 누름 칸) | 제목 + 작은 정보 한 줄 | 상태 칩. 줄 사이 가는 선 */
 .ms .trow {
   position: relative;
-  display: flex;
-  align-items: flex-start;
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr) auto;
   gap: 12px;
-  padding: 11px 0;
+  align-items: center;
+  padding: 8px 0;
 }
-/* 줄 사이 선 — 묶음의 첫 줄(소제목 바로 아래 포함)에는 긋지 않는다 */
-.ms .trow.sep::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 32px;
-  right: 0;
-  height: 1px;
-  background: var(--td-line);
+.ms .tasks > .trow + .trow {
+  border-top: 1px solid var(--line2);
 }
 .ms .trow.enter {
   animation: td-enter 0.5s cubic-bezier(0.22, 1, 0.36, 1);
@@ -679,10 +753,10 @@
 }
 .ms .trow-ck {
   all: unset;
-  flex: none;
-  width: 20px;
-  height: 20px;
-  margin-top: 1px;
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
   cursor: pointer;
   border-radius: 50%;
 }
@@ -738,11 +812,42 @@
 .ms .s-done .si-chk {
   stroke-dashoffset: 0;
 }
+/* 목록의 동그라미 — 시안 .tick-btn(26px · 할 일 옅은 선 · 진행 중 파랑 · 완료 초록, 누를 수 있는 곳에 마우스를 올리면 체크가 비친다) */
+.ms .tasks .trow-ck .si {
+  width: 26px;
+  height: 26px;
+}
+.ms .tasks .si-ring {
+  stroke-width: 1.6;
+}
+.ms .tasks .s-todo .si-ring {
+  stroke: var(--line);
+}
+.ms .tasks .s-progress .si-ring {
+  stroke: var(--ai);
+}
+.ms .tasks .s-progress .si-pie {
+  opacity: 0;
+}
+.ms .tasks .s-done .si-ring {
+  stroke: var(--ok);
+}
+.ms .tasks .s-done .si-disc {
+  fill: var(--ok);
+}
+@media (hover: hover) {
+  .ms .tasks .trow:not(.s-done) .trow-ck:hover .si-chk {
+    stroke: var(--muted);
+    stroke-dashoffset: 0;
+  }
+}
 .ms .trow-tx {
   all: unset;
-  flex: 1;
   min-width: 0;
   cursor: pointer;
+  display: block;
+}
+.ms .trow-h {
   display: block;
 }
 .ms .trow-tx:focus-visible {
@@ -751,7 +856,7 @@
   border-radius: 6px;
 }
 .ms .trow-tt {
-  font: 500 15px / 1.4 var(--f);
+  font: 700 15px / 1.45 var(--f);
   letter-spacing: -0.01em;
   color: var(--ink);
   overflow-wrap: anywhere;
@@ -766,7 +871,6 @@
 }
 /* 중요 제목 — 남색→보라. 끝난 일에는 .imp 가 붙지 않아 위 취소선이 그대로 쓰인다 */
 .ms .trow.imp .trow-tt {
-  font-weight: 600;
   background: linear-gradient(90deg, var(--td-b1), var(--td-imp));
   -webkit-background-clip: text;
   background-clip: text;
@@ -794,11 +898,19 @@
 }
 .ms .trow-mt {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 8px;
+  gap: 2px 6px;
   margin-top: 2px;
-  font-size: 12px;
-  color: var(--muted-fg);
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--muted);
+}
+.ms .trow-mt .tx + .tx::before {
+  content: "·";
+  margin-right: 6px;
+  color: var(--muted);
+  font-weight: 400;
 }
 .ms .trow .trow-mt svg {
   width: 13px;
@@ -808,66 +920,6 @@
 .ms .trow-due.soon {
   color: var(--td-red);
   font-weight: 600;
-}
-.ms .trow-st {
-  flex: none;
-  margin-top: 4px;
-  font: 600 9.5px var(--fm);
-  letter-spacing: 0.06em;
-}
-.ms .s-todo .trow-st {
-  color: var(--td-todo);
-}
-.ms .s-progress .trow-st {
-  color: var(--td-prog);
-}
-.ms .s-done .trow-st {
-  color: var(--muted-fg);
-}
-
-/* 날짜 묶음 */
-.ms .todo-day .dh {
-  display: flex;
-  align-items: baseline;
-  gap: 8px;
-  padding: 0 2px 4px;
-}
-.ms .todo-day .dh b {
-  font: 700 15px var(--f);
-  letter-spacing: -0.02em;
-  color: var(--ink);
-}
-.ms .todo-day .dh-sub {
-  font-size: 12px;
-  color: var(--muted-fg);
-}
-.ms .todo-day .dh-n {
-  margin-left: auto;
-  font: 500 12px var(--fm);
-  color: var(--muted-fg);
-}
-.ms .todo-tail {
-  min-height: 40px;
-  display: grid;
-  place-items: center;
-  font-size: 12px;
-  color: var(--muted-fg);
-}
-.ms .todo-tail p {
-  margin: 0;
-}
-.ms .todo-retry {
-  all: unset;
-  padding: 8px 16px;
-  border-radius: 999px;
-  border: 1px solid var(--td-line);
-  font: 600 12.5px var(--f);
-  color: var(--td-b1);
-  cursor: pointer;
-}
-.ms .todo-retry:focus-visible {
-  outline: 2px solid var(--td-b1);
-  outline-offset: 2px;
 }
 .ms .todo-loader {
   display: block;
@@ -1307,31 +1359,7 @@
   margin-top: 10px;
 }
 
-/* ── 만들기 버튼·알림 ────────────────────────────────────────────────── */
-.ms .todo-fab {
-  all: unset;
-  position: fixed;
-  right: max(20px, env(safe-area-inset-right, 0px));
-  bottom: calc(24px + env(safe-area-inset-bottom, 0px));
-  z-index: 40;
-  width: 56px;
-  height: 56px;
-  border-radius: 50%;
-  display: grid;
-  place-items: center;
-  color: #fff;
-  background: var(--td-b1);
-  box-shadow: 0 12px 26px -10px rgba(99, 102, 241, 0.9);
-  cursor: pointer;
-  transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1);
-}
-.ms .todo-fab:active {
-  transform: scale(0.9);
-}
-.ms .todo-fab:focus-visible {
-  outline: 3px solid color-mix(in srgb, var(--td-b1) 45%, transparent);
-  outline-offset: 3px;
-}
+/* ── 알림 ─────────────────────────────────────────────────────────── */
 .ms .todo-toast {
   position: fixed;
   left: 50%;
@@ -1434,13 +1462,6 @@
 .ms .todo-md-preview .todo-note {
   margin: 0;
   color: var(--ink);
-}
-
-/* 휴대폰 하단 탭 바(768px 미만) 위로 만들기 버튼을 올린다 — morning-signal.css .tabbar */
-@media (max-width: 767.98px) {
-  .ms .todo-fab {
-    bottom: calc(64px + 16px + env(safe-area-inset-bottom, 0px));
-  }
 }
 
 /* 목록 로더 — 회전 고리 대신 격자(TodoList TodoLoader). 라벨 글자는 숨기고 낭독용으로만 */
