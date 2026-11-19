@@ -105,22 +105,6 @@ export function useUnlock(): UseMutationResult<void, TodoApiError, string> {
   })
 }
 
-export function useLock(): UseMutationResult<void, TodoApiError, void> {
-  const qc = useQueryClient()
-  return useMutation({
-    mutationFn: async () => {
-      await request('lock', { method: 'POST' })
-    },
-    onSuccess: () => {
-      qc.removeQueries({ queryKey: todoKeys.list })
-      qc.removeQueries({ queryKey: ['ms', 'todo', 'detail'] })
-      qc.removeQueries({ queryKey: ['ms', 'todo', 'find'] })
-      qc.removeQueries({ queryKey: ['ms', 'todo', 'done'] })
-      qc.setQueryData<SessionResponse>(todoKeys.session, { unlocked: false, lockedUntil: null })
-    },
-  })
-}
-
 export function useTodoList(enabled: boolean): UseInfiniteQueryResult<ListData, TodoApiError> {
   const qc = useQueryClient()
   return useInfiniteQuery({

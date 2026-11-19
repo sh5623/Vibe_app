@@ -79,16 +79,19 @@ test('content is not hidden behind the tab bar', async ({ page }) => {
     .toBeLessThanOrEqual(0)
 })
 
-test('자물쇠를 누르면 PIN 화면', async ({ page }) => {
-  const state = await api(page, { unlocked: true })
-  await page.goto('/morning-signal/todo')
-  await expect(page.getByText('남은 일', { exact: true })).toBeVisible()
-  // 자물쇠는 「남은 일」 제목 줄 Add 옆(상단 막대 오른쪽 칸이 아니다)
-  await expect(page.locator('.top-slot').getByRole('button')).toHaveCount(0)
-  const lock = page.locator('[data-area="list"] .ph').getByRole('button', { name: '다시 잠그기' })
-  await lock.click()
-  await expect(page.getByText('본인 확인')).toBeVisible()
-  expect(state.unlocked).toBe(false)
+test('열린 TO-DO 에 다시 잠그기 버튼이 없고, 세션이 잠기면 PIN 화면', async ({ page }) => {
+  for (const width of [1440, 375]) {
+    await page.setViewportSize({ width, height: 900 })
+    const state = await api(page, { unlocked: true })
+    await page.goto('/morning-signal/todo')
+    await expect(page.getByText('남은 일', { exact: true })).toBeVisible()
+    await expect(page.getByRole('button', { name: '다시 잠그기' })).toHaveCount(0)
+    await expect(page.locator('.top-slot').getByRole('button')).toHaveCount(0)
+    // 세션 만료를 흉내: 모의 API 세션을 잠금으로 돌리고 새로 읽는다
+    state.unlocked = false
+    await page.reload()
+    await expect(page.getByText('본인 확인')).toBeVisible()
+  }
 })
 
 // ── PIN 화면(시안 D) ───────────────────────────────────────────────────
@@ -112,7 +115,7 @@ test('right PIN unlocks to list', async ({ page }) => {
   await pinInput(page).pressSequentially('1234')
   await expect(page.getByText('확인됐어요')).toBeVisible()
   await expect(page.getByText('남은 일', { exact: true })).toBeVisible({ timeout: 4000 })
-  await expect(page.getByRole('button', { name: '다시 잠그기' })).toBeVisible()
+  await expect(page.getByRole('button', { name: '다시 잠그기' })).toHaveCount(0)
 })
 
 test('backspace removes the last digit', async ({ page }) => {
@@ -381,14 +384,8 @@ test('휴대폰: Add가 남은 일 제목 오른쪽, seg는 그 아래', async (
   expect(add.x).toBeGreaterThan(h.x + h.width)
   expect(Math.abs(add.y + add.height / 2 - (h.y + h.height / 2))).toBeLessThanOrEqual(4)
   expect(add.height).toBeGreaterThanOrEqual(44)
-  // 카드 오른쪽 안쪽 여백(16 + 테두리 1)에 붙는다 — 자물쇠는 Add 왼쪽
+  // 카드 오른쪽 안쪽 여백(16 + 테두리 1)에 붙는다
   expect(Math.round(box.x + box.width - (add.x + add.width))).toBeLessThanOrEqual(18)
-  const lock = await list.getByRole('button', { name: '다시 잠그기' }).boundingBox()
-  expect((lock?.x ?? 0) + (lock?.width ?? 0)).toBeLessThanOrEqual(add.x)
-  // 자물쇠와 Add 는 세로 가운데가 맞는다
-  expect(
-    Math.abs((lock?.y ?? 0) + (lock?.height ?? 0) / 2 - (add.y + add.height / 2))
-  ).toBeLessThanOrEqual(2)
   // seg 는 그 아래 한 줄
   expect(seg.y).toBeGreaterThanOrEqual(add.y + add.height)
   await noHorizontalScroll(page)

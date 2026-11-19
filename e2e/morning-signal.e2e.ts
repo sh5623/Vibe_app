@@ -713,17 +713,21 @@ test.describe('PIN 창 위치·닫힘', () => {
   })
 })
 
-test('하단 TO-DO 배지가 NEWS 에서도 남은 일 수이고, 다시 잠그면 사라진다', async ({ page }) => {
+test('하단 TO-DO 배지가 NEWS 에서도 남은 일 수이고, 잠기면 사라진다', async ({ page }) => {
   await page.setViewportSize({ width: 375, height: 812 })
   await mockApi(page, '1119')
-  await mockTodoApi(page, {
+  const state = await mockTodoApi(page, {
     unlocked: true,
     seed: [makeTodo({ id: 'a' }), makeTodo({ id: 'b' }), makeTodo({ id: 'c', status: 'done' })],
   })
   await page.goto('/morning-signal')
   await expect(page.locator('.tabbar .tab-badge')).toHaveText('2')
   await page.locator('.tabbar').getByRole('link', { name: 'TO-DO' }).click()
-  await page.getByRole('button', { name: '다시 잠그기' }).click()
+  await expect(page.getByText('남은 일', { exact: true })).toBeVisible()
+  // 세션 만료를 흉내: 모의 API 세션을 잠금으로 돌리고 새로 읽는다
+  state.unlocked = false
+  await page.reload()
+  await expect(page.getByText('본인 확인')).toBeVisible()
   await page.locator('.tabbar').getByRole('link', { name: 'NEWS' }).click()
   await expect(page.locator('.tabbar .tab-badge')).toHaveCount(0)
 })
