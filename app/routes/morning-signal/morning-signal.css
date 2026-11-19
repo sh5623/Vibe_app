@@ -97,7 +97,8 @@
 .ms .wrap {
   position: relative;
   z-index: 1;
-  max-width: 1200px;
+  /* 시안 base.css .wrap — 상단 막대(.top-in)와 같은 폭이라 로고·날짜 칸 가장자리가 카드 가장자리와 맞는다 */
+  max-width: 1320px;
   margin: 0 auto;
   padding-block: 22px 64px;
   padding-left: max(16px, env(safe-area-inset-left, 0px));
@@ -167,7 +168,9 @@
   outline: 2px solid var(--ai);
   outline-offset: 2px;
 }
+/* 날짜 글자 칸 — 버튼이라 위 「.datenav > button」의 40px 폭을 함께 받는다. 시안 .lab(span)처럼 글자 폭을 따르게 푼다 */
 .ms .datenav .cur {
+  width: auto;
   padding: 0 12px;
   display: flex;
   gap: 8px;
@@ -1002,9 +1005,9 @@
   backdrop-filter: blur(10px);
   box-shadow: 0 1px 0 var(--line);
 }
-/* 3칸 격자 — 오른쪽(날짜 이동)이 TO-DO 에서 비어도 가운데 탭 자리는 그대로 */
+/* 3칸 격자 — 오른쪽(날짜 이동)이 TO-DO 에서 비어도 가운데 탭 자리는 그대로. 폭은 본문(.wrap)과 같은 1320 */
 .ms .top-in {
-  max-width: 1200px;
+  max-width: 1320px;
   margin: 0 auto;
   padding-inline: max(16px, env(safe-area-inset-left, 0px))
     max(16px, env(safe-area-inset-right, 0px));

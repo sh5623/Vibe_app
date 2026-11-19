@@ -266,6 +266,35 @@ test('날짜 이동은 상단 막대 오른쪽 칸 안에 있다', async ({ page
   await expect(page.locator('.rail')).toHaveCount(0)
 })
 
+test('375px: 날짜 칸 글자와 「최신」이 잘리지 않고 화면 안에 있다', async ({ page }) => {
+  await mockApi(page, '1119')
+  await page.setViewportSize({ width: 375, height: 812 })
+  await page.goto('/morning-signal')
+  const label = page.locator('.datenav .cur')
+  await expect(label.locator('.t')).toHaveText('11월 19일 (목)')
+  await expect(label.getByText('최신')).toBeVisible()
+  const fit = await label.evaluate((el) => ({ sw: el.scrollWidth, cw: el.clientWidth }))
+  expect(fit.sw).toBeLessThanOrEqual(fit.cw)
+  const nav = await page.locator('.datenav').boundingBox()
+  expect((nav?.x ?? 0) + (nav?.width ?? 999)).toBeLessThanOrEqual(375 - 16)
+})
+
+test('1440px: 상단 막대 가장자리가 카드 가장자리와 같고 본문 폭은 시안 1320', async ({ page }) => {
+  await mockApi(page, '1119')
+  await page.setViewportSize({ width: 1440, height: 900 })
+  await page.goto('/morning-signal')
+  await expect(page.locator('.ms-grid > .p')).toHaveCount(5)
+  const grid = await page.locator('.ms-grid').boundingBox()
+  const brand = await page.locator('.top .brand').boundingBox()
+  const nav = await page.locator('.top .datenav').boundingBox()
+  // 시안 .wrap max-width 1320 − 좌우 여백 16 × 2
+  expect(Math.round(grid?.width ?? 0)).toBe(1288)
+  expect(Math.round(brand?.x ?? -1)).toBe(Math.round(grid?.x ?? 0))
+  expect(Math.round((nav?.x ?? 0) + (nav?.width ?? 0))).toBe(
+    Math.round((grid?.x ?? 0) + (grid?.width ?? 0))
+  )
+})
+
 test('상단 막대: 로고·이름·보기 전환에 현재 화면 표시', async ({ page }) => {
   await mockApi(page, 'normal')
   await page.goto('/morning-signal')
