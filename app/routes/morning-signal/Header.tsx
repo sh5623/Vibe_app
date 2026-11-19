@@ -22,7 +22,7 @@ export function useMsThemeAttr() {
   }, [])
 }
 
-/** 임시 상수 — 사용처(Bento·TodoList)와 함께 Task 7 에서 지운다 */
+/** 임시 상수 — 남은 사용처(TodoList)와 함께 Task 7 에서 지운다 */
 export const useMsTheme = (): 'light' => 'light'
 
 interface CalendarProps {

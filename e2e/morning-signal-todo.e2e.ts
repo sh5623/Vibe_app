@@ -59,7 +59,7 @@ test('375 top row, date nav and tab bar fit without horizontal scroll', async ({
 test('content is not hidden behind the tab bar', async ({ page }) => {
   await mockTodoApi(page)
   await page.goto('/morning-signal')
-  await expect(page.locator('.list .item').first()).toBeVisible()
+  await expect(page.locator('.lines > li').first()).toBeVisible()
   await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight))
   // 스크롤이 끝날 때까지 상태로 기다린다 — 마지막 칸 아래 끝이 탭 바 위에 와야 한다
   await expect

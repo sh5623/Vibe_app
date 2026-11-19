@@ -3,12 +3,15 @@ import { createPortal } from 'react-dom'
 import { useNavigate } from 'react-router'
 import LatticeLoader from '@/components/react-bits/LatticeLoader'
 import { useMsDay, useMsDays } from '@/hooks/use-morning-signal'
+import type { Theme } from '../../api/morning-signal'
 import type { Route } from './+types/morning-signal'
-import Bento from './morning-signal/Bento'
+import Alerts from './morning-signal/Alerts'
 import Feed from './morning-signal/Feed'
+import FePicks from './morning-signal/FePicks'
 import { DateNav } from './morning-signal/Header'
-import Kpis from './morning-signal/Kpis'
-import { pickInitialDate } from './morning-signal/model'
+import Lead from './morning-signal/Lead'
+import Mix from './morning-signal/Mix'
+import { alertItems, pickInitialDate } from './morning-signal/model'
 import { useMsLayout } from './morning-signal-layout'
 
 const EMPTY = { title: '아직 저장된 뉴스가 없어요', text: '매일 아침 8시에 첫 브리핑이 들어와요.' }
@@ -69,6 +72,16 @@ export default function MorningSignal() {
   // 날짜 이동은 상단 막대 오른쪽 칸으로 포털
   const { dateSlot } = useMsLayout()
 
+  // 소식 탭 — 날짜를 옮겨도 남는다. 오늘의 한 줄 칸을 누르면 그 테마로 바꾸고 소식 카드로 스크롤한다
+  const [tab, setTab] = useState<Theme>('ai')
+  const pickTheme = (t: Theme) => {
+    setTab(t)
+    const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches
+    document
+      .querySelector('.ms-grid > [data-area="feed"]')
+      ?.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' })
+  }
+
   return (
     <>
       {dateSlot &&
@@ -88,11 +101,22 @@ export default function MorningSignal() {
           <LatticeLoader label="신호 수신 중" grid={4} pattern="sweep" cellSize={6} gap={3} />
         </section>
       )}
+      {/* NEWS 격자(B안 §4) — 데스크톱 1행 챙길 것 | 오늘의 한 줄 | 오늘의 구성, 2행 소식(2칸) | FE에 쓸 레포.
+          DOM 은 오늘의 한 줄을 먼저 둔다(휴대폰 첫 카드 · 화면 읽기 순서) — 자리는 grid-area 가 정한다 */}
       {!state && days && view && (
-        <div className="content">
-          <Kpis days={days} day={view.day} feeds={view.feeds} />
-          <Bento day={view.day} feeds={view.feeds} />
-          <Feed feeds={view.feeds} date={view.day.date} dir={sel?.dir ?? 0} />
+        <div className="ms-grid">
+          <Lead day={view.day} feeds={view.feeds} onPick={pickTheme} />
+          {/* 마감 임박 할 일(due)은 Task 6 에서 잠금 세션 조회로 붙인다 */}
+          <Alerts items={alertItems(view.feeds)} />
+          <Mix feeds={view.feeds} />
+          <Feed
+            feeds={view.feeds}
+            date={view.day.date}
+            dir={sel?.dir ?? 0}
+            tab={tab}
+            onTab={setTab}
+          />
+          <FePicks feed={view.feeds.gh} />
         </div>
       )}
     </>
