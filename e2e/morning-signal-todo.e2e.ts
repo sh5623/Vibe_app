@@ -15,13 +15,13 @@ async function noHorizontalScroll(page: Page) {
   expect(w).toBeLessThanOrEqual(375)
 }
 
-test('tab bar switches routes and the rail is hidden', async ({ page }) => {
+test('tab bar switches routes and the top views nav is hidden', async ({ page }) => {
   await mockTodoApi(page)
   await page.goto('/morning-signal')
-  await expect(page.locator('.rail')).toBeHidden()
+  await expect(page.locator('.views')).toBeHidden()
   const bar = page.locator('.tabbar').getByRole('navigation', { name: '보기 전환' })
-  await expect(bar.getByRole('link', { name: 'News' })).toHaveAttribute('aria-current', 'page')
-  const tab = await bar.getByRole('link', { name: 'News' }).boundingBox()
+  await expect(bar.getByRole('link', { name: 'NEWS' })).toHaveAttribute('aria-current', 'page')
+  const tab = await bar.getByRole('link', { name: 'NEWS' }).boundingBox()
   expect(tab?.height ?? 0).toBeGreaterThanOrEqual(48)
   await bar.getByRole('link', { name: 'TO-DO' }).click()
   await expect(page).toHaveURL(/\/morning-signal\/todo$/)
@@ -38,7 +38,6 @@ test('todo page keeps news shell and theme', async ({ page }) => {
   await expect(page.locator('html')).toHaveAttribute('data-ms-theme', 'light')
   await expect(page.locator('.datenav')).toHaveCount(0)
   await expect(page.getByRole('button', { name: '다시 잠그기' })).toHaveCount(0)
-  await expect(page.getByRole('heading', { name: 'TO-DO' })).toBeVisible()
 })
 
 test('375 top row, date nav and tab bar fit without horizontal scroll', async ({ page }) => {
@@ -50,9 +49,11 @@ test('375 top row, date nav and tab bar fit without horizontal scroll', async ({
   }
   await page.goto('/morning-signal')
   const nav = await page.locator('.datenav').boundingBox()
-  const h1 = await page.locator('.ptitle h1').boundingBox()
-  expect((nav?.y ?? 0) > (h1?.y ?? 0) + (h1?.height ?? 0) - 1).toBe(true)
-  expect(nav?.width).toBeGreaterThan(300)
+  const top = await page.locator('header.top').boundingBox()
+  expect((nav?.y ?? 0) + (nav?.height ?? 0)).toBeLessThanOrEqual(
+    (top?.y ?? 0) + (top?.height ?? 0) + 1
+  )
+  expect(nav?.width).toBeGreaterThan(150)
 })
 
 test('content is not hidden behind the tab bar', async ({ page }) => {

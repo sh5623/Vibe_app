@@ -10,7 +10,6 @@ test('opens latest date with 최신 badge', async ({ page }) => {
   await expect(dateBtn(page).getByText('최신')).toBeVisible()
   await expect(page.getByRole('button', { name: '다음 날짜' })).toBeDisabled()
   await expect(page).toHaveURL(/#2026-10-19$/)
-  await expect(page.getByText('10월 19일 (월) · 08:03 KST 갱신')).toBeVisible()
 })
 
 test('honours hash and prev button updates hash', async ({ page }) => {
@@ -58,7 +57,7 @@ test('calendar navigates and closes on Escape', async ({ page }) => {
   // 바깥을 눌러도 닫힌다
   await dateBtn(page).click()
   await expect(dialog).toBeVisible()
-  await page.locator('.ptitle h1').click()
+  await page.locator('.top .brand').click()
   await expect(dialog).toBeHidden()
 })
 
@@ -97,7 +96,7 @@ test('empty state', async ({ page }) => {
 test('error state after retries', async ({ page }) => {
   await mockApi(page, 'error')
   await page.goto('/morning-signal')
-  await expect(page.getByText('불러오는 중')).toBeVisible()
+  await expect(page.locator('.ms-loading')).toBeVisible()
   await expect(page.getByText('데이터를 불러오지 못했어요')).toBeVisible({ timeout: 15_000 })
   await expect(page.getByText('잠시 뒤 새로고침해 주세요.')).toBeVisible()
 })
@@ -263,106 +262,55 @@ test('home links to morning signal', async ({ page }) => {
   await expect(page).toHaveURL(/\/morning-signal(#.*)?$/)
 })
 
-// ── 왼쪽 레일(768px 이상) — 2026-11-05 사이드 레일 설계 §5.2 ───────────────────────
+// ── 상단 막대 · 하단 탭 바(B안) ───────────────────────────────────────────────────────
 
-/** (x, y) 지점에서 실제로 눌리는 요소가 레일 안인가 — 접힌 레일은 clip-path 로 56px 밖이 눌리지 않는다 */
-const hitRail = (page: Page, x: number, y: number) =>
-  page.evaluate(
-    ([px, py]) => !!document.elementFromPoint(px ?? 0, py ?? 0)?.closest('.rail'),
-    [x, y]
+test('가운데 탭 자리는 NEWS와 TO-DO에서 같다', async ({ page }) => {
+  await mockApi(page, 'normal')
+  for (const width of [1440, 1024]) {
+    await page.setViewportSize({ width, height: 800 })
+    await page.goto('/morning-signal')
+    await expect(page.locator('.views')).toBeVisible()
+    const a = await page.locator('.views').boundingBox()
+    await page.getByRole('link', { name: 'TO-DO' }).click()
+    await expect(page).toHaveURL(/\/todo$/)
+    const b = await page.locator('.views').boundingBox()
+    expect(Math.abs((a?.x ?? 0) - (b?.x ?? -1))).toBeLessThan(1)
+  }
+})
+
+test('날짜 이동은 상단 막대 오른쪽 칸 안에 있다', async ({ page }) => {
+  await mockApi(page, 'normal')
+  await page.goto('/morning-signal')
+  await expect(page.locator('.top-slot .datenav')).toBeVisible()
+  await expect(page.locator('.ptitle')).toHaveCount(0)
+  await expect(page.locator('.rail')).toHaveCount(0)
+})
+
+test('상단 막대: 로고·이름·보기 전환에 현재 화면 표시', async ({ page }) => {
+  await mockApi(page, 'normal')
+  await page.goto('/morning-signal')
+  await expect(page.locator('header.top .brand .bn')).toHaveText('Morning Signal')
+  const nav = page.locator('header.top').getByRole('navigation', { name: '보기 전환' })
+  await expect(nav.getByRole('link', { name: 'NEWS' })).toHaveAttribute('aria-current', 'page')
+  await nav.getByRole('link', { name: 'TO-DO' }).click()
+  await expect(nav.getByRole('link', { name: 'TO-DO' })).toHaveAttribute('aria-current', 'page')
+})
+
+test('휴대폰: 스크롤 뒤에도 하단 탭 바가 화면 아래에 있다', async ({ page }) => {
+  await mockApi(page, 'normal')
+  await page.setViewportSize({ width: 375, height: 812 })
+  await page.goto('/morning-signal')
+  await expect(page.locator('.tabbar')).toBeVisible()
+  await page.mouse.wheel(0, 900)
+  await expect
+    .poll(async () => {
+      const box = await page.locator('.tabbar').boundingBox()
+      return Math.round((box?.y ?? 0) + (box?.height ?? 0))
+    })
+    .toBe(812)
+  expect(await page.locator('.top').evaluate((el) => getComputedStyle(el).backdropFilter)).toBe(
+    'none'
   )
-const railRowY = async (page: Page, name: RegExp) => {
-  const b = await page.locator('.rail').getByRole('link', { name }).boundingBox()
-  return (b?.y ?? 0) + (b?.height ?? 0) / 2
-}
-
-test('header row is gone and title shows the view', async ({ page }) => {
-  await mockApi(page, 'normal')
-  await page.goto('/morning-signal')
-  await expect(page.locator('header.top')).toHaveCount(0)
-  await expect(page.locator('.ptitle h1')).toHaveText('News')
-  await expect(page.getByText('10월 19일 (월) · 08:03 KST 갱신')).toBeVisible()
-})
-
-test('rail collapsed then opens on hover', async ({ page }) => {
-  await mockApi(page, 'normal')
-  await page.goto('/morning-signal')
-  const y = await railRowY(page, /News/)
-  expect(await hitRail(page, 150, y)).toBe(false)
-  await page.mouse.move(28, y)
-  await expect.poll(() => hitRail(page, 150, y), { timeout: 3000 }).toBe(true)
-  await expect(page.locator('.rail').getByRole('link', { name: /News/ })).toContainText('24')
-})
-
-test('brushing past the rail does not open it', async ({ page }) => {
-  await mockApi(page, 'normal')
-  await page.goto('/morning-signal')
-  const y = await railRowY(page, /News/)
-  // 레일 위(28)를 지나 바로 본문(700)으로 — 두 이동을 같은 작업에서 보내 부하와 무관하게 0.12초 안에 빠져나가게 한다
-  await page.evaluate(
-    ([yy]) => {
-      for (const x of [28, 700])
-        document.dispatchEvent(
-          new PointerEvent('pointermove', {
-            clientX: x,
-            clientY: yy,
-            pointerType: 'mouse',
-            bubbles: true,
-          })
-        )
-    },
-    [y]
-  )
-  await page.waitForTimeout(450) // 고정 대기: 부재 확인 — 그 사이 레일이 열리지 않는다
-  await expect(page.locator('.rail')).not.toHaveClass(/open/)
-  expect(await hitRail(page, 150, y)).toBe(false)
-})
-
-test('keyboard focus opens the rail and Escape closes it', async ({ page }) => {
-  await mockApi(page, 'normal')
-  await page.goto('/morning-signal')
-  const y = await railRowY(page, /News/)
-  await page.keyboard.press('Tab')
-  await expect(page.locator('.rail').locator(':focus')).toHaveCount(1)
-  // 펼침·접힘은 clip-path 전환(0.3s·0.2s)이라 병렬 실행 부하에선 고정 대기가 모자란다 — 그 상태가 될 때까지 기다린다
-  await expect.poll(() => hitRail(page, 150, y), { timeout: 3000 }).toBe(true)
-  await page.keyboard.press('Escape')
-  await expect(page.locator('.rail')).not.toHaveClass(/open/)
-  await expect.poll(() => hitRail(page, 150, y), { timeout: 3000 }).toBe(false)
-})
-
-test('rail link navigates with aria-current and stays open while hovered', async ({ page }) => {
-  await mockApi(page, 'normal')
-  await page.goto('/morning-signal')
-  const nav = page.locator('.rail').getByRole('navigation', { name: '보기 전환' })
-  await expect(nav.getByRole('link', { name: /News/ })).toHaveAttribute('aria-current', 'page')
-  const y = await railRowY(page, /TO-DO/)
-  await page.mouse.move(28, y)
-  // 다 펼쳐진 뒤에 이름표 자리(x 150)를 누른다 — 병렬 부하에선 고정 대기가 모자란다
-  await expect.poll(() => hitRail(page, 150, y), { timeout: 3000 }).toBe(true)
-  await page.mouse.click(150, y)
-  await expect(page).toHaveURL(/\/morning-signal\/todo$/)
-  await expect(nav.getByRole('link', { name: /TO-DO/ })).toHaveAttribute('aria-current', 'page')
-  // 라우트 이동은 View Transition 이라 전환이 끝나기 전엔 elementFromPoint 가 전환 레이어를 집는다 — 끝날 때까지 기다린다
-  await expect(page.locator('.rail')).toHaveClass(/open/)
-  await expect.poll(() => hitRail(page, 150, y), { timeout: 3000 }).toBe(true)
-  await page.mouse.move(900, 500)
-  await expect.poll(() => hitRail(page, 150, y), { timeout: 3000 }).toBe(false)
-})
-
-test('reduced motion opens the rail at once', async ({ page }) => {
-  await page.emulateMedia({ reducedMotion: 'reduce' })
-  await mockApi(page, 'normal')
-  await page.goto('/morning-signal')
-  const y = await railRowY(page, /News/)
-  await page.mouse.move(28, y)
-  // 「바로」는 시계 시간 대신 전환 길이로 본다(부하에 따라 렌더 시각이 흔들린다): 머묾 지연·clip-path 전환이 없어야 한다
-  await expect(page.locator('.rail')).toHaveClass(/open/, { timeout: 1000 })
-  const dur = await page.evaluate(
-    () => getComputedStyle(document.querySelector('.rail-in') as Element).transitionDuration
-  )
-  expect(Number.parseFloat(dur)).toBeLessThan(0.01)
-  await expect.poll(() => hitRail(page, 150, y), { timeout: 1000 }).toBe(true)
 })
 
 // ── 배경·날짜 — 파형·출발판을 빼고 원래대로(2026-11-05 후속 「정신 없다」) ───────────────
@@ -438,19 +386,7 @@ test('shows the lattice loader while news loads', async ({ page }) => {
 
 // ── 리뷰 지적: 보기 전환이 레일·탭 바·배경을 다시 마운트하지 않는다(레이아웃 라우트) ─────────────
 
-/** 라우트가 바뀌는 순간(aria-current 가 TO-DO 로 넘어간 첫 프레임)의 선택 표시 애니메이션 수 */
-const indicatorAnimsOnSwitch = (page: Page) =>
-  page.waitForFunction(
-    () => {
-      const a = document.querySelector('.rail a[aria-current="page"]')
-      if (!a?.textContent?.includes('TO-DO')) return false
-      return { anims: document.querySelector('.rind')?.getAnimations().length ?? 0 }
-    },
-    null,
-    { polling: 'raf', timeout: 5000 }
-  )
-
-test('rail indicator slides to the new view and the shell stays mounted', async ({ page }) => {
+test('the shell stays mounted when switching views', async ({ page }) => {
   await page.addInitScript(() => {
     const w = window as unknown as { __vt: number }
     w.__vt = 0
@@ -467,10 +403,7 @@ test('rail indicator slides to the new view and the shell stays mounted', async 
   await page.evaluate(() => {
     ;(document.querySelector('.ms .aurora') as HTMLElement & { __keep?: number }).__keep = 1
   })
-  const y = await railRowY(page, /TO-DO/)
-  await page.mouse.click(28, y)
-  const r = await (await indicatorAnimsOnSwitch(page)).jsonValue()
-  expect((r as { anims: number }).anims).toBeGreaterThan(0)
+  await page.locator('.views').getByRole('link', { name: 'TO-DO' }).click()
   await expect(page).toHaveURL(/\/morning-signal\/todo$/)
   expect(
     await page.evaluate(
@@ -494,8 +427,7 @@ test('reduced motion switches views without a view transition', async ({ page })
   })
   await mockApi(page, 'normal')
   await page.goto('/morning-signal')
-  const y = await railRowY(page, /TO-DO/)
-  await page.mouse.click(28, y)
+  await page.locator('.views').getByRole('link', { name: 'TO-DO' }).click()
   await expect(page).toHaveURL(/\/morning-signal\/todo$/)
   expect(await page.evaluate(() => (window as unknown as { __vt: number }).__vt)).toBe(0)
 })

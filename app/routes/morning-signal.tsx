@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { useNavigate } from 'react-router'
 import LatticeLoader from '@/components/react-bits/LatticeLoader'
 import { useMsDay, useMsDays } from '@/hooks/use-morning-signal'
@@ -7,8 +8,7 @@ import Bento from './morning-signal/Bento'
 import Feed from './morning-signal/Feed'
 import { DateNav } from './morning-signal/Header'
 import Kpis from './morning-signal/Kpis'
-import { countsFor, pickInitialDate, stampText } from './morning-signal/model'
-import { TitleBar } from './morning-signal/Nav'
+import { countsFor, pickInitialDate } from './morning-signal/model'
 import { useMsLayout } from './morning-signal-layout'
 
 const EMPTY = { title: '아직 저장된 뉴스가 없어요', text: '매일 아침 8시에 첫 브리핑이 들어와요.' }
@@ -65,18 +65,19 @@ export default function MorningSignal() {
   // 보여 줄 데이터가 없을 때만 오류 카드를 띄우고, 이미 그린 화면은 그대로 둔다.
   const failed = (daysQ.isError && !days) || (dayQ.isError && !view)
   const state = failed ? ERROR : days?.length === 0 ? EMPTY : null
-  const stamp = view ? stampText(view.day, view.feeds) : '불러오는 중'
 
-  // 레일 News 칩 — 그날 전체 건수(레이아웃이 그린다)
-  const { setNewsCount } = useMsLayout()
+  // 건수(레이아웃 컨텍스트) · 날짜 이동은 상단 막대 오른쪽 칸으로 포털
+  const { setNewsCount, dateSlot } = useMsLayout()
   const newsTotal = curDay ? countsFor(curDay, view?.feeds ?? null).total : null
   useEffect(() => setNewsCount(newsTotal), [newsTotal, setNewsCount])
 
   return (
     <>
-      <TitleBar title="News" sub={stamp}>
-        <DateNav days={days ?? []} cur={cur} dir={sel?.dir ?? 0} onGo={go} />
-      </TitleBar>
+      {dateSlot &&
+        createPortal(
+          <DateNav days={days ?? []} cur={cur} dir={sel?.dir ?? 0} onGo={go} />,
+          dateSlot
+        )}
       {state && (
         <section className="card state">
           <b>{state.title}</b>

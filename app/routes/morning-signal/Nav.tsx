@@ -1,36 +1,51 @@
-import { Lock, Newspaper, SquareCheck } from 'lucide-react'
-import { type CSSProperties, type ReactNode, useEffect, useRef, useState } from 'react'
+import { Lock } from 'lucide-react'
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router'
 
 /**
- * 왼쪽 레일 · 휴대폰 하단 탭 바 · 본문 제목 줄 — 2026-11-05 사이드 레일 설계(second-brain
- * `.wiki-automation/specs/2026-11-05-morning-signal-sidebar-design.md` §5.2·§5.3·§6.1).
- * 아티팩트판(dashboard/morning-signal.html 의 .rail·.ptitle)과 같은 값·같은 규칙이다.
+ * 상단 막대(데스크톱 가운데 탭 · 오른쪽 날짜 칸) · 휴대폰 하단 탭 바 — 2026-11-19 B안 설계 §4.
+ * 시안(second-brain `.wiki-automation/specs/2026-11-19-morning-signal-redesign-mockup/base.css`)의
+ * .top·.top-in·.brand·.views 와 ≤760px 탭 바 규칙을 React 로 옮겼다.
  */
 
 export type MsView = 'news' | 'todo'
 
-const VIEWS = [
-  { key: 'news', label: 'News', to: '/morning-signal', Icon: Newspaper },
-  { key: 'todo', label: 'TO-DO', to: '/morning-signal/todo', Icon: SquareCheck },
-] as const
+const ICONS = {
+  news: (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M4 5h13v14H6a2 2 0 0 1-2-2z" />
+      <path d="M17 9h3v8a2 2 0 0 1-2 2M8 9h5M8 13h5" />
+    </svg>
+  ),
+  todo: (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <rect x="4" y="4" width="16" height="16" rx="3" />
+      <path d="m8 12 3 3 5-6" />
+    </svg>
+  ),
+} as const
 
-const RAIL_X = 220 // 펼친 폭(접힌 폭 56px 은 CSS --rail)
+const VIEWS = [
+  { key: 'news', label: 'NEWS', to: '/morning-signal' },
+  { key: 'todo', label: 'TO-DO', to: '/morning-signal/todo' },
+] as const
 
 /** 「동작 줄이기」면 보기 전환을 View Transition 없이 바로 바꾼다(설계 §6.1-3) */
 const reduceMotion = () =>
   typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches
 
+/** 시안 B 로고 — 남색 바탕에 눈금 세 줄(노랑 · 흰색 · 반투명 흰색) */
 export function Logo() {
   return (
-    <div className="logo" aria-hidden="true">
-      <span>
-        <i />
-        <i />
-        <i />
-      </span>
-      <i className="live" />
-    </div>
+    <span className="logo" aria-hidden="true">
+      {/* biome-ignore lint/a11y/noSvgWithoutTitle: 장식 — 부모 span 이 aria-hidden 이다 */}
+      <svg viewBox="0 0 32 32">
+        <rect width="32" height="32" rx="9" fill="#1e3a8a" />
+        <rect x="7.5" y="8.5" width="7" height="3" rx="1.5" fill="#fbbf24" />
+        <rect x="7.5" y="14.5" width="17" height="4.2" rx="2.1" fill="#ffffff" />
+        <rect x="7.5" y="21.5" width="11" height="3" rx="1.5" fill="#ffffff" fillOpacity=".5" />
+      </svg>
+    </span>
   )
 }
 
@@ -48,196 +63,80 @@ export function LockButton({ onLock }: { onLock: () => void }) {
   )
 }
 
-/**
- * 마우스를 0.12초 머물면 펼치고 떠나면 0.15초 뒤 접는다. 키보드 포커스(:focus-visible)로도 펼치고 Esc 로 접는다.
- * 안/밖 판정은 좌표로 한다 — 보기 전환(View Transition) 중에는 브라우저가 레일을 벗어난 것으로 이벤트를 보낸다.
- */
-function useRailOpen() {
-  const ref = useRef<HTMLElement>(null)
-  const [open, setOpen] = useState(false)
-  const openRef = useRef(open)
-  openRef.current = open
-
+/** 스크롤이 40px 를 넘으면 true — 상단 막대에 배경·선이 붙는다 */
+function useScrolled() {
+  const [scrolled, setScrolled] = useState(false)
   useEffect(() => {
-    const rail = ref.current
-    if (!rail) return
-    const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches
-    let timer = 0
-    let inside = openRef.current
-    let escShut = false
-    const later = (fn: () => void, ms: number) => {
-      window.clearTimeout(timer)
-      timer = window.setTimeout(fn, reduce ? 0 : ms)
-    }
-    const keyFocus = () => !!rail.querySelector(':focus-visible')
-    const onMove = (e: PointerEvent) => {
-      if (e.pointerType !== 'mouse') return
-      const width = openRef.current ? RAIL_X : rail.offsetWidth
-      const now = e.clientX < width
-      if (now === inside) return
-      inside = now
-      if (now) later(() => setOpen(true), 120)
-      else {
-        escShut = false
-        later(() => {
-          if (!keyFocus()) setOpen(false)
-        }, 150)
-      }
-    }
-    const onDocLeave = (e: PointerEvent) => {
-      if (e.pointerType !== 'mouse' || !inside) return
-      inside = false
-      later(() => {
-        if (!keyFocus()) setOpen(false)
-      }, 150)
-    }
-    const onFocusIn = () => {
-      if (!escShut && keyFocus()) {
-        window.clearTimeout(timer)
-        setOpen(true)
-      }
-    }
-    const onFocusOut = (e: FocusEvent) => {
-      if (rail.contains(e.relatedTarget as Node | null)) return
-      escShut = false
-      if (!inside) setOpen(false)
-    }
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && openRef.current) {
-        escShut = true
-        window.clearTimeout(timer)
-        setOpen(false)
-      }
-    }
-    document.addEventListener('pointermove', onMove, { passive: true })
-    document.documentElement.addEventListener('pointerleave', onDocLeave)
-    rail.addEventListener('focusin', onFocusIn)
-    rail.addEventListener('focusout', onFocusOut)
-    document.addEventListener('keydown', onKey)
-    return () => {
-      window.clearTimeout(timer)
-      document.removeEventListener('pointermove', onMove)
-      document.documentElement.removeEventListener('pointerleave', onDocLeave)
-      rail.removeEventListener('focusin', onFocusIn)
-      rail.removeEventListener('focusout', onFocusOut)
-      document.removeEventListener('keydown', onKey)
-    }
+    const on = () => setScrolled(window.scrollY > 40)
+    on()
+    window.addEventListener('scroll', on, { passive: true })
+    return () => window.removeEventListener('scroll', on)
   }, [])
-
-  return { ref, open }
+  return scrolled
 }
 
-interface RailProps {
+interface TopBarProps {
   view: MsView
-  /** 뉴스 건수(그날 전체) — 모르면 null(칩 숨김) */
-  newsCount?: number | null
-  /** 남은 일 수 — TO-DO 목록을 받은 뒤에만 */
-  todoCount?: number | null
-  onLock?: () => void
+  /** 오른쪽 칸(.top-slot) — 날짜 이동 등을 포털로 넣는다 */
+  slotRef: (el: HTMLElement | null) => void
 }
 
-/** 768px 이상에서만 보인다(CSS). 접힌 56px 아이콘 줄 → 펼치면 220px 로 본문 위에 겹친다. */
-export function Rail({ view, newsCount = null, todoCount = null, onLock }: RailProps) {
-  const { ref, open } = useRailOpen()
+/** 3칸 격자 — 오른쪽 칸이 비어도(TO-DO) 가운데 탭 자리는 그대로다. 휴대폰에서는 가운데 탭이 숨고 하단 탭 바가 대신한다. */
+export function TopBar({ view, slotRef }: TopBarProps) {
+  const scrolled = useScrolled()
   const reduce = reduceMotion()
-  const counts: Record<MsView, number | null> = { news: newsCount, todo: todoCount }
-  const active = VIEWS.findIndex((v) => v.key === view)
-  const ind: CSSProperties = { transform: `translateY(${Math.max(0, active) * 44}px)` }
   return (
-    <aside ref={ref} className={open ? 'rail open' : 'rail'} aria-label="Morning Signal 메뉴">
-      <div className="rail-in">
-        <div className="rbrand">
+    <header className={scrolled ? 'top scrolled' : 'top'}>
+      <div className="top-in">
+        <span className="brand">
           <Logo />
-          <b className="rlb" style={{ '--i': 0 } as CSSProperties}>
-            Morning Signal
-          </b>
-        </div>
-        <nav className="rnav" aria-label="보기 전환">
-          <span className="rind" style={ind} aria-hidden="true" />
-          {VIEWS.map((v, i) => {
-            const n = counts[v.key]
-            const on = view === v.key
-            return (
-              <Link
-                key={v.key}
-                to={v.to}
-                viewTransition={!reduce}
-                aria-current={on ? 'page' : undefined}
-                className={on ? 'on' : undefined}
-                title={v.label}
-                style={{ '--i': i + 1 } as CSSProperties}
-              >
-                <v.Icon size={20} strokeWidth={1.8} aria-hidden="true" />
-                <span className="rlb">{v.label}</span>
-                {n !== null && <em className="rcnt rlb">{n.toLocaleString('ko-KR')}</em>}
-              </Link>
-            )
-          })}
-        </nav>
-        <div className="rfoot">{onLock && <LockButton onLock={onLock} />}</div>
-      </div>
-    </aside>
-  )
-}
-
-/** 768px 미만에서만 보인다(CSS). 터치 높이 48px 이상, 홈 표시줄만큼 아래 여백. */
-export function MobileTabBar({ view }: { view: MsView }) {
-  const reduce = reduceMotion()
-  const active = VIEWS.findIndex((v) => v.key === view)
-  const ind: CSSProperties = { transform: `translateX(${Math.max(0, active) * 100}%)` }
-  return (
-    <div className="tabbar">
-      <nav aria-label="보기 전환">
-        <span className="tind" style={ind} aria-hidden="true" />
-        {VIEWS.map((v) => {
-          const on = view === v.key
-          return (
+          <span className="bn">Morning Signal</span>
+        </span>
+        <nav className="views" aria-label="보기 전환">
+          {VIEWS.map((v) => (
             <Link
               key={v.key}
               to={v.to}
               viewTransition={!reduce}
-              aria-current={on ? 'page' : undefined}
-              className={on ? 'on' : undefined}
+              aria-current={view === v.key ? 'page' : undefined}
             >
-              <v.Icon size={20} strokeWidth={1.8} aria-hidden="true" />
-              <span>{v.label}</span>
+              {v.label}
             </Link>
-          )
-        })}
-      </nav>
-    </div>
+          ))}
+        </nav>
+        <div className="top-slot" ref={slotRef} />
+      </div>
+    </header>
   )
 }
 
-interface TitleBarProps {
-  title: string
-  /** 제목 아래 작은 줄(갱신 스탬프) */
-  sub?: string
-  onLock?: () => void
-  /** 오른쪽(휴대폰은 다음 줄) — 날짜 이동 */
-  children?: ReactNode
+interface MobileTabBarProps {
+  view: MsView
+  /** 남은 일 수 — TO-DO 목록을 받은 뒤에만(0 이하·모름이면 배지 숨김) */
+  todoCount?: number | null
 }
 
-/** 예전 헤더 자리. 휴대폰에서는 로고·테마·자물쇠가 이 줄로 올라온다(레일이 없으므로). */
-export function TitleBar({ title, sub, onLock, children }: TitleBarProps) {
+/** 760px 이하에서만 보인다(CSS). 터치 높이 48px 이상, 홈 표시줄만큼 아래 여백. */
+export function MobileTabBar({ view, todoCount }: MobileTabBarProps) {
+  const reduce = reduceMotion()
   return (
-    <header className="ptitle">
-      <div className="pt-row">
-        <div className="pt-logo">
-          <Logo />
-        </div>
-        <div className="pt-l">
-          <h1>{title}</h1>
-          {sub !== undefined && (
-            <p className="psub">
-              <i className="live" />
-              <span>{sub}</span>
-            </p>
-          )}
-        </div>
-        <div className="pt-tools">{onLock && <LockButton onLock={onLock} />}</div>
-      </div>
-      {children}
-    </header>
+    <div className="tabbar">
+      <nav aria-label="보기 전환">
+        {VIEWS.map((v) => (
+          <Link
+            key={v.key}
+            to={v.to}
+            viewTransition={!reduce}
+            aria-current={view === v.key ? 'page' : undefined}
+          >
+            {ICONS[v.key]}
+            <span>{v.label}</span>
+            {v.key === 'todo' && todoCount !== undefined && todoCount !== null && todoCount > 0 && (
+              <em className="tab-badge">{todoCount > 99 ? '99+' : todoCount}</em>
+            )}
+          </Link>
+        ))}
+      </nav>
+    </div>
   )
 }

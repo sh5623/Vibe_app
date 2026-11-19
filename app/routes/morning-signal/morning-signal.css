@@ -66,11 +66,6 @@
   /* 오버스크롤 영역도 같은 색이 되게 html 에 둔다 */
   background: var(--bg);
 }
-::view-transition-old(root),
-::view-transition-new(root) {
-  animation: none;
-  mix-blend-mode: normal;
-}
 .ms * {
   box-sizing: border-box;
 }
@@ -114,115 +109,57 @@
   backdrop-filter: blur(12px);
 }
 
-/* 로고(레일·휴대폰 제목 줄 공용) */
+/* 로고 — 시안 B(SVG 30×30) */
 .ms .logo {
-  position: relative;
-  width: 36px;
-  height: 36px;
-  border-radius: 10px;
-  background: var(--card);
-  border: 1px solid var(--border);
-  display: grid;
-  place-items: center;
-  box-shadow: var(--shadow);
+  display: block;
+  width: 30px;
+  height: 30px;
   flex: none;
 }
-.ms .logo span {
-  display: flex;
-  gap: 3px;
-  align-items: end;
-  height: 16px;
-}
-.ms .logo span i {
-  width: 3px;
-  border-radius: 2px;
-  transform-origin: bottom;
-  animation: ms-eq 1.6s ease-in-out infinite;
-}
-.ms .logo span i:nth-child(1) {
-  background: var(--s-ai);
-  height: 40%;
-}
-.ms .logo span i:nth-child(2) {
-  background: var(--s-world);
+.ms .logo svg {
+  display: block;
+  width: 100%;
   height: 100%;
-  animation-delay: -0.4s;
 }
-.ms .logo span i:nth-child(3) {
-  background: var(--s-gh);
-  height: 65%;
-  animation-delay: -0.8s;
-}
-@keyframes ms-eq {
-  50% {
-    transform: scaleY(0.45);
-  }
-}
-.ms .live {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: var(--ok);
-  box-shadow: 0 0 0 0 var(--ok);
-  animation: ms-ping 2s infinite;
-  flex: none;
-}
-.ms .logo .live {
-  position: absolute;
-  right: -3px;
-  top: -3px;
-  width: 10px;
-  height: 10px;
-  border: 2px solid var(--card);
-}
-@keyframes ms-ping {
-  70% {
-    box-shadow: 0 0 0 7px transparent;
-  }
-  100% {
-    box-shadow: 0 0 0 0 transparent;
-  }
-}
-/* 날짜 이동 */
+/* 날짜 이동 — 시안 .datenav(알약 · 40px 원형 버튼) */
 .ms .datenav {
   position: relative;
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: 2px;
   padding: 4px;
-  border-radius: 12px;
-  background: var(--card);
-  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--panel);
+  border: 1px solid var(--line);
   box-shadow: var(--shadow);
 }
 .ms .datenav > button {
   all: unset;
   cursor: pointer;
-  height: 32px;
-  min-width: 32px;
+  width: 40px;
+  height: 40px;
   display: grid;
   place-items: center;
-  border-radius: 8px;
-  color: var(--muted-fg);
-  font: 600 18px / 1 var(--f);
+  border-radius: 50%;
+  color: var(--fg);
+  font: 600 18px / 1 var(--f-body);
   transition:
     background 0.2s,
     color 0.2s,
     transform 0.2s var(--ease);
 }
 .ms .datenav > button:hover:not([disabled]) {
-  background: var(--surface-muted);
-  color: var(--ink);
+  background: var(--hover);
 }
 .ms .datenav > button:active:not([disabled]) {
   transform: scale(0.94);
 }
 .ms .datenav > button[disabled] {
-  opacity: 0.35;
+  color: var(--tick);
   cursor: default;
 }
 .ms .datenav > button:focus-visible {
-  outline: 2px solid var(--primary);
+  outline: 2px solid var(--ai);
   outline-offset: 2px;
 }
 .ms .datenav .cur {
@@ -233,7 +170,7 @@
   overflow: hidden;
   font: 600 13px / 1 var(--f);
   color: var(--ink);
-  min-width: 136px;
+  min-width: 138px;
   justify-content: center;
 }
 .ms .datenav .cur .t {
@@ -1187,222 +1124,92 @@
   outline-offset: 2px;
 }
 
-/* ── 왼쪽 레일(768px 이상) · 휴대폰 하단 탭 바(768px 미만) · 본문 제목 줄 — 2026-11-05 사이드 레일 설계 §5.2·§5.3·§6.1 ──
-   레일은 늘 56px로 접혀 있고, 마우스를 0.12초 머물거나 키보드로 들어가면 220px로 본문 위에 겹쳐 펼친다(Nav.tsx useRailOpen).
-   폭이 아니라 clip-path 로 드러낸다(레이아웃 불변). 링크 자체는 40×40 이라 접힌 상태에서도 아이콘으로 다 눌린다. */
-.ms {
-  --rail: 56px;
-  --rail-x: 220px;
-}
-.ms .rail {
-  position: fixed;
+/* ── 상단 막대(데스크톱) · 하단 탭 바(≤760px) — 2026-11-19 B안 §4 · 시안 base.css ── */
+.ms .top {
+  position: sticky;
+  top: env(safe-area-inset-top, 0px);
   z-index: 40;
-  inset: 0 auto 0 0;
-  width: var(--rail);
-  transition: filter 0.2s;
-}
-.ms .rail.open {
-  filter: drop-shadow(14px 0 22px rgba(15, 23, 42, 0.16));
-}
-.ms .rail::after {
-  content: "";
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  left: calc(var(--rail) - 1px);
-  width: 1px;
-  background: var(--border);
-  transition: opacity 0.2s;
-}
-.ms .rail.open::after {
-  opacity: 0;
-}
-.ms .rail-in {
-  width: var(--rail-x);
-  height: 100%;
-  padding: 16px 8px;
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-  white-space: nowrap;
-  background: color-mix(in srgb, var(--card) 94%, transparent);
-  -webkit-backdrop-filter: blur(14px);
-  backdrop-filter: blur(14px);
-  border-right: 1px solid var(--border);
-  clip-path: inset(0 calc(var(--rail-x) - var(--rail)) 0 0);
-  transition: clip-path 0.2s var(--ease);
-}
-.ms .rail.open .rail-in {
-  clip-path: inset(0 0 0 0);
-  transition-duration: 0.3s;
-  background: var(--card);
-}
-.ms .rlb {
-  opacity: 0;
-  transform: translateX(-6px);
+  background: transparent;
   transition:
-    opacity 0.15s,
-    transform 0.15s;
+    background 0.2s var(--ease),
+    box-shadow 0.2s var(--ease);
 }
-.ms .rail.open .rlb {
-  opacity: 1;
-  transform: none;
-  transition:
-    opacity 0.25s var(--ease) calc(0.04s + var(--i, 0) * 30ms),
-    transform 0.3s var(--ease) calc(0.04s + var(--i, 0) * 30ms);
+.ms .top.scrolled {
+  background: rgb(246 248 252 / 0.86);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 1px 0 var(--line);
 }
-.ms .rbrand {
+/* 3칸 격자 — 오른쪽(날짜 이동)이 TO-DO 에서 비어도 가운데 탭 자리는 그대로 */
+.ms .top-in {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: 12px 20px;
+  padding-block: 14px;
+}
+.ms .top-in .brand {
+  justify-self: start;
+}
+.ms .top-slot {
+  justify-self: end;
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding-left: 2px;
-  height: 40px;
+  gap: 8px;
+  min-width: 0;
 }
-.ms .rbrand b {
-  font: 700 15px / 1 var(--f);
-  letter-spacing: -0.02em;
-  color: var(--ink);
+.ms .brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 800;
+  font-size: 16px;
+  letter-spacing: -0.01em;
 }
-.ms .rnav {
-  position: relative;
-  display: grid;
+.ms .views {
+  display: flex;
   gap: 4px;
+  padding: 4px;
+  border-radius: 999px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  justify-self: center;
+  box-shadow: var(--shadow);
 }
-.ms .rind {
-  position: absolute;
-  left: 0;
-  top: 0;
-  width: calc(var(--rail-x) - 16px);
-  height: 40px;
-  border-radius: 10px;
-  background: color-mix(in srgb, var(--primary) 12%, transparent);
-  box-shadow: inset 3px 0 0 var(--primary);
-  transition: transform 0.25s var(--ease);
-  pointer-events: none;
-}
-.ms .rnav a {
-  all: unset;
-  box-sizing: border-box;
-  position: relative;
-  cursor: pointer;
-  width: 40px;
-  height: 40px;
-  display: grid;
+.ms .views a {
+  display: inline-grid;
   place-items: center;
-  color: var(--muted-fg);
-  border-radius: 10px;
-  transition:
-    color 0.2s,
-    transform 0.2s var(--ease);
-}
-/* 펼쳤을 때 줄 전체가 눌리고 호버된다(접힌 상태에선 clip 밖이라 안 눌린다) */
-.ms .rnav a::before {
-  content: "";
-  position: absolute;
-  left: 0;
-  top: 0;
-  width: calc(var(--rail-x) - 16px);
-  height: 40px;
-  border-radius: 10px;
-  transition: background 0.2s;
-}
-.ms .rnav a:hover:not(.on)::before {
-  background: var(--surface-muted);
-}
-.ms .rnav a:hover {
-  color: var(--ink);
-}
-.ms .rnav a:active {
-  transform: scale(0.94);
-}
-.ms .rnav a.on {
-  color: var(--primary);
-}
-.ms .rnav a:focus-visible {
-  outline: 2px solid var(--primary);
-  outline-offset: -2px;
-}
-.ms .rnav a svg {
-  position: relative;
-}
-.ms .rnav a .rlb:not(.rcnt) {
-  position: absolute;
-  left: 48px;
-  top: 0;
-  font: 600 13px / 40px var(--f);
+  min-height: 40px;
+  min-width: 76px;
+  padding: 0 16px;
+  box-sizing: border-box;
+  border-radius: 999px;
+  color: var(--muted);
+  text-decoration: none;
+  font-weight: 700;
+  font-size: 13px;
   letter-spacing: 0.02em;
 }
-.ms .rcnt {
-  position: absolute;
-  left: calc(var(--rail-x) - 16px - 10px);
-  top: 11px;
-  translate: -100% 0;
-  font: 600 11px / 1 var(--fm);
-  font-style: normal;
-  padding: 4px 7px;
-  border-radius: 6px;
-  background: var(--surface-muted);
-  color: var(--muted-fg);
-  pointer-events: none;
+.ms .views a:hover {
+  color: var(--fg);
+  background: var(--hover);
 }
-.ms .rnav a.on .rcnt {
-  background: color-mix(in srgb, var(--primary) 16%, transparent);
-  color: var(--primary);
+.ms .views a[aria-current="page"] {
+  background: var(--ai);
+  color: var(--on-lead);
+  box-shadow: 0 6px 16px -6px rgb(37 99 235 / 0.6);
 }
-.ms .rfoot {
-  margin-top: auto;
-  display: grid;
-  gap: 8px;
-  justify-items: start;
+.ms .views a:focus-visible {
+  outline: 2px solid var(--ai);
+  outline-offset: 2px;
 }
-
-/* 본문 제목 줄(예전 헤더 자리) */
-.ms .ptitle {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px 16px;
-  flex-wrap: wrap;
-}
-.ms .pt-row {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  min-width: 0;
-}
-.ms .pt-l {
-  min-width: 0;
-}
-.ms .ptitle h1 {
-  margin: 0;
-  font: 700 22px / 1.15 var(--f);
-  letter-spacing: -0.02em;
-}
-.ms .psub {
-  margin: 4px 0 0;
-  font: 500 12px / 1.2 var(--fm);
-  color: var(--muted-fg);
-  display: flex;
-  align-items: center;
-  gap: 7px;
-}
-.ms .pt-logo,
-.ms .pt-tools {
-  display: none;
-}
-
-/* 하단 탭 바(휴대폰) */
 .ms .tabbar {
   display: none;
 }
 
-/* 보기 전환은 본문만 0.2초 겹쳐 바꾼다(React Router viewTransition 링크). 테마 전환 중에는 이름을 떼어 원형 효과가 본문까지 덮게 한다 */
+/* 보기 전환은 본문만 0.2초 겹쳐 바꾼다(React Router viewTransition 링크). 탭 바는 따로 이름을 붙여 본문 스냅숏에서 뺀다 */
 .ms .wrap {
   view-transition-name: msmain;
-}
-/* 레일·탭 바는 따로 이름을 붙여 본문 스냅숏에서 빼고, 겹침 없이 바로 바꾼다 */
-.ms .rail {
-  view-transition-name: msrail;
 }
 .ms .tabbar {
   view-transition-name: mstab;
@@ -1427,91 +1234,116 @@
   }
 }
 
-@media (min-width: 768px) {
-  .ms {
-    padding-left: var(--rail);
-  }
-}
-@media (max-width: 767.98px) {
-  .ms .rail {
-    display: none;
-  }
-  .ms .ptitle .pt-row {
-    flex: 1 1 100%;
-  }
-  .ms .pt-logo {
-    display: block;
-  }
-  .ms .pt-l {
-    flex: 1;
-  }
-  .ms .pt-tools {
+/* 휴대폰: 화면 전환 = 하단 탭 바(엄지 닿는 곳), 날짜 = 상단 막대 오른쪽 */
+@media (max-width: 760px) {
+  .ms .top-in {
     display: flex;
-    gap: 8px;
+    flex-wrap: nowrap;
+    padding-block: 10px;
   }
-  .ms .ptitle h1 {
-    font-size: 19px;
+  .ms .brand {
+    font-size: 15px;
+  }
+  .ms .brand .bn {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+  /* 흐림(backdrop-filter)은 고정 자식의 기준점을 바꿔 하단 탭 바를 머리줄로 끌어올린다 — 휴대폰은 불투명 배경만 */
+  .ms .top.scrolled {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    background: var(--bg);
+  }
+  .ms .top-slot {
+    margin-left: auto;
+  }
+  .ms .datenav .cur {
+    min-width: 0;
+    font-size: 13px;
+    white-space: nowrap;
+    gap: 6px;
+  }
+  .ms .views {
+    display: none;
   }
   .ms .tabbar {
     display: block;
     position: fixed;
-    z-index: 40;
+    z-index: 50;
     left: 0;
     right: 0;
     bottom: 0;
-    background: color-mix(in srgb, var(--card) 94%, transparent);
-    -webkit-backdrop-filter: blur(14px);
-    backdrop-filter: blur(14px);
-    border-top: 1px solid var(--border);
+    background: rgb(255 255 255 / 0.94);
+    -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: blur(12px);
+    border-top: 1px solid var(--line);
+    box-shadow: 0 -4px 12px -8px rgb(15 23 42 / 0.18);
     padding: 6px max(12px, env(safe-area-inset-right, 0px))
       calc(6px + env(safe-area-inset-bottom, 0px)) max(12px, env(safe-area-inset-left, 0px));
   }
   .ms .tabbar nav {
-    position: relative;
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-  }
-  .ms .tind {
-    position: absolute;
-    left: 0;
-    top: 0;
-    width: 50%;
-    height: 100%;
-    border-radius: 12px;
-    background: color-mix(in srgb, var(--primary) 12%, transparent);
-    transition: transform 0.25s var(--ease);
-    pointer-events: none;
+    display: flex;
+    gap: 4px;
   }
   .ms .tabbar a {
     all: unset;
     position: relative;
     cursor: pointer;
+    flex: 1;
+    min-width: 0;
     min-height: 52px;
     display: grid;
     justify-items: center;
     align-content: center;
     gap: 3px;
-    font: 600 11px / 1 var(--f);
-    color: var(--muted-fg);
+    border-radius: 12px;
+    font: 700 11px / 1 var(--f-body);
+    color: var(--muted);
     -webkit-tap-highlight-color: transparent;
     transition:
       color 0.2s,
       transform 0.12s;
   }
+  .ms .tabbar a svg {
+    width: 22px;
+    height: 22px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
   .ms .tabbar a:active {
     transform: scale(0.94);
   }
-  .ms .tabbar a.on {
-    color: var(--primary);
+  .ms .tabbar a[aria-current="page"] {
+    background: var(--ai-soft);
+    color: var(--ai-ink);
   }
   .ms .tabbar a:focus-visible {
-    outline: 2px solid var(--primary);
+    outline: 2px solid var(--ai);
     outline-offset: -2px;
-    border-radius: 12px;
   }
-  /* 탭 바에 마지막 내용이 가리지 않게 */
+  .ms .tab-badge {
+    position: absolute;
+    top: 4px;
+    left: calc(50% + 8px);
+    min-width: 16px;
+    padding: 2px 4px;
+    border-radius: 999px;
+    background: var(--hot);
+    color: #fff;
+    font: 700 10px / 1 var(--f-num);
+    font-style: normal;
+    text-align: center;
+  }
+  /* 탭 바에 마지막 내용이 가리지 않게 — 탭 바 높이(약 64px) + 홈 표시줄 */
   .ms .wrap {
-    padding-bottom: calc(64px + 64px + env(safe-area-inset-bottom, 0px));
+    padding-bottom: calc(64px + 24px + env(safe-area-inset-bottom, 0px));
   }
 }
 
@@ -1549,12 +1381,6 @@
   }
   .ms .bento {
     grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
-@media (max-width: 640px) {
-  .ms .ptitle .datenav {
-    flex: 1 1 100%;
-    justify-content: space-between;
   }
 }
 @media (max-width: 600px) {

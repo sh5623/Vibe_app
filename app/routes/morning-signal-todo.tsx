@@ -1,12 +1,10 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useLock, useTodoSession } from '@/hooks/use-morning-signal-todo'
 import type { Route } from './+types/morning-signal-todo'
-import { TitleBar } from './morning-signal/Nav'
 import PinGate from './morning-signal/todo/PinGate'
 import TodoList from './morning-signal/todo/TodoList'
 import { CreateSheet, DetailSheet } from './morning-signal/todo/TodoSheets'
 import { useMsLayout } from './morning-signal-layout'
-import './morning-signal/todo/todo.css'
 
 const TOAST_MS = 3000
 const NEW_ROW_MS = 900
@@ -45,8 +43,7 @@ export default function MorningSignalTodo() {
       setPending(null)
     }
   }, [unlocked])
-  const onLock = unlocked ? () => lock.mutate() : undefined
-  // 레일 TO-DO 칩·자물쇠(레이아웃이 그린다)
+  // 탭 바 TO-DO 배지·자물쇠(레이아웃이 그린다)
   const { setTodoCount, setOnLock } = useMsLayout()
   useEffect(() => setTodoCount(unlocked ? pending : null), [unlocked, pending, setTodoCount])
   const relock = lock.mutate
@@ -57,7 +54,6 @@ export default function MorningSignalTodo() {
 
   return (
     <>
-      <TitleBar title="TO-DO" onLock={onLock} />
       {session.isPending ? null : unlocked ? (
         <>
           <TodoList
