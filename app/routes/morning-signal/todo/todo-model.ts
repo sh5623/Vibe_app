@@ -34,30 +34,26 @@ function byDueThenCreated(a: Todo, b: Todo): number {
   return due || a.createdAt.localeCompare(b.createdAt)
 }
 
-/** 「남은 일」 묶음 — 중요 표시는 상태와 무관하게 맨 위 IMPORTANT 로(그 안은 진행 중 → 할 일, 각각 마감순) */
+/** 「남은 일」 묶음 — 중요 표시와 무관하게 진행 중 → 할 일, 각각 마감순 */
 export function splitPending(todos: Todo[]): {
-  important: Todo[]
   progress: Todo[]
   todo: Todo[]
 } {
   const open = todos.filter((t) => t.status !== 'done')
-  const imp = open.filter((t) => t.important)
-  const rest = open.filter((t) => !t.important)
   return {
-    important: [
-      ...imp.filter((t) => t.status === 'in_progress').sort(byDueThenCreated),
-      ...imp.filter((t) => t.status === 'todo').sort(byDueThenCreated),
-    ],
-    progress: rest.filter((t) => t.status === 'in_progress').sort(byDueThenCreated),
-    todo: rest.filter((t) => t.status === 'todo').sort(byDueThenCreated),
+    progress: open.filter((t) => t.status === 'in_progress').sort(byDueThenCreated),
+    todo: open.filter((t) => t.status === 'todo').sort(byDueThenCreated),
   }
 }
 
+/** 「중요」 카드 — 중요 표시한 남은 일(진행 중 먼저, 각각 마감순) */
+export function importantPending(todos: Todo[]): Todo[] {
+  const { progress, todo } = splitPending(todos.filter((t) => t.important))
+  return [...progress, ...todo]
+}
+
 /** 이 할 일이 「남은 일」 어느 묶음에 들어가는가 */
-export function pendingGroup(
-  t: Pick<Todo, 'important' | 'status'>
-): 'important' | 'progress' | 'todo' {
-  if (t.important) return 'important'
+export function pendingGroup(t: Pick<Todo, 'status'>): 'progress' | 'todo' {
   return t.status === 'in_progress' ? 'progress' : 'todo'
 }
 

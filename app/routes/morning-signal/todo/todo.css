@@ -663,30 +663,37 @@
   padding: 0;
   list-style: none;
 }
-.ms .todo-sub {
-  margin: 0;
-  padding: 10px 0 0 56px;
-  font: 600 10px var(--fm);
-  letter-spacing: 0.1em;
-}
-
-/* ── 중요(IMPORTANT) — 「남은 일」 맨 위 보라 상자 ─────────────────────
+/* ── 중요 카드 효과 — 목록 둘레 별빛 + 제목 글자색 흐름 ─────────────────
    테두리 별빛은 react-bits StarBorder(캔버스, 화면 밖·동작 줄이기면 스스로 멈춤).
    제목 글자색은 react-bits GradientText 의 linear·yoyo 를 CSS 키프레임으로 옮겼다 —
    원본은 줄마다 requestAnimationFrame 으로 그라데이션 문자열을 다시 쓰므로, 휴대폰 부담을 줄이려고 JS 없이 돌린다.
-   흐름은 이 상자 안에서만 — 상자 밖 중요 줄(거를 때 등)은 같은 색을 멈춘 채로 둔다. */
-.ms .todo-imp.star-border {
+   「남은 일」의 중요 줄은 정적 ★ 표시뿐이다. */
+.ms .imp-star.star-border {
   display: block;
-  margin: 0 -8px 8px;
-  padding: 0 8px;
+  margin: 0;
+  padding: 8px;
   font-weight: inherit;
   line-height: inherit;
   text-align: start;
 }
-.ms .todo-sub.important {
-  color: var(--td-imp);
+.ms .todo-board .lk.imp-flow {
+  background-image: linear-gradient(
+    90deg,
+    var(--td-b1),
+    var(--td-imp),
+    var(--td-imp-3),
+    var(--td-imp),
+    var(--td-b1)
+  );
+  background-size: 300% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: td-imp-flow 8s ease-in-out infinite alternate;
 }
-/* 제목 글자색 규칙은 아래 .trow-tt·.s-done .trow-tt 뒤에 둔다(선택자 우선순위 순서) */
+.ms .todo-board .lk.imp-flow:hover {
+  -webkit-text-fill-color: transparent;
+}
 .ms .todo-dt-imp {
   margin: 0 0 4px;
   font: 600 10px var(--fm);
@@ -791,26 +798,18 @@
 .ms .s-done .si-chk {
   stroke-dashoffset: 0;
 }
-/* 목록의 동그라미 — 시안 .tick-btn(26px · 할 일 옅은 선 · 진행 중 파랑 · 완료 초록, 누를 수 있는 곳에 마우스를 올리면 체크가 비친다) */
+/* 목록의 동그라미 — 시안 .tick-btn 크기(26px). 할 일은 옅은 선 원, 진행 중·완료는 상태 시트의 아이콘과 같은 모양·색(반 찬 원 · 초록 체크 원).
+   누를 수 있는 할 일 줄에 마우스를 올리면 체크가 비친다 */
 .ms .tasks .trow-ck .si {
   width: 26px;
   height: 26px;
 }
-.ms .tasks .si-ring {
-  stroke-width: 1.6;
-}
 .ms .tasks .s-todo .si-ring {
+  stroke-width: 1.6;
   stroke: var(--line);
 }
-/* 진행 중(주황 링 + 반 찬 원)은 바텀시트(StatusSheet)와 같게 — 위 공통 .s-progress 규칙을 그대로 쓴다 */
-.ms .tasks .s-done .si-ring {
-  stroke: var(--ok);
-}
-.ms .tasks .s-done .si-disc {
-  fill: var(--ok);
-}
 @media (hover: hover) {
-  .ms .tasks .trow:not(.s-done) .trow-ck:hover .si-chk {
+  .ms .tasks .trow.s-todo .trow-ck:hover .si-chk {
     stroke: var(--muted);
     stroke-dashoffset: 0;
   }
@@ -842,25 +841,6 @@
 .ms .s-done .trow-tt {
   background-size: 100% 1.2px;
   color: var(--muted-fg);
-}
-/* 중요 제목 — 남색→보라. 끝난 일에는 .imp 가 붙지 않아 위 취소선이 그대로 쓰인다 */
-.ms .trow.imp .trow-tt {
-  background: linear-gradient(90deg, var(--td-b1), var(--td-imp));
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
-}
-.ms .todo-imp .trow.imp .trow-tt {
-  background-image: linear-gradient(
-    90deg,
-    var(--td-b1),
-    var(--td-imp),
-    var(--td-imp-3),
-    var(--td-imp),
-    var(--td-b1)
-  );
-  background-size: 300% 100%;
-  animation: td-imp-flow 8s ease-in-out infinite alternate;
 }
 @keyframes td-imp-flow {
   from {

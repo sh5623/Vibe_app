@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react'
 import LatticeLoader from '@/components/react-bits/LatticeLoader'
 import { springDone } from '@/components/react-bits/SpringCheck'
-import StarBorder from '@/components/react-bits/StarBorder'
 import { useTodoList, useUpdateTodo } from '@/hooks/use-morning-signal-todo'
 import type { Todo, TodoStatus } from '../../../../api/morning-signal-todo'
 import { SAVE_FAILED, StatusIcon, StatusSheet, statusClass } from './TodoSheets'
@@ -16,14 +15,11 @@ import {
 } from './todo-model'
 
 // 「남은 일」 목록 — 보드(TodoBoard)의 남은 일 카드 본문. 시안 todo.js listHTML · views.css .tasks/.task/.tick-btn/.star.
-// 중요 표시는 맨 위 별빛 상자(IMPORTANT), 그 아래 진행 중 → 할 일. 줄마다 상태 칩, 거르기(전체·할 일·진행 중)는 보드가 정한다.
+// 중요 표시는 제목 옆 별(★)뿐 — 진행 중 → 할 일 묶음에 섞여 들어가고, 별빛 상자는 「중요」 카드(TodoBoard)에 있다. 줄마다 상태 칩, 거르기(전체·할 일·진행 중)는 보드가 정한다.
 
 /** DONE 이 된 줄이 「남은 일」에서 빠지기까지 — 체크 모션(~0.45s) + 접힘(0.36s) + 여유 */
 const LEAVE_MS = 850
 const ENTER_MS = 900
-/** IMPORTANT 테두리 별빛 색 — 캔버스에 칠하므로 CSS 변수가 아니라 실제 색이어야 한다(--td-imp 와 같은 값) */
-const IMP_STAR = '#8b5cf6'
-
 /** 줄 끝 상태 칩 — 시안 todo.js ST(할 일 · 진행 중). 빠지는 동안의 DONE 은 완료 */
 export const STATUS_CHIP: Record<TodoStatus, { label: string; cls: string }> = {
   todo: { label: '할 일', cls: 'chip' },
@@ -38,7 +34,7 @@ export const STAR_ICON = (
   </svg>
 )
 
-type Group = 'important' | 'progress' | 'todo'
+type Group = 'progress' | 'todo'
 
 interface Leaving {
   todo: Todo
@@ -109,8 +105,6 @@ function Row({ t, today, leaving, entering, onStatus, onOpen }: RowProps) {
     'task',
     'trow',
     `s-${statusClass(t.status)}`,
-    // 중요 강조(보라 글자) — 끝난 일은 강조를 뺀다. 글자색 흐름은 IMPORTANT 상자 안에서만(CSS)
-    t.important && t.status !== 'done' ? 'imp' : '',
     leaving ? 'leaving' : '',
     entering ? 'enter' : '',
   ]
@@ -280,33 +274,10 @@ export default function TodoList({
         <p className="empty">아직 할 일이 없어요. Add로 첫 할 일을 만들어 보세요.</p>
       ) : live.length === 0 && leaving.size === 0 ? (
         <p className="empty">남은 일이 없어요</p>
-      ) : split.important.length + rest.length === 0 ? (
+      ) : rest.length === 0 ? (
         <p className="empty">이 상태의 할 일이 없어요.</p>
       ) : (
-        <>
-          {split.important.length > 0 && (
-            // 중요 묶음 — 테두리를 따라 별빛 하나가 돈다(react-bits StarBorder, 화면 밖·동작 줄이기면 멈춤)
-            <StarBorder
-              as="div"
-              className="todo-imp"
-              theme="light"
-              color={IMP_STAR}
-              backgroundColor="var(--td-imp-bg)"
-              borderColor="var(--td-imp-line)"
-              textColor="inherit"
-              radius={14}
-              duration={6}
-              trailLength={0.35}
-              glow={0.5}
-              hover="none"
-              clickPulse={false}
-            >
-              <p className="todo-sub important">IMPORTANT</p>
-              <ul className="tasks">{split.important.map(row)}</ul>
-            </StarBorder>
-          )}
-          {rest.length > 0 && <ul className="tasks">{rest.map(row)}</ul>}
-        </>
+        <>{rest.length > 0 && <ul className="tasks">{rest.map(row)}</ul>}</>
       )}
       <StatusSheet todo={statusFor} onPick={pick} onClose={() => setStatusFor(null)} />
     </div>

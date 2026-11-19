@@ -1,4 +1,5 @@
 import { type CSSProperties, Fragment, useState } from 'react'
+import StarBorder from '@/components/react-bits/StarBorder'
 import { useDoneHistory, useTodoList } from '@/hooks/use-morning-signal-todo'
 import type { Todo } from '../../../../api/morning-signal-todo'
 import Card, { Ticks } from '../Card'
@@ -9,9 +10,9 @@ import {
   dueLeft,
   dueText,
   dueWithin,
+  importantPending,
   kstToday,
   type PendingFilter,
-  splitPending,
 } from './todo-model'
 
 // TO-DO 보드 — 2026-11-19 B안 §4. 1행 상태 | 중요 | 마감 임박 · 2행 남은 일(2칸) | 완료 기록.
@@ -42,6 +43,9 @@ const PLUS = (
     <path d="M12 5v14M5 12h14" />
   </svg>
 )
+
+/** 「중요」 카드 테두리 별빛 색 — 캔버스에 칠하므로 CSS 변수가 아니라 실제 색이어야 한다(--td-imp 와 같은 값) */
+const IMP_STAR = '#8b5cf6'
 
 /** 마감이 가까운 것 → 시각 → 먼저 추가한 것 */
 function byDue(a: Todo, b: Todo): number {
@@ -95,7 +99,7 @@ export default function TodoBoard({
   const nProg = pending.filter((t) => t.status === 'in_progress').length
   // 상태 카드는 「오늘 완료」(설계 §4 · 시안 todo.js) — 완료 기록(최근 7일) 중 오늘(KST) 것만
   const nDone = doneToday(done.data ?? [], today)
-  const imp = splitPending(pending).important
+  const imp = importantPending(pending)
   const soon = pending.filter((t) => dueWithin(t, today, DUE_DAYS)).sort(byDue)
   const groups = doneGroups(done.data ?? [], today)
 
@@ -106,8 +110,8 @@ export default function TodoBoard({
   ]
 
   /** 중요·마감 임박 줄의 제목 — 누르면 상세 */
-  const open = (t: Todo) => (
-    <button type="button" className="lk" onClick={() => onOpen(t.id)}>
+  const open = (t: Todo, cls = '') => (
+    <button type="button" className={`lk${cls ? ` ${cls}` : ''}`} onClick={() => onOpen(t.id)}>
       {t.title}
     </button>
   )
@@ -138,24 +142,41 @@ export default function TodoBoard({
         {imp.length === 0 ? (
           <p className="empty">중요 표시한 일이 없어요</p>
         ) : (
-          <ul className="rows">
-            {imp.map((t) => {
-              const chip = STATUS_CHIP[t.status]
-              const due = dueText(t)
-              return (
-                <li key={t.id}>
-                  <span className="ico star-ico">{STAR_ICON}</span>
-                  <strong>
-                    {open(t)}
-                    <span className={chip.cls}>{chip.label}</span>
-                  </strong>
-                  <span className="s">
-                    {due ? `마감 ${due} · ${dueLeft(t, today)}` : '마감 없음'}
-                  </span>
-                </li>
-              )
-            })}
-          </ul>
+          // 중요 효과 — 목록 둘레를 별빛 하나가 돈다(react-bits StarBorder, 화면 밖·동작 줄이기면 멈춤). 제목 글자색은 흐른다(CSS imp-flow)
+          <StarBorder
+            as="div"
+            className="imp-star"
+            theme="light"
+            color={IMP_STAR}
+            backgroundColor="var(--td-imp-bg)"
+            borderColor="var(--td-imp-line)"
+            textColor="inherit"
+            radius={14}
+            duration={6}
+            trailLength={0.35}
+            glow={0.5}
+            hover="none"
+            clickPulse={false}
+          >
+            <ul className="rows">
+              {imp.map((t) => {
+                const chip = STATUS_CHIP[t.status]
+                const due = dueText(t)
+                return (
+                  <li key={t.id}>
+                    <span className="ico star-ico">{STAR_ICON}</span>
+                    <strong>
+                      {open(t, 'imp-flow')}
+                      <span className={chip.cls}>{chip.label}</span>
+                    </strong>
+                    <span className="s">
+                      {due ? `마감 ${due} · ${dueLeft(t, today)}` : '마감 없음'}
+                    </span>
+                  </li>
+                )
+              })}
+            </ul>
+          </StarBorder>
         )}
       </Card>
 
