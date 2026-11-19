@@ -8,6 +8,7 @@ import {
   dueText,
   dueWithin,
   filterPending,
+  importantPending,
   isDueSoon,
   kstToday,
   STATUS_LABEL,
@@ -51,11 +52,22 @@ describe('todo-model', () => {
     ])
     expect(r.progress.map((t) => t.id)).toEqual(['p-due', 'p-early', 'p-late'])
     expect(r.todo.map((t) => t.id)).toEqual(['t-2', 't-1'])
-    expect(r.important).toEqual([])
   })
 
-  it('splitPending pulls important to its own group — in progress first, then due', () => {
+  it('splitPending keeps important items in their status groups', () => {
     const r = splitPending([
+      todo('t', { dueDate: '2026-10-24' }),
+      todo('i-todo', { important: true, dueDate: '2026-10-22' }),
+      todo('i-prog', { important: true, status: 'in_progress', dueDate: '2026-11-30' }),
+      todo('p', { status: 'in_progress', dueDate: '2026-11-01' }),
+      todo('i-done', { important: true, status: 'done' }),
+    ])
+    expect(r.progress.map((t) => t.id)).toEqual(['p', 'i-prog'])
+    expect(r.todo.map((t) => t.id)).toEqual(['i-todo', 't'])
+  })
+
+  it('importantPending — important only, in progress first, then due', () => {
+    const r = importantPending([
       todo('t', { dueDate: '2026-10-24' }),
       todo('i-todo-due', { important: true, dueDate: '2026-10-25' }),
       todo('i-todo', { important: true }),
@@ -63,9 +75,7 @@ describe('todo-model', () => {
       todo('p', { status: 'in_progress' }),
       todo('i-done', { important: true, status: 'done' }),
     ])
-    expect(r.important.map((t) => t.id)).toEqual(['i-prog', 'i-todo-due', 'i-todo'])
-    expect(r.progress.map((t) => t.id)).toEqual(['p'])
-    expect(r.todo.map((t) => t.id)).toEqual(['t'])
+    expect(r.map((t) => t.id)).toEqual(['i-prog', 'i-todo-due', 'i-todo'])
   })
 
   it('dueText', () => {

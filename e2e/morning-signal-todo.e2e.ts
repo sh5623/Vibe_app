@@ -500,25 +500,45 @@ function seedImportant() {
   )
 }
 
-test('important group sits on top inside a star border', async ({ page }) => {
+test('남은 일 has no important box — important rows keep only a static ★', async ({ page }) => {
   await api(page, { unlocked: true, seed: seedImportant() })
   await page.goto('/morning-signal/todo')
-  const imp = page.locator('.todo-pending .todo-imp')
-  await expect(page.locator('.todo-pending .todo-sub').first()).toHaveText('IMPORTANT')
-  await expect(imp.locator('canvas.star-border__light')).toHaveCount(1)
-  // 별빛 캔버스는 상자 밖 48px까지 번진다 — 375 폭에서 가로 스크롤을 만들지 않는다
-  await noHorizontalScroll(page)
-  await expect(imp.locator('.trow')).toHaveCount(2)
-  // 그 안은 진행 중 → 할 일, 상태는 줄 끝 칩으로 · 제목 옆 별
-  await expect(imp.locator('.trow').first()).toContainText('주말 장보기')
-  await expect(imp.locator('.trow').first().locator('.chip')).toHaveText('진행 중')
-  await expect(imp.locator('.trow').nth(1).locator('.chip')).toHaveText('할 일')
-  await expect(imp.locator('.trow .star')).toHaveCount(2)
+  const pending = page.locator('.todo-pending')
+  await expect(pending.locator('.todo-imp')).toHaveCount(0)
+  await expect(pending.locator('canvas.star-border__light')).toHaveCount(0)
+  await expect(pending.getByText('IMPORTANT', { exact: true })).toHaveCount(0)
   await expect(pendingRows(page)).toHaveCount(5)
-  await expect(imp.locator('.trow-tt').first()).not.toHaveCSS('animation-name', 'none')
+  // 중요 줄도 일반 줄과 같은 상태 묶음에 — 진행 중 둘이 먼저, 별은 제목 옆에 정적으로
+  const progress = pendingRows(page).filter({ has: page.locator('.chip.ai') })
+  await expect(progress).toHaveCount(2)
+  const shop = pendingRows(page).filter({ hasText: '주말 장보기' })
+  const wedding = pendingRows(page).filter({ hasText: '민수 결혼식 참석' })
+  await expect(shop.locator('.star')).toHaveCount(1)
+  await expect(wedding.locator('.star')).toHaveCount(1)
+  await expect(pending.locator('.star')).toHaveCount(2)
+  // 제목은 흐르는 글자색이 아니다
+  await expect(shop.locator('.trow-tt')).toHaveCSS('animation-name', 'none')
+  await expect(shop.locator('.trow-tt')).not.toHaveCSS(
+    '-webkit-text-fill-color',
+    'rgba(0, 0, 0, 0)'
+  )
 })
 
-test('create with ★ 중요 sends important and lands in IMPORTANT', async ({ page }) => {
+test('중요 card carries the star border and flowing title color', async ({ page }) => {
+  await api(page, { unlocked: true, seed: seedImportant() })
+  await page.goto('/morning-signal/todo')
+  const imp = card(page, 'imp')
+  await expect(imp.locator('.imp-star canvas.star-border__light')).toHaveCount(1)
+  // 별빛 캔버스는 상자 밖 48px까지 번진다 — 375 폭에서 가로 스크롤을 만들지 않는다
+  await noHorizontalScroll(page)
+  await expect(imp.locator('.imp-star .rows > li')).toHaveCount(2)
+  const titles = imp.locator('.lk.imp-flow')
+  await expect(titles).toHaveCount(2)
+  await expect(titles.first()).toHaveText('주말 장보기')
+  await expect(titles.first()).not.toHaveCSS('animation-name', 'none')
+})
+
+test('create with ★ 중요 sends important and lands in the 중요 card', async ({ page }) => {
   const state = await api(page, { unlocked: true, seed: seedDay() })
   await page.goto('/morning-signal/todo')
   let sheet = await openCreate(page)
@@ -535,12 +555,12 @@ test('create with ★ 중요 sends important and lands in IMPORTANT', async ({ p
   await sheet.getByRole('button', { name: '추가' }).click()
   await expect(sheet).toBeHidden()
   expect(state.lastCreate).toMatchObject({ important: true })
-  await expect(page.locator('.todo-imp .trow')).toHaveCount(1)
-  await expect(page.locator('.todo-imp .trow')).toContainText('보고서 제출')
   await expect(card(page, 'imp').locator('.rows > li')).toHaveCount(1)
+  await expect(card(page, 'imp').locator('.rows > li')).toContainText('보고서 제출')
+  await expect(pendingRows(page).filter({ hasText: '보고서 제출' }).locator('.star')).toHaveCount(1)
 })
 
-test('edit turns important off and the group goes away', async ({ page }) => {
+test('edit turns important off and it leaves the 중요 card', async ({ page }) => {
   const state = await api(page, { unlocked: true, seed: seedImportant() })
   await page.goto('/morning-signal/todo')
   await page.locator('.todo-pending .trow-tx').filter({ hasText: '민수 결혼식 참석' }).click()
@@ -555,8 +575,11 @@ test('edit turns important off and the group goes away', async ({ page }) => {
   await expect(detail.getByRole('heading', { name: '민수 결혼식 참석!' })).toBeVisible()
   expect(state.lastUpdate).toMatchObject({ important: false })
   await page.keyboard.press('Escape')
-  await expect(page.locator('.todo-imp .trow')).toHaveCount(1)
-  await expect(page.locator('.todo-imp')).not.toContainText('민수 결혼식 참석')
+  await expect(card(page, 'imp').locator('.rows > li')).toHaveCount(1)
+  await expect(card(page, 'imp')).not.toContainText('민수 결혼식 참석')
+  await expect(
+    pendingRows(page).filter({ hasText: '민수 결혼식 참석!' }).locator('.star')
+  ).toHaveCount(0)
 })
 
 test('edit without touching ★ 중요 does not send it', async ({ page }) => {
@@ -592,6 +615,56 @@ test('status to DONE leaves pending and lands in today done history', async ({ p
   const done = card(page, 'done')
   await expect(done.locator('h3').first()).toHaveText('오늘')
   await expect(done.locator('ul.done').first()).toContainText('자동차 보험 갱신 비교')
+})
+
+/** 줄 아이콘·시트 옵션 아이콘의 비교용 계산 스타일 */
+async function iconStyle(icon: import('@playwright/test').Locator) {
+  return icon.evaluate((svg) => {
+    const g = (sel: string, props: string[]) => {
+      const el = svg.querySelector(sel)
+      if (!el) return null
+      const cs = getComputedStyle(el)
+      return Object.fromEntries(props.map((p) => [p, cs.getPropertyValue(p)]))
+    }
+    return {
+      ring: g('.si-ring', ['stroke', 'fill']),
+      pie: g('.si-pie', ['fill', 'opacity']),
+      disc: g('.si-disc', ['fill', 'transform']),
+      chk: g('.si-chk', ['stroke', 'stroke-dashoffset']),
+    }
+  })
+}
+
+test('row icon matches the status sheet icon for 진행 중 and 완료, 할 일 keeps its look', async ({
+  page,
+}) => {
+  await api(page, { unlocked: true, seed: seedDay() })
+  await page.goto('/morning-signal/todo')
+  const prog = pendingRows(page)
+    .filter({ has: page.locator('.chip.ai') })
+    .first()
+  const todo = pendingRows(page)
+    .filter({ has: page.locator('.chip:not(.ai)') })
+    .first()
+  // 할 일 — 반 찬 원·체크 원은 숨고 옅은 선 원만
+  const todoIcon = await iconStyle(todo.locator('.si'))
+  expect(todoIcon.pie?.opacity).toBe('0')
+  expect(todoIcon.disc?.transform).not.toBe('none')
+  expect(todoIcon.chk?.['stroke-dashoffset']).toBe('13px')
+  // 진행 중 — 시트의 IN PROGRESS 옵션과 같은 색·모양
+  const progIcon = await iconStyle(prog.locator('.si'))
+  await todo.getByRole('button', { name: '상태 바꾸기' }).click()
+  const sheet = page.getByRole('dialog', { name: '상태 바꾸기' })
+  const sheetProg = await iconStyle(sheet.locator('.todo-opt.s-progress .si'))
+  const sheetDone = await iconStyle(sheet.locator('.todo-opt.s-done .si'))
+  expect(progIcon).toEqual(sheetProg)
+  expect(progIcon.pie?.opacity).toBe('1')
+  // 완료 — 줄이 접히기 전(leaving 동안)의 아이콘이 시트의 DONE 옵션과 같다
+  await sheet.getByRole('button', { name: /^DONE/ }).click()
+  const doneRow = page.locator('.todo-pending .trow.s-done').first()
+  await expect(doneRow.locator('.si-disc')).toHaveCSS('fill', sheetDone.disc?.fill ?? '')
+  await expect(doneRow.locator('.si-ring')).toHaveCSS('stroke', sheetDone.ring?.stroke ?? '')
+  await expect(doneRow.locator('.si-chk')).toHaveCSS('stroke', sheetDone.chk?.stroke ?? '')
 })
 
 test('status to IN PROGRESS moves the row into that group', async ({ page }) => {
