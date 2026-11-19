@@ -802,12 +802,7 @@
 .ms .tasks .s-todo .si-ring {
   stroke: var(--line);
 }
-.ms .tasks .s-progress .si-ring {
-  stroke: var(--ai);
-}
-.ms .tasks .s-progress .si-pie {
-  opacity: 0;
-}
+/* 진행 중(주황 링 + 반 찬 원)은 바텀시트(StatusSheet)와 같게 — 위 공통 .s-progress 규칙을 그대로 쓴다 */
 .ms .tasks .s-done .si-ring {
   stroke: var(--ok);
 }
