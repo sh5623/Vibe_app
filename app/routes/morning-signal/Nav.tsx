@@ -1,7 +1,6 @@
 import { Lock, Newspaper, SquareCheck } from 'lucide-react'
 import { type CSSProperties, type ReactNode, useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router'
-import { ThemeButton } from './Header'
 
 /**
  * 왼쪽 레일 · 휴대폰 하단 탭 바 · 본문 제목 줄 — 2026-11-05 사이드 레일 설계(second-brain
@@ -175,10 +174,7 @@ export function Rail({ view, newsCount = null, todoCount = null, onLock }: RailP
             )
           })}
         </nav>
-        <div className="rfoot">
-          {onLock && <LockButton onLock={onLock} />}
-          <ThemeButton />
-        </div>
+        <div className="rfoot">{onLock && <LockButton onLock={onLock} />}</div>
       </div>
     </aside>
   )
@@ -239,10 +235,7 @@ export function TitleBar({ title, sub, onLock, children }: TitleBarProps) {
             </p>
           )}
         </div>
-        <div className="pt-tools">
-          {onLock && <LockButton onLock={onLock} />}
-          <ThemeButton />
-        </div>
+        <div className="pt-tools">{onLock && <LockButton onLock={onLock} />}</div>
       </div>
       {children}
     </header>

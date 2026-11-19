@@ -62,18 +62,12 @@ test('calendar navigates and closes on Escape', async ({ page }) => {
   await expect(dialog).toBeHidden()
 })
 
-test('theme persists and does not leak to other routes', async ({ page }) => {
+test('밝은 화면 고정 — 테마 버튼이 없고 저장된 dark를 무시한다', async ({ page }) => {
   await mockApi(page, 'normal')
+  await page.addInitScript(() => localStorage.setItem('ms-theme', 'dark'))
   await page.goto('/morning-signal')
-  const html = page.locator('html')
-  await expect(html).toHaveAttribute('data-ms-theme', 'light')
-  await page.getByRole('button', { name: '다크 모드로 전환' }).click()
-  await expect(html).toHaveAttribute('data-ms-theme', 'dark')
-  await expect(page.getByRole('button', { name: '라이트 모드로 전환' })).toBeVisible()
-  expect(await page.evaluate(() => localStorage.getItem('ms-theme'))).toBe('dark')
-
-  await page.reload()
-  await expect(html).toHaveAttribute('data-ms-theme', 'dark')
+  await expect(page.locator('html')).toHaveAttribute('data-ms-theme', 'light')
+  await expect(page.locator('.theme')).toHaveCount(0)
 
   // 앱 안에서 다른 라우트로 옮기면(문서는 그대로) 라우트가 언마운트되며 속성을 지운다
   await page.evaluate(() => {
@@ -81,10 +75,15 @@ test('theme persists and does not leak to other routes', async ({ page }) => {
     window.dispatchEvent(new PopStateEvent('popstate'))
   })
   await expect(page.locator('.ms')).toHaveCount(0)
-  await expect(html).not.toHaveAttribute('data-ms-theme')
+  await expect(page.locator('html')).not.toHaveAttribute('data-ms-theme')
+})
 
-  await page.goto('/')
-  await expect(html).not.toHaveAttribute('data-ms-theme')
+test('전류 필터가 없다', async ({ page }) => {
+  await mockApi(page, 'normal')
+  await page.goto('/morning-signal')
+  await expect(page.locator('#ms-zap')).toHaveCount(0)
+  await expect(page.locator('.aurora')).toHaveCount(1)
+  await expect(page.locator('.grid-bg')).toHaveCount(0)
 })
 
 test('empty state', async ({ page }) => {
@@ -368,12 +367,12 @@ test('reduced motion opens the rail at once', async ({ page }) => {
 
 // ── 배경·날짜 — 파형·출발판을 빼고 원래대로(2026-11-05 후속 「정신 없다」) ───────────────
 
-test('background is the static grid, not animated waves', async ({ page }) => {
+test('background is the static aurora, not animated waves', async ({ page }) => {
   await mockApi(page, 'normal')
   await page.goto('/morning-signal')
-  await expect(page.locator('.ms .grid-bg')).toHaveCount(1)
+  await expect(page.locator('.ms .aurora')).toHaveCount(1)
   await expect(page.locator('.ms .ms-waves')).toHaveCount(0)
-  await expect(page.locator('.ms .grid-bg canvas, .ms > canvas')).toHaveCount(0)
+  await expect(page.locator('.ms > canvas')).toHaveCount(0)
 })
 
 test('date label is plain text and changes at once', async ({ page }) => {
@@ -395,54 +394,6 @@ test('rapid date clicks settle on the last date', async ({ page }) => {
     await page.waitForTimeout(100) // 고정 대기: 연타 간격
   }
   await expect(dateBtn(page).locator('.t')).toHaveText('10월 14일 (수)')
-})
-
-// ── 목록 빨간 칩 전류(FE 높음·FE 주목) — 도넛 카드 전류의 작은 판, SVG 필터 하나를 함께 쓴다 ──
-
-/** 목록 칩 상태 — 빨간 칩 수, 전류 필터(#ms-zap)가 걸린 칩 수, 테두리 고리가 있는 빨간 칩 수 */
-const zapState = (page: Page) =>
-  page.evaluate(() => {
-    const chips = [...document.querySelectorAll('.ms .list .item .chip')]
-    const high = chips.filter((c) => c.classList.contains('h'))
-    const zapped = chips.filter((c) => getComputedStyle(c, '::after').filter.includes('ms-zap'))
-    return {
-      filters: document.querySelectorAll('#ms-zap').length,
-      anim: document.querySelectorAll('#ms-zap animate').length,
-      high: high.length,
-      zapped: zapped.length,
-      onlyHigh: zapped.every((c) => c.classList.contains('h')),
-      // Tailwind preflight 가 모든 ::after 에 `border: 0 solid` 를 주므로 굵기와 content 로 본다
-      ring: high.filter((c) => {
-        const a = getComputedStyle(c, '::after')
-        return a.content !== 'none' && Number.parseFloat(a.borderTopWidth) > 0
-      }).length,
-      canvases: document.querySelectorAll('.ms .list canvas').length,
-    }
-  })
-
-test('FE high chips in AI and GitHub lists get the electric ring', async ({ page }) => {
-  await mockApi(page, 'normal')
-  await page.goto('/morning-signal')
-  await expect(page.locator('.ms .list .item').first()).toBeVisible()
-  const ai = await zapState(page)
-  expect(ai).toMatchObject({ filters: 1, high: 2, zapped: 2, onlyHigh: true, canvases: 0 })
-  expect(ai.anim).toBeGreaterThan(0)
-  // 시사·경제·상식은 FE 영향도가 없다(분류 칩뿐)
-  await page.getByRole('tab', { name: /시사·경제·상식/ }).click()
-  await expect.poll(async () => (await zapState(page)).high).toBe(0)
-  expect((await zapState(page)).zapped).toBe(0)
-  // GitHub 는 FE 주목 2건
-  await page.getByRole('tab', { name: /GitHub/ }).click()
-  await expect.poll(async () => (await zapState(page)).zapped).toBe(2)
-  expect((await zapState(page)).onlyHigh).toBe(true)
-})
-
-test('reduced motion keeps a still red ring on FE high chips', async ({ page }) => {
-  await page.emulateMedia({ reducedMotion: 'reduce' })
-  await mockApi(page, 'normal')
-  await page.goto('/morning-signal')
-  await expect(page.locator('.ms .list .item').first()).toBeVisible()
-  expect(await zapState(page)).toMatchObject({ high: 2, zapped: 0, ring: 2 })
 })
 
 // ── FE 높음 경고 전류 테두리(react-bits ElectricBorder) — 도넛 카드, 설계 §4-2·§6.2 ──
@@ -512,9 +463,9 @@ test('rail indicator slides to the new view and the shell stays mounted', async 
   })
   await mockApi(page, 'normal')
   await page.goto('/morning-signal')
-  await expect(page.locator('.ms .grid-bg')).toHaveCount(1)
+  await expect(page.locator('.ms .aurora')).toHaveCount(1)
   await page.evaluate(() => {
-    ;(document.querySelector('.ms .grid-bg') as HTMLElement & { __keep?: number }).__keep = 1
+    ;(document.querySelector('.ms .aurora') as HTMLElement & { __keep?: number }).__keep = 1
   })
   const y = await railRowY(page, /TO-DO/)
   await page.mouse.click(28, y)
@@ -523,7 +474,7 @@ test('rail indicator slides to the new view and the shell stays mounted', async 
   await expect(page).toHaveURL(/\/morning-signal\/todo$/)
   expect(
     await page.evaluate(
-      () => (document.querySelector('.ms .grid-bg') as HTMLElement & { __keep?: number })?.__keep
+      () => (document.querySelector('.ms .aurora') as HTMLElement & { __keep?: number })?.__keep
     )
   ).toBe(1)
   expect(await page.evaluate(() => (window as unknown as { __vt: number }).__vt)).toBeGreaterThan(0)

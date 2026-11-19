@@ -1,136 +1,29 @@
 import {
   type CSSProperties,
-  type MouseEvent as ReactMouseEvent,
   type Ref,
   useEffect,
-  useId,
   useLayoutEffect,
   useMemo,
   useRef,
   useState,
-  useSyncExternalStore,
 } from 'react'
 import type { DaySummary } from '../../../api/morning-signal'
 import { calendarCells, dateParts, labelKo } from './model'
 
 type CssVars = CSSProperties & Record<`--${string}`, string | number>
-type MsTheme = 'light' | 'dark'
-
-const THEME_KEY = 'ms-theme'
-
-function readTheme(): MsTheme {
-  try {
-    const t = localStorage.getItem(THEME_KEY)
-    if (t === 'dark' || t === 'light') return t
-  } catch {
-    // 저장소를 못 읽으면 기본(라이트)
-  }
-  return 'light'
-}
-
-/** html[data-ms-theme] 를 이 라우트가 마운트된 동안만 둔다 — Shell 이 부른다(페인트 전에 토큰이 붙어야 첫 프레임부터 색이 맞는다). */
+/** html[data-ms-theme] 를 이 라우트가 마운트된 동안만 둔다 — 늘 light(밝은 화면 고정). Shell 이 부른다(페인트 전에 토큰이 붙어야 첫 프레임부터 색이 맞는다). */
 export function useMsThemeAttr() {
   useLayoutEffect(() => {
     const root = document.documentElement
-    root.dataset.msTheme = readTheme()
+    root.dataset.msTheme = 'light'
     return () => {
       delete root.dataset.msTheme
     }
   }, [])
 }
 
-const subscribeTheme = (cb: () => void) => {
-  const mo = new MutationObserver(cb)
-  mo.observe(document.documentElement, { attributes: true, attributeFilter: ['data-ms-theme'] })
-  return () => mo.disconnect()
-}
-const themeNow = (): MsTheme =>
-  document.documentElement.dataset.msTheme === 'dark' ? 'dark' : 'light'
-
-/** 지금 테마(html[data-ms-theme]) — 바뀌면 다시 그린다 */
-export const useMsTheme = () =>
-  useSyncExternalStore(subscribeTheme, themeNow, () => 'light' as MsTheme)
-
-/**
- * 테마 버튼 — 레퍼런스 409–423행. 레일(데스크톱)과 휴대폰 제목 줄에 하나씩 있으므로
- * 상태를 컴포넌트에 두지 않고 html[data-ms-theme] 하나에서 읽는다.
- */
-export function ThemeButton() {
-  const theme = useMsTheme()
-  const maskId = useId() // 버튼이 두 개(레일·휴대폰 줄)라 mask id 가 겹치지 않게
-
-  const toggle = (e: ReactMouseEvent<HTMLButtonElement>) => {
-    const next: MsTheme = themeNow() === 'dark' ? 'light' : 'dark'
-    const root = document.documentElement
-    // 뷰 전환이 새 화면을 찍기 전에 DOM 이 바뀌어 있어야 하므로 동기로 바꾼다
-    const apply = () => {
-      root.dataset.msTheme = next
-      try {
-        localStorage.setItem(THEME_KEY, next)
-      } catch {
-        // 저장 실패는 무시한다(이번 방문 동안만 유지)
-      }
-    }
-    const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches
-    if (typeof document.startViewTransition !== 'function' || reduce) {
-      apply()
-      return
-    }
-    const r = e.currentTarget.getBoundingClientRect()
-    const x = r.left + r.width / 2
-    const y = r.top + r.height / 2
-    const R = Math.hypot(Math.max(x, innerWidth - x), Math.max(y, innerHeight - y))
-    root.classList.add('vt-theme')
-    const t = document.startViewTransition(apply)
-    t.finished.finally(() => root.classList.remove('vt-theme'))
-    t.ready
-      .then(() => {
-        document.documentElement.animate(
-          { clipPath: [`circle(0px at ${x}px ${y}px)`, `circle(${R}px at ${x}px ${y}px)`] },
-          {
-            duration: 700,
-            easing: 'cubic-bezier(.16,1,.3,1)',
-            pseudoElement: '::view-transition-new(root)',
-          }
-        )
-      })
-      .catch(() => {})
-  }
-
-  return (
-    <button
-      className="theme"
-      type="button"
-      aria-label={theme === 'dark' ? '라이트 모드로 전환' : '다크 모드로 전환'}
-      onClick={toggle}
-    >
-      <svg viewBox="0 0 24 24" aria-hidden="true">
-        <mask id={maskId}>
-          <rect x="-6" y="-6" width="36" height="36" fill="#fff" />
-          <circle className="bite" cx="17" cy="7" r="7" fill="#000" />
-        </mask>
-        <circle
-          className="core"
-          cx="12"
-          cy="12"
-          r="8"
-          fill="currentColor"
-          mask={`url(#${maskId})`}
-        />
-        <g className="rays" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-          <line x1="12" y1="1" x2="12" y2="3" />
-          <line x1="12" y1="21" x2="12" y2="23" />
-          <line x1="1" y1="12" x2="3" y2="12" />
-          <line x1="21" y1="12" x2="23" y2="12" />
-          <line x1="4.2" y1="4.2" x2="5.6" y2="5.6" />
-          <line x1="18.4" y1="18.4" x2="19.8" y2="19.8" />
-          <line x1="4.2" y1="19.8" x2="5.6" y2="18.4" />
-          <line x1="18.4" y1="5.6" x2="19.8" y2="4.2" />
-        </g>
-      </svg>
-    </button>
-  )
-}
+/** 임시 상수 — 사용처(Bento·TodoList)와 함께 Task 7 에서 지운다 */
+export const useMsTheme = (): 'light' => 'light'
 
 interface CalendarProps {
   days: DaySummary[]

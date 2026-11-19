@@ -34,8 +34,8 @@ test('todo page keeps news shell and theme', async ({ page }) => {
   await page.goto('/morning-signal/todo')
   await expect(page.getByText('본인 확인')).toBeVisible()
   await expect(page.locator('.ms .aurora')).toHaveCount(1)
-  await expect(page.locator('.ms .grid-bg')).toHaveCount(1)
-  await expect(page.locator('html')).toHaveAttribute('data-ms-theme', /light|dark/)
+  await expect(page.locator('.ms .grid-bg')).toHaveCount(0)
+  await expect(page.locator('html')).toHaveAttribute('data-ms-theme', 'light')
   await expect(page.locator('.datenav')).toHaveCount(0)
   await expect(page.getByRole('button', { name: '다시 잠그기' })).toHaveCount(0)
   await expect(page.getByRole('heading', { name: 'TO-DO' })).toBeVisible()
@@ -46,7 +46,6 @@ test('375 top row, date nav and tab bar fit without horizontal scroll', async ({
   for (const path of ['/morning-signal', '/morning-signal/todo']) {
     await page.goto(path)
     await expect(page.locator('.tabbar')).toBeVisible()
-    await expect(page.locator('.ptitle .theme')).toBeVisible()
     await noHorizontalScroll(page)
   }
   await page.goto('/morning-signal')
