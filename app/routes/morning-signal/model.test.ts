@@ -21,7 +21,6 @@ import {
   mixModel,
   pickInitialDate,
   safeUrl,
-  stampText,
   TAB_LABEL,
   tabCount,
   WD_KO,
@@ -100,21 +99,6 @@ describe('calendarCells', () => {
     const cells = calendarCells(2026, 11, new Set(), null)
     expect(cells.slice(0, 6).every((c) => c.date === null)).toBe(true)
     expect(cells[6]).toEqual({ date: '2026-11-01', day: 1, has: false, on: false })
-  })
-})
-
-describe('stampText', () => {
-  it('uses updatedAt, else the latest feed generatedAt', () => {
-    const base = { date: '2026-10-19', model: 'm', status: 'empty' as const, items: [] }
-    const feeds: Feeds = {
-      ai: { ...base, theme: 'ai', generatedAt: '2026-10-18T22:50:00Z' },
-      gh: { ...base, theme: 'gh', generatedAt: '2026-10-18T23:01:00Z' },
-    }
-    expect(stampText(day('2026-10-19', '2026-10-18T23:03:00Z'), feeds)).toBe(
-      '10월 19일 (월) · 08:03 KST 갱신'
-    )
-    expect(stampText(day('2026-10-19'), feeds)).toBe('10월 19일 (월) · 08:01 KST 갱신')
-    expect(stampText(day('2026-10-19'), {})).toBe('10월 19일 (월)')
   })
 })
 

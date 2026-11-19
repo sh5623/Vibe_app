@@ -176,7 +176,7 @@
   gap: 8px;
   align-items: center;
   overflow: hidden;
-  font: 600 13px / 1 var(--f);
+  font: 800 14px / 1 var(--f);
   color: var(--ink);
   min-width: 138px;
   justify-content: center;
@@ -487,11 +487,12 @@
 /* 눈금 — 한 칸이 한 건. 카드가 처음 화면에 들어오면(.in) 칸마다 켜진다 */
 .ms .ticks {
   display: flex;
-  gap: 3px;
+  gap: var(--tick-gap, 3px);
   height: 28px;
 }
 .ms .ticks i {
-  flex: 1;
+  flex: 1 1 0;
+  min-width: 0;
   border-radius: 2px;
   background: var(--c, var(--tick));
   transform-origin: bottom;
@@ -961,7 +962,9 @@
 .ms .pin-dlg {
   border: 0;
   border-radius: var(--r);
-  padding: 24px;
+  /* Tailwind preflight 의 margin:0 이 UA 기본 margin:auto 를 덮는다 — 가운데로 되돌린다 */
+  margin: auto;
+  padding: 0;
   width: min(360px, calc(100vw - 32px));
   background: var(--panel);
   color: var(--fg);
@@ -970,12 +973,15 @@
 .ms .pin-dlg::backdrop {
   background: rgb(15 23 42 / 0.45);
 }
+.ms .pin-dlg .pin-in {
+  padding: 24px;
+}
 .ms .pin-dlg h2 {
   margin: 0 0 8px;
   font-size: 18px;
   font-weight: 800;
 }
-.ms .pin-dlg > p {
+.ms .pin-dlg .pin-in > p {
   margin: 0;
   font-size: 13.5px;
   line-height: 1.6;
@@ -1048,7 +1054,7 @@
   }
 }
 
-/* TO-DO 다시 잠그기(레일 아래 · 휴대폰 제목 줄) */
+/* TO-DO 다시 잠그기(상단 막대 오른쪽 칸) */
 .ms .lockbtn {
   all: unset;
   cursor: pointer;
@@ -1117,6 +1123,11 @@
   font-weight: 800;
   font-size: 16px;
   letter-spacing: -0.01em;
+}
+.ms .brand .bn {
+  margin: 0;
+  font: inherit;
+  letter-spacing: inherit;
 }
 .ms .views {
   display: flex;
@@ -1330,8 +1341,5 @@
     animation-delay: 0s !important;
     /* biome-ignore lint/complexity/noImportantStyles: 위와 같은 이유 */
     transition-delay: 0s !important;
-  }
-  .ms .aurora {
-    display: none;
   }
 }

@@ -90,7 +90,7 @@ export function TopBar({ view, slotRef }: TopBarProps) {
       <div className="top-in">
         <span className="brand">
           <Logo />
-          <span className="bn">Morning Signal</span>
+          <h1 className="bn">Morning Signal</h1>
         </span>
         <nav className="views" aria-label="보기 전환">
           {VIEWS.map((v) => (

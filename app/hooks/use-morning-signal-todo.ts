@@ -114,6 +114,8 @@ export function useLock(): UseMutationResult<void, TodoApiError, void> {
     onSuccess: () => {
       qc.removeQueries({ queryKey: todoKeys.list })
       qc.removeQueries({ queryKey: ['ms', 'todo', 'detail'] })
+      qc.removeQueries({ queryKey: ['ms', 'todo', 'find'] })
+      qc.removeQueries({ queryKey: ['ms', 'todo', 'done'] })
       qc.setQueryData<SessionResponse>(todoKeys.session, { unlocked: false, lockedUntil: null })
     },
   })

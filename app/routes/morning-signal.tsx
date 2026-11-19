@@ -74,7 +74,7 @@ export default function MorningSignal() {
   const state = failed ? ERROR : days?.length === 0 ? EMPTY : null
 
   // 날짜 이동은 상단 막대 오른쪽 칸으로 포털
-  const { dateSlot } = useMsLayout()
+  const { dateSlot, setTodoCount } = useMsLayout()
 
   // 소식 탭 — 날짜를 옮겨도 남는다. 오늘의 한 줄 칸을 누르면 그 테마로 바꾸고 소식 카드로 스크롤한다
   const [tab, setTab] = useState<Theme>('ai')
@@ -94,6 +94,13 @@ export default function MorningSignal() {
     const today = kstToday(new Date())
     return (pendingTodos ?? []).filter((t) => dueWithin(t, today, 1))
   }, [pendingTodos])
+
+  // 하단 탭 TO-DO 배지 — 목록을 받은 뒤에만(모르는 동안 낡은 값·0 을 보이지 않게), 잠기면 뺀다
+  const pendingCount = pendingTodos ? pendingTodos.filter((t) => t.status !== 'done').length : null
+  useEffect(
+    () => setTodoCount(unlocked && pendingCount !== null ? pendingCount : null),
+    [unlocked, pendingCount, setTodoCount]
+  )
 
   // 「TO-DO에 담았어요」·저장 실패 토스트(TO-DO 화면과 같은 todo-toast)
   const [toast, setToast] = useState<{ message: string; key: number } | null>(null)

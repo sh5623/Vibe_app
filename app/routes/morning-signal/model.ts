@@ -56,16 +56,6 @@ export function pickInitialDate(days: DaySummary[], hash: string): string | null
   return days.some((d) => d.date === h) ? h : last.date
 }
 
-/** `${labelKo(date)} · HH:MM KST 갱신` — 시각은 day.updatedAt, 없으면 가장 늦은 feed.generatedAt. */
-export function stampText(day: DaySummary, feeds: Feeds): string {
-  const gen = [feeds.ai?.generatedAt, feeds.world?.generatedAt, feeds.gh?.generatedAt]
-    .filter((g): g is string => !!g)
-    .sort()
-    .pop()
-  const time = kstTime(day.updatedAt || gen)
-  return `${labelKo(day.date)}${time ? ` · ${time} KST 갱신` : ''}`
-}
-
 export interface CalCell {
   date: string | null
   day: number | null

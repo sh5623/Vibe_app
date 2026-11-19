@@ -45,8 +45,9 @@ export default function Alerts({ items }: { items: AlertItem[] }) {
         <p className="empty">오늘 챙길 것이 없어요</p>
       ) : (
         <ul className="rows">
-          {items.map((it) => (
-            <li key={`${it.kind}|${it.title}`}>
+          {items.map((it, i) => (
+            // biome-ignore lint/suspicious/noArrayIndexKey: 같은 종류·제목이 겹칠 수 있어 인덱스를 함께 쓴다
+            <li key={`${it.kind}|${it.title}|${i}`}>
               <span className={`ico ${KIND[it.kind].cls}`}>{KIND[it.kind].icon}</span>
               <strong>
                 {it.title}

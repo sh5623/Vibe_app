@@ -54,6 +54,8 @@ test('375 top row, date nav and tab bar fit without horizontal scroll', async ({
     await noHorizontalScroll(page)
   }
   await page.goto('/morning-signal')
+  // 날짜 데이터가 도착한 뒤에 잰다(도착 전 폭으로 거짓 실패하지 않게)
+  await expect(page.locator('.datenav .cur .t')).toHaveText(/월/)
   const nav = await page.locator('.datenav').boundingBox()
   const top = await page.locator('header.top').boundingBox()
   expect((nav?.y ?? 0) + (nav?.height ?? 0)).toBeLessThanOrEqual(

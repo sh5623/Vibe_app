@@ -1,5 +1,6 @@
 import { useQueryClient } from '@tanstack/react-query'
 import { useEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import {
   findTodoByLink,
   todoKeys,
@@ -8,6 +9,8 @@ import {
   useTodoSession,
 } from '@/hooks/use-morning-signal-todo'
 import type { GhItem } from '../../../api/morning-signal'
+import { safeUrl } from './model'
+import { useMsRoot } from './Shell'
 import PinGate from './todo/PinGate'
 import { SAVE_FAILED } from './todo/TodoSheets'
 
@@ -28,6 +31,9 @@ interface AddToTodoProps {
   onNotify?: (message: string) => void
 }
 
+/** FePicks 카드 링크와 같은 주소 — 안전하지 않은 url 이면 레포 페이지로 */
+const linkOf = (g: GhItem) => safeUrl(g.url) ?? `https://github.com/${g.repo}`
+
 /**
  * 「FE에 쓸 레포」 카드의 TO-DO 담기 버튼(시안 app.js `msAddTodo`).
  * 풀려 있으면 바로 담고, 잠겨 있으면 그 자리에서 PIN 창을 띄워 풀리는 순간 이어서 담는다(A안).
@@ -37,7 +43,7 @@ export default function AddToTodo({ item, onNotify }: AddToTodoProps) {
   const qc = useQueryClient()
   const session = useTodoSession()
   const unlocked = session.data?.unlocked === true
-  const found = useFindTodoByLink(item.url, unlocked)
+  const found = useFindTodoByLink(linkOf(item), unlocked)
   const create = useCreateTodo()
   const [open, setOpen] = useState(false)
   // PIN 이 풀리면 한 번만 이어서 담는다 — 창을 닫으면 비운다
@@ -45,11 +51,12 @@ export default function AddToTodo({ item, onNotify }: AddToTodoProps) {
   const added = !!found.data
 
   const save = (g: GhItem) => {
+    const link = linkOf(g)
     create.mutate(
-      { title: g.repo, body: g.impactNote ?? g.description, link: g.url },
+      { title: g.repo, body: g.impactNote || g.description, link },
       {
         onSuccess: (todo) => {
-          qc.setQueryData(todoKeys.find(g.url), { id: todo.id, status: todo.status })
+          qc.setQueryData(todoKeys.find(link), { id: todo.id, status: todo.status })
           onNotify?.('TO-DO에 담았어요')
         },
         onError: () => onNotify?.(SAVE_FAILED),
@@ -63,11 +70,12 @@ export default function AddToTodo({ item, onNotify }: AddToTodoProps) {
     const g = pending.current
     pending.current = null
     setOpen(false)
+    const link = linkOf(g)
     // 잠겨 있던 동안은 중복 조회를 못 했다 — 풀린 직후 확인하고, 이미 있으면 만들지 않는다
     void qc
       .fetchQuery({
-        queryKey: todoKeys.find(g.url),
-        queryFn: () => findTodoByLink(g.url),
+        queryKey: todoKeys.find(link),
+        queryFn: () => findTodoByLink(link),
         staleTime: 0,
       })
       .then((hit) => {
@@ -126,11 +134,14 @@ function PinDialog({
   onClose: () => void
 }) {
   const ref = useRef<HTMLDialogElement>(null)
+  const root = useMsRoot()
+  // 카드(.picks li) 밖 .ms 루트로 포털 — 카드 CSS 가 창 안으로 새지 않게(시트와 같은 방식)
+  // biome-ignore lint/correctness/useExhaustiveDependencies: root 가 생겨 창이 그려진 뒤에 연다
   useEffect(() => {
     const el = ref.current
     if (el && !el.open) el.showModal()
-  }, [])
-  return (
+  }, [root])
+  const dlg = (
     // biome-ignore lint/a11y/useKeyWithClickEvents: 바깥 누름은 마우스·터치 보조 — 키보드는 Esc(네이티브)
     <dialog
       id="pinDlg"
@@ -142,14 +153,18 @@ function PinDialog({
         if (e.target === e.currentTarget) e.currentTarget.close()
       }}
     >
-      <h2 id="pinDlgT">PIN을 입력하세요</h2>
-      <p>입력하면 바로 TO-DO에 담아요.</p>
-      <PinGate compact lockedUntil={lockedUntil} configError={configError} />
-      <div className="acts">
-        <button type="button" className="btn ghost" onClick={() => ref.current?.close()}>
-          취소
-        </button>
+      <div className="pin-in">
+        <h2 id="pinDlgT">PIN을 입력하세요</h2>
+        <p>입력하면 바로 TO-DO에 담아요.</p>
+        <PinGate compact lockedUntil={lockedUntil} configError={configError} />
+        <div className="acts">
+          <button type="button" className="btn ghost" onClick={() => ref.current?.close()}>
+            취소
+          </button>
+        </div>
       </div>
     </dialog>
   )
+  // 루트가 아직 없으면(첫 렌더) 그 자리에 두지 않고 기다린다 — 카드 안에 그려지면 안 된다
+  return root ? createPortal(dlg, root) : null
 }

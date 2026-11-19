@@ -23,8 +23,11 @@ export function Ticks({ parts }: { parts: readonly (readonly [number, string])[]
       cells.push(<i key={n} style={style} />)
     }
   }
+  // 건수가 많으면 칸 사이 간격을 줄여 카드 폭 안에 머물게 한다(칸은 flex 로 줄어든다)
+  const gap = cells.length > 60 ? 1 : cells.length > 36 ? 2 : 3
+  const style: CssVars = { '--tick-gap': `${gap}px` }
   return (
-    <div className="ticks" aria-hidden="true">
+    <div className="ticks" aria-hidden="true" style={style}>
       {cells}
     </div>
   )

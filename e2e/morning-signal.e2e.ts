@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs'
 import { expect, type Page, test } from '@playwright/test'
 import { mockApi } from './fixtures/mock-api'
 import { makeTodo, mockTodoApi } from './fixtures/mock-todo-api'
@@ -676,4 +677,76 @@ test.describe('FE에 쓸 레포 → TO-DO', () => {
     await expect(page.locator('[data-area="alert"]')).not.toContainText('분기 보고서 제출')
     await expect(page.locator('#pinDlg')).toHaveCount(0)
   })
+})
+
+// ── 최종 검토 수정 ──────────────────────────────────────────────────────
+test.describe('PIN 창 위치·닫힘', () => {
+  for (const width of [375, 1440]) {
+    test(`${width}px 에서 창이 화면 가운데에 온다`, async ({ page }) => {
+      await page.setViewportSize({ width, height: 900 })
+      await mockApi(page, '1119')
+      await mockTodoApi(page)
+      await page.goto('/morning-signal')
+      await page.locator('.picks [aria-label="TO-DO에 담기"]').first().click()
+      const box = await page.locator('#pinDlg').boundingBox()
+      expect(box).not.toBeNull()
+      const cx = (box?.x ?? 0) + (box?.width ?? 0) / 2
+      const cy = (box?.y ?? 0) + (box?.height ?? 0) / 2
+      expect(Math.abs(cx - width / 2)).toBeLessThanOrEqual(2)
+      expect(Math.abs(cy - 450)).toBeLessThanOrEqual(2)
+      // 카드 안이 아니라 .ms 루트 아래에 있다
+      await expect(page.locator('.ms > #pinDlg')).toHaveCount(1)
+    })
+  }
+
+  test('안쪽 여백을 눌러도 닫히지 않고, 바깥(어두운 영역)을 누르면 닫힌다', async ({ page }) => {
+    await mockApi(page, '1119')
+    await mockTodoApi(page)
+    await page.goto('/morning-signal')
+    await page.locator('.picks [aria-label="TO-DO에 담기"]').first().click()
+    const dlg = page.locator('#pinDlg')
+    const box = await dlg.boundingBox()
+    await page.mouse.click((box?.x ?? 0) + 6, (box?.y ?? 0) + 6)
+    await expect(dlg).toBeVisible()
+    await page.mouse.click(5, 5)
+    await expect(dlg).toHaveCount(0)
+  })
+})
+
+test('하단 TO-DO 배지가 NEWS 에서도 남은 일 수이고, 다시 잠그면 사라진다', async ({ page }) => {
+  await page.setViewportSize({ width: 375, height: 812 })
+  await mockApi(page, '1119')
+  await mockTodoApi(page, {
+    unlocked: true,
+    seed: [makeTodo({ id: 'a' }), makeTodo({ id: 'b' }), makeTodo({ id: 'c', status: 'done' })],
+  })
+  await page.goto('/morning-signal')
+  await expect(page.locator('.tabbar .tab-badge')).toHaveText('2')
+  await page.locator('.tabbar').getByRole('link', { name: 'TO-DO' }).click()
+  await page.getByRole('button', { name: '다시 잠그기' }).click()
+  await page.locator('.tabbar').getByRole('link', { name: 'NEWS' }).click()
+  await expect(page.locator('.tabbar .tab-badge')).toHaveCount(0)
+})
+
+test('눈금이 100건에서도 카드 폭 안에 머문다 (375px)', async ({ page }) => {
+  await page.setViewportSize({ width: 375, height: 812 })
+  await mockApi(page, '1119')
+  const fx = JSON.parse(
+    readFileSync(new URL('./fixtures/day-1119.json', import.meta.url), 'utf8')
+  ) as { day: Record<string, unknown>; feeds: Record<string, unknown> }
+  const base = fx.feeds.ai as { items: unknown[] }
+  const ai = base.items
+  const many = { ...base, items: Array.from({ length: 100 }, (_, i) => ai[i % ai.length]) }
+  await page.route('**/api/morning-signal?date=*', (route) =>
+    route.fulfill({ json: { day: fx.day, feeds: { ...fx.feeds, ai: many } } })
+  )
+  await page.goto('/morning-signal')
+  const card = page.locator('[data-area="mix"]')
+  await expect(card.locator('.ticks').first().locator('i')).toHaveCount(100 + 5 + 15)
+  const c = await card.boundingBox()
+  for (const t of await card.locator('.ticks').all()) {
+    // 컨테이너가 아니라 마지막 칸의 오른쪽 끝을 잰다(칸이 넘쳐도 컨테이너 상자는 카드 안이다)
+    const b = await t.locator('i').last().boundingBox()
+    expect((b?.x ?? 0) + (b?.width ?? 0)).toBeLessThanOrEqual((c?.x ?? 0) + (c?.width ?? 0))
+  }
 })
