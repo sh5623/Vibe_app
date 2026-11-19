@@ -5,7 +5,7 @@
    레이아웃: 헤더(로고·날짜 이동·테마) → KPI 4 → 벤토(한 줄·도넛·카테고리바·바리스트) → 피드
    팔레트: ui-ux-pro-max Analytics Dashboard(라이트, 기본) / Financial Dashboard(다크). */
 :root[data-ms-theme] {
-  /* 밝은 화면 고정(B안) — 시안 base.css 값. 아래 구 이름(--card·--muted·--ink…)은 뒤 태스크가 새 이름으로 옮길 때까지 같은 값으로 이어 둔다 */
+  /* 밝은 화면 고정(B안) — 시안 base.css 값. 아래 구 이름(--card·--surface-muted·--ink…)은 뒤 태스크가 새 이름으로 옮길 때까지 같은 값으로 이어 둔다 */
   --bg: #f6f8fc;
   --panel: #ffffff;
   --panel2: #f5f8fd;
@@ -44,7 +44,8 @@
   --f-num: "JetBrains Mono", ui-monospace, Menlo, monospace;
   /* 구 이름 → 새 값 */
   --card: #ffffff;
-  --muted: #e8eef8;
+  --surface-muted: #e8eef8;
+  --muted: #52607a;
   --muted-fg: #52607a;
   --ink: #0f172a;
   --border: #dbe5f6;
@@ -210,7 +211,7 @@
     transform 0.2s var(--ease);
 }
 .ms .datenav > button:hover:not([disabled]) {
-  background: var(--muted);
+  background: var(--surface-muted);
   color: var(--ink);
 }
 .ms .datenav > button:active:not([disabled]) {
@@ -286,7 +287,7 @@
   font: 600 16px / 1 var(--f);
 }
 .ms .cal .hd button:hover:not([disabled]) {
-  background: var(--muted);
+  background: var(--surface-muted);
   color: var(--ink);
 }
 .ms .cal .hd button[disabled] {
@@ -341,7 +342,7 @@
   opacity: var(--dot, 0);
 }
 .ms .cal .days button:hover:not([disabled]) {
-  background: var(--muted);
+  background: var(--surface-muted);
 }
 .ms .cal .days button.on {
   background: var(--primary);
@@ -454,7 +455,7 @@
   font: 600 11px / 1 var(--fm);
   padding: 5px 7px;
   border-radius: 999px;
-  background: var(--muted);
+  background: var(--surface-muted);
   color: var(--muted-fg);
   display: inline-flex;
   gap: 4px;
@@ -737,7 +738,7 @@
 }
 .ms .donut .trk {
   fill: none;
-  stroke: var(--muted);
+  stroke: var(--surface-muted);
   stroke-width: 11;
 }
 .ms .donut .seg {
@@ -791,7 +792,7 @@
   border-radius: 6px;
   overflow: hidden;
   gap: 3px;
-  background: var(--muted);
+  background: var(--surface-muted);
 }
 .ms .catbar span {
   display: block;
@@ -925,7 +926,7 @@
   gap: 2px;
   padding: 4px;
   border-radius: 12px;
-  background: var(--muted);
+  background: var(--surface-muted);
   width: max-content;
   max-width: 100%;
   overflow-x: auto;
@@ -1111,7 +1112,7 @@
 }
 .ms .chip.l {
   color: var(--muted-fg);
-  background: var(--muted);
+  background: var(--surface-muted);
 }
 .ms .chip.c {
   color: var(--s-world);
@@ -1306,7 +1307,7 @@
   transition: background 0.2s;
 }
 .ms .rnav a:hover:not(.on)::before {
-  background: var(--muted);
+  background: var(--surface-muted);
 }
 .ms .rnav a:hover {
   color: var(--ink);
@@ -1340,7 +1341,7 @@
   font-style: normal;
   padding: 4px 7px;
   border-radius: 6px;
-  background: var(--muted);
+  background: var(--surface-muted);
   color: var(--muted-fg);
   pointer-events: none;
 }
