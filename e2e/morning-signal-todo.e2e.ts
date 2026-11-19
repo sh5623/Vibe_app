@@ -429,6 +429,37 @@ test('1행 카드는 위·아래 끝이 같고 제목 시작점이 같다', asyn
   expect(new Set(row2).size).toBe(1)
 })
 
+test('1024: 중요 | 마감 임박 / 남은 일 / 상태 | 완료 기록, 같은 행 카드는 위·아래 끝이 같다', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1024, height: 900 })
+  await api(page, { unlocked: true, seed: seedImportant() })
+  await page.goto('/morning-signal/todo')
+  await expect(page.locator('.todo-board > .p')).toHaveCount(5)
+  await expect(pendingRows(page).first()).toBeVisible()
+  const boxes = await page.locator('.todo-board > .p').evaluateAll((els) =>
+    els.map((el) => {
+      const r = el.getBoundingClientRect()
+      return {
+        a: el.getAttribute('data-area') ?? '',
+        t: Math.round(r.top),
+        b: Math.round(r.bottom),
+        l: Math.round(r.left),
+      }
+    })
+  )
+  const order = [...boxes].sort((x, y) => x.t - y.t || x.l - y.l).map((x) => x.a)
+  expect(order).toEqual(['imp', 'due', 'list', 'stat', 'done'])
+  const at = (a: string) => boxes.find((x) => x.a === a)
+  for (const [x, y] of [
+    ['imp', 'due'],
+    ['stat', 'done'],
+  ] as const) {
+    expect(at(x)?.t).toBe(at(y)?.t)
+    expect(at(x)?.b).toBe(at(y)?.b)
+  }
+})
+
 test('시트가 열리면 상단 막대와 하단 탭 바를 덮는다', async ({ page }) => {
   await api(page, { unlocked: true, seed: seedDay() })
   await page.goto('/morning-signal/todo')

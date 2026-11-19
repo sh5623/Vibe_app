@@ -567,8 +567,9 @@
   }
 }
 @media (max-width: 1180px) {
+  /* 시안 grid.css 82행 — 중요 | 마감 임박 / 남은 일 / 상태 | 완료 기록 */
   .ms .ms-grid.todo-board {
-    grid-template-areas: "stat stat" "imp due" "list list" "done done";
+    grid-template-areas: "imp due" "list list" "stat done";
   }
 }
 /* 다시 잠그기 — 제목 줄(36)에 맞춘 아이콘 버튼(.btn.ghost 모양) */
