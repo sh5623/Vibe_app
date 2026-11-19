@@ -565,6 +565,31 @@ async function handleList(req: VercelRequest, res: ServerResponse) {
   return json(res, 200, body)
 }
 
+/** 링크로 할 일 찾기 — 완료된 것도 포함. 첫 행의 id·status 만 돌려준다. */
+async function handleFind(req: VercelRequest, res: ServerResponse) {
+  const link = normalizeLink(getQueryParam(req, 'link') ?? '')
+  if (!link) return json(res, 400, { error: 'INVALID_LINK' })
+  const rows = await sbJson<TodoRow[]>(
+    `${TODOS}?select=id,status&link=eq.${encodeURIComponent(link)}&order=created_at.desc&limit=1`
+  )
+  const r = rows[0]
+  return json(res, 200, { todo: r ? { id: r.id, status: r.status } : null })
+}
+
+/** 최근 완료 — 지금−days일 이후 완료된 것, 최근 완료 순. days 는 1~31 정수(기본 7). */
+async function handleDone(req: VercelRequest, res: ServerResponse) {
+  const raw = getQueryParam(req, 'days')
+  const days = raw === undefined ? 7 : /^\d+$/.test(raw) ? Number(raw) : Number.NaN
+  if (!Number.isInteger(days) || days < 1 || days > 31) {
+    return json(res, 400, { error: 'INVALID_DAYS' })
+  }
+  const since = new Date(Date.now() - days * 86_400_000).toISOString()
+  const rows = await sbJson<TodoRow[]>(
+    `${TODOS}?select=*&status=eq.done&done_at=gte.${encodeURIComponent(since)}&order=done_at.desc`
+  )
+  return json(res, 200, { items: rows.map(toTodo) })
+}
+
 async function handleGet(req: VercelRequest, res: ServerResponse) {
   const id = idParam(req, res)
   if (!id) return
@@ -691,6 +716,8 @@ const PUBLIC_OPS: Record<string, { method: string; run: Op }> = {
 const PRIVATE_OPS: Record<string, { method: string; run: Op }> = {
   list: { method: 'GET', run: handleList },
   get: { method: 'GET', run: handleGet },
+  find: { method: 'GET', run: handleFind },
+  done: { method: 'GET', run: handleDone },
   create: { method: 'POST', run: handleCreate },
   update: { method: 'PATCH', run: handleUpdate },
   delete: { method: 'DELETE', run: handleDelete },

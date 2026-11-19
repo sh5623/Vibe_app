@@ -945,3 +945,108 @@ describe('handler — Task 3 attachments', () => {
     expect(res.statusCode).toBe(200)
   })
 })
+
+describe('handler — find·done', () => {
+  let calls: Call[]
+  let rows: Row[]
+  const cookie = () => validCookie()
+
+  beforeEach(() => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date(NOW))
+    process.env.SUPABASE_URL = 'https://example.supabase.co'
+    process.env.SUPABASE_SERVICE_ROLE_KEY = 'service-role-key'
+    process.env.MS_TODO_PIN = '1234'
+    process.env.MS_TODO_SECRET = SECRET
+    calls = []
+    rows = []
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string, init?: RequestInit) => {
+        calls.push({ url, method: init?.method ?? 'GET', body: undefined })
+        return okJson(rows)
+      })
+    )
+  })
+
+  afterEach(() => {
+    process.env = { ...ORIGINAL_ENV }
+    vi.useRealTimers()
+    vi.unstubAllGlobals()
+    vi.restoreAllMocks()
+  })
+
+  it('find: 정규화한 링크로 조회하고 첫 행의 id·status를 돌려준다', async () => {
+    rows = [row(1, { status: 'done' })]
+    const { res, body } = await call(
+      makeReq('GET', {
+        query: { op: 'find', link: ' example.com/a?x=1 ' },
+        cookie: cookie(),
+      })
+    )
+    expect(res.statusCode).toBe(200)
+    expect(body).toEqual({ todo: { id: uuid(1), status: 'done' } })
+    expect(calls[0]?.url).toContain(`link=eq.${encodeURIComponent('https://example.com/a?x=1')}`)
+  })
+
+  it('find: 없으면 todo null', async () => {
+    const { res, body } = await call(
+      makeReq('GET', { query: { op: 'find', link: 'https://example.com/' }, cookie: cookie() })
+    )
+    expect(res.statusCode).toBe(200)
+    expect(body).toEqual({ todo: null })
+  })
+
+  it('find: 링크가 http(s)가 아니면 400 INVALID_LINK', async () => {
+    for (const link of ['javascript:alert(1)', 'ftp://example.com/x', '']) {
+      const { res, body } = await call(
+        makeReq('GET', { query: { op: 'find', link }, cookie: cookie() })
+      )
+      expect(res.statusCode).toBe(400)
+      expect(body).toEqual({ error: 'INVALID_LINK' })
+    }
+    expect(calls).toHaveLength(0)
+  })
+
+  it('done: days 없으면 7일, done_at 내림차순', async () => {
+    rows = [row(1, { status: 'done', done_at: '2026-10-25T00:00:00.000Z' })]
+    const { res, body } = await call(makeReq('GET', { query: { op: 'done' }, cookie: cookie() }))
+    expect(res.statusCode).toBe(200)
+    expect((body as { items: Todo[] }).items).toHaveLength(1)
+    const url = calls[0]?.url ?? ''
+    expect(url).toContain('status=eq.done')
+    expect(url).toContain(
+      `done_at=gte.${encodeURIComponent(new Date(NOW - 7 * 86_400_000).toISOString())}`
+    )
+    expect(url).toContain('order=done_at.desc')
+  })
+
+  it('done: days=3 은 3일 전부터', async () => {
+    await call(makeReq('GET', { query: { op: 'done', days: '3' }, cookie: cookie() }))
+    expect(calls[0]?.url).toContain(
+      `done_at=gte.${encodeURIComponent(new Date(NOW - 3 * 86_400_000).toISOString())}`
+    )
+  })
+
+  it('done: days=0·40·abc → 400 INVALID_DAYS', async () => {
+    for (const days of ['0', '40', 'abc', '1.5']) {
+      const { res, body } = await call(
+        makeReq('GET', { query: { op: 'done', days }, cookie: cookie() })
+      )
+      expect(res.statusCode).toBe(400)
+      expect(body).toEqual({ error: 'INVALID_DAYS' })
+    }
+    expect(calls).toHaveLength(0)
+  })
+
+  it('find·done: 세션 없으면 401 LOCKED_SESSION', async () => {
+    for (const query of [
+      { op: 'find', link: 'https://example.com/' } as Record<string, string>,
+      { op: 'done' } as Record<string, string>,
+    ]) {
+      const { res, body } = await call(makeReq('GET', { query }))
+      expect(res.statusCode).toBe(401)
+      expect(body).toEqual({ error: 'LOCKED_SESSION' })
+    }
+  })
+})

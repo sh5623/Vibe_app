@@ -24,6 +24,8 @@ export const todoKeys = {
   session: ['ms', 'todo', 'session'] as const,
   list: ['ms', 'todo', 'list'] as const,
   detail: (id: string) => ['ms', 'todo', 'detail', id] as const,
+  find: (link: string) => ['ms', 'todo', 'find', link] as const,
+  done: (days: number) => ['ms', 'todo', 'done', days] as const,
 }
 
 /** 비 2xx 응답(또는 네트워크 실패: status 0, code 'NETWORK') */
@@ -167,12 +169,70 @@ export function useTodoDetail(id: string | null): UseQueryResult<Todo, TodoApiEr
   })
 }
 
+/** 링크로 이미 담은 할 일을 찾는다(완료 포함). 없으면 null. */
+export function useFindTodoByLink(
+  link: string,
+  enabled: boolean
+): UseQueryResult<{ id: string; status: TodoStatus } | null, TodoApiError> {
+  const qc = useQueryClient()
+  return useQuery({
+    queryKey: todoKeys.find(link),
+    queryFn: async () => {
+      try {
+        return (
+          await request<{ todo: { id: string; status: TodoStatus } | null }>('find', {
+            params: { link },
+          })
+        ).todo
+      } catch (error) {
+        onLocked(qc, error)
+        throw error
+      }
+    },
+    enabled,
+    retry: false,
+  })
+}
+
+/** 최근 days일 안에 완료한 할 일(최근 완료 순) */
+export function useDoneHistory(
+  days: number,
+  enabled: boolean
+): UseQueryResult<Todo[], TodoApiError> {
+  const qc = useQueryClient()
+  return useQuery({
+    queryKey: todoKeys.done(days),
+    queryFn: async () => {
+      try {
+        return (await request<{ items: Todo[] }>('done', { params: { days: String(days) } })).items
+      } catch (error) {
+        onLocked(qc, error)
+        throw error
+      }
+    },
+    enabled,
+    retry: false,
+  })
+}
+
+/** 만들기·수정 뒤 링크 조회·최근 완료 캐시를 낡음 처리한다 */
+const FIND_DONE_PREFIXES = [
+  ['ms', 'todo', 'find'],
+  ['ms', 'todo', 'done'],
+] as const
+function invalidateFindDone(qc: QueryClient) {
+  for (const queryKey of FIND_DONE_PREFIXES) void qc.invalidateQueries({ queryKey })
+}
+
 export function useCreateTodo(): UseMutationResult<Todo, TodoApiError, TodoInput> {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: async (input: TodoInput) =>
       (await request<{ todo: Todo }>('create', { method: 'POST', body: input })).todo,
-    onSuccess: () => qc.invalidateQueries({ queryKey: todoKeys.list }),
+    onSuccess: () => {
+      invalidateFindDone(qc)
+      return qc.invalidateQueries({ queryKey: todoKeys.list })
+    },
     onError: (e) => onLocked(qc, e),
   })
 }
@@ -239,6 +299,7 @@ export function useUpdateTodo(): UseMutationResult<
       const refetchType = statusOnly ? 'none' : 'active'
       void qc.invalidateQueries({ queryKey: todoKeys.list, refetchType })
       void qc.invalidateQueries({ queryKey: todoKeys.detail(id), refetchType })
+      if (!e) invalidateFindDone(qc)
     },
   })
 }
