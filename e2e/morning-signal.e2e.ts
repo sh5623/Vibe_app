@@ -294,10 +294,10 @@ test('스크롤해도 상단 막대가 화면 맨 위에 붙어 있다', async (
     await page.goto('/morning-signal')
     await expect(page.locator('header.top')).toBeVisible()
     await page.mouse.wheel(0, 900)
+    await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(100)
     await expect
       .poll(async () => Math.abs((await page.locator('header.top').boundingBox())?.y ?? 99))
       .toBeLessThanOrEqual(1)
-    expect(await page.evaluate(() => window.scrollY)).toBeGreaterThan(100)
   }
 })
 
