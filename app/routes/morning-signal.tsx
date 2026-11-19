@@ -1,10 +1,12 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useNavigate } from 'react-router'
 import LatticeLoader from '@/components/react-bits/LatticeLoader'
 import { useMsDay, useMsDays } from '@/hooks/use-morning-signal'
+import { useTodoList, useTodoSession } from '@/hooks/use-morning-signal-todo'
 import type { Theme } from '../../api/morning-signal'
 import type { Route } from './+types/morning-signal'
+import AddToTodo from './morning-signal/AddToTodo'
 import Alerts from './morning-signal/Alerts'
 import Feed from './morning-signal/Feed'
 import FePicks from './morning-signal/FePicks'
@@ -12,9 +14,11 @@ import { DateNav } from './morning-signal/Header'
 import Lead from './morning-signal/Lead'
 import Mix from './morning-signal/Mix'
 import { alertItems, pickInitialDate } from './morning-signal/model'
+import { dueWithin, kstToday } from './morning-signal/todo/todo-model'
 import { useMsLayout } from './morning-signal-layout'
 
 const EMPTY = { title: '아직 저장된 뉴스가 없어요', text: '매일 아침 8시에 첫 브리핑이 들어와요.' }
+const TOAST_MS = 3000
 const ERROR = { title: '데이터를 불러오지 못했어요', text: '잠시 뒤 새로고침해 주세요.' }
 
 export function meta(_: Route.MetaArgs) {
@@ -82,6 +86,24 @@ export default function MorningSignal() {
       ?.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' })
   }
 
+  // 챙길 것의 마감 임박 할 일 — 세션이 풀려 있을 때만(잠겨 있으면 PIN 을 묻지 않고 그냥 뺀다)
+  const unlocked = useTodoSession().data?.unlocked === true
+  const todos = useTodoList(unlocked)
+  const pendingTodos = todos.data?.pages[0]?.pending
+  const dueSoon = useMemo(() => {
+    const today = kstToday(new Date())
+    return (pendingTodos ?? []).filter((t) => dueWithin(t, today, 1))
+  }, [pendingTodos])
+
+  // 「TO-DO에 담았어요」·저장 실패 토스트(TO-DO 화면과 같은 todo-toast)
+  const [toast, setToast] = useState<{ message: string; key: number } | null>(null)
+  const notify = useCallback((message: string) => setToast({ message, key: Date.now() }), [])
+  useEffect(() => {
+    if (!toast) return
+    const t = setTimeout(() => setToast(null), TOAST_MS)
+    return () => clearTimeout(t)
+  }, [toast])
+
   return (
     <>
       {dateSlot &&
@@ -106,8 +128,7 @@ export default function MorningSignal() {
       {!state && days && view && (
         <div className="ms-grid">
           <Lead day={view.day} feeds={view.feeds} onPick={pickTheme} />
-          {/* 마감 임박 할 일(due)은 Task 6 에서 잠금 세션 조회로 붙인다 */}
-          <Alerts items={alertItems(view.feeds)} />
+          <Alerts items={alertItems(view.feeds, dueSoon)} />
           <Mix feeds={view.feeds} />
           <Feed
             feeds={view.feeds}
@@ -116,9 +137,15 @@ export default function MorningSignal() {
             tab={tab}
             onTab={setTab}
           />
-          <FePicks feed={view.feeds.gh} />
+          <FePicks
+            feed={view.feeds.gh}
+            renderAdd={(g) => <AddToTodo item={g} onNotify={notify} />}
+          />
         </div>
       )}
+      <div className={`todo-toast${toast ? ' show' : ''}`} role="status" aria-live="polite">
+        {toast?.message}
+      </div>
     </>
   )
 }

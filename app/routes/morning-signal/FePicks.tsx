@@ -16,7 +16,7 @@ const LANG: Record<string, string> = {
 
 interface FePicksProps {
   feed: Feed<'gh'> | undefined
-  /** 「＋ TO-DO」 담기 버튼 자리 — Task 6 에서 채운다(지금은 아무것도 그리지 않는다) */
+  /** 「＋ TO-DO」 담기 버튼 자리 */
   renderAdd?: (g: GhItem) => ReactNode
 }
 

@@ -174,6 +174,22 @@ export async function mockTodoApi(
       if (!cursor) res.pending = all.filter((t) => t.status !== 'done')
       return send(200, res)
     }
+    if (op === 'find') {
+      // 서버처럼 링크를 정규화해 비교한다(완료 포함 · 가장 최근 것)
+      let link = url.searchParams.get('link') ?? ''
+      if (link && !/^https?:\/\//.test(link)) link = `https://${link}`
+      const norm = link ? new URL(link).href : ''
+      const hit = order(state.todos).find((t) => t.link === norm)
+      return send(200, { todo: hit ? { id: hit.id, status: hit.status } : null })
+    }
+    if (op === 'done') {
+      const days = Number(url.searchParams.get('days') ?? '7')
+      const since = Date.now() - days * 86_400_000
+      const items = state.todos
+        .filter((t) => t.status === 'done' && t.doneAt && Date.parse(t.doneAt) >= since)
+        .sort((a, b) => (b.doneAt ?? '').localeCompare(a.doneAt ?? ''))
+      return send(200, { items })
+    }
     const tid = url.searchParams.get('id')
     const found = state.todos.find((t) => t.id === tid)
     if (op === 'get') {

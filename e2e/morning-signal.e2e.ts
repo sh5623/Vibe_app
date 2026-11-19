@@ -1,5 +1,6 @@
 import { expect, type Page, test } from '@playwright/test'
 import { mockApi } from './fixtures/mock-api'
+import { makeTodo, mockTodoApi } from './fixtures/mock-todo-api'
 
 const dateBtn = (page: Page) => page.locator('.datenav .cur')
 
@@ -119,7 +120,7 @@ test('background refetch failure keeps the dashboard instead of the error card',
   await page.unrouteAll({ behavior: 'wait' })
   await mockApi(page, 'error')
   await page.clock.fastForward('02:00')
-  await page.evaluate(() => window.dispatchEvent(new Event('visibilitychange')))
+  await page.evaluate(() => window.dispatchEvent(new Event('visibilitychange', { bubbles: true })))
 
   // 목록 1+3회 · 상세 1+3회
   await expect.poll(() => failures, { timeout: 20_000 }).toBeGreaterThanOrEqual(8)
@@ -529,4 +530,134 @@ test('reduced motion switches views without a view transition', async ({ page })
   await page.locator('.views').getByRole('link', { name: 'TO-DO' }).click()
   await expect(page).toHaveURL(/\/morning-signal\/todo$/)
   expect(await page.evaluate(() => (window as unknown as { __vt: number }).__vt)).toBe(0)
+})
+
+// ── 레포를 TO-DO에 담기(Task 6) ─────────────────────────────────────────
+test.describe('FE에 쓸 레포 → TO-DO', () => {
+  const add = (page: Page) => page.locator('.picks [aria-label="TO-DO에 담기"]').first()
+  const UNIVER = 'https://github.com/dream-num/univer'
+
+  test.beforeEach(async ({ page }) => {
+    await mockApi(page, '1119')
+  })
+
+  test('잠긴 상태에서 담기 → PIN → 담김', async ({ page }) => {
+    const state = await mockTodoApi(page)
+    await page.goto('/morning-signal')
+    await expect(add(page)).toHaveAttribute('aria-pressed', 'false')
+    await add(page).click()
+    await expect(page.locator('#pinDlg')).toBeVisible()
+    await expect(page.locator('#pinDlg')).toContainText('PIN을 입력하세요')
+    await page.keyboard.type('1234')
+    await expect(page.locator('#pinDlg')).toBeHidden()
+    await expect(add(page)).toHaveAttribute('aria-pressed', 'true')
+    await expect(page.getByRole('status')).toContainText('TO-DO에 담았어요')
+    expect(state.todos[0]).toMatchObject({
+      title: 'dream-num/univer',
+      link: UNIVER,
+      status: 'todo',
+    })
+    expect(state.creates).toBe(1)
+  })
+
+  test('풀려 있으면 PIN 없이 바로 담고, 다시 눌러도 더 담지 않는다', async ({ page }) => {
+    const state = await mockTodoApi(page, { unlocked: true })
+    await page.goto('/morning-signal')
+    await add(page).click()
+    await expect(add(page)).toHaveAttribute('aria-pressed', 'true')
+    await expect(page.locator('#pinDlg')).toHaveCount(0)
+    await add(page).click()
+    expect(state.creates).toBe(1)
+  })
+
+  test('PIN이 틀리면 창 안에 오류', async ({ page }) => {
+    await mockTodoApi(page)
+    await page.goto('/morning-signal')
+    await add(page).click()
+    await page.keyboard.type('0000')
+    await expect(page.locator('#pinDlg [role="alert"]')).toContainText('PIN이 맞지 않아요')
+    await expect(page.locator('#pinDlg')).toBeVisible()
+  })
+
+  test('잠금 상태(429)면 창 안에 남은 시간', async ({ page }) => {
+    await mockTodoApi(page, { locked: true })
+    await page.goto('/morning-signal')
+    await add(page).click()
+    await expect(page.locator('#pinDlg')).toContainText('남음')
+    await expect(page.locator('#pinDlg input')).toBeDisabled()
+  })
+
+  test('PIN 창을 닫으면 담기가 취소된다', async ({ page }) => {
+    await page.clock.install()
+    const state = await mockTodoApi(page)
+    await page.goto('/morning-signal')
+    await add(page).click()
+    await expect(page.locator('#pinDlg')).toBeVisible()
+    await page.keyboard.press('Escape')
+    await expect(page.locator('#pinDlg')).toHaveCount(0)
+    // 다른 곳에서 풀린 것처럼 — 세션을 다시 읽게 한다
+    state.unlocked = true
+    const found = page.waitForResponse((r) => r.url().includes('op=find'))
+    // 세션은 60초 동안 신선하다 — 시계를 넘기고 숨김 → 보임으로 다시 읽게 한다
+    await page.clock.fastForward(61_000)
+    await page.evaluate(() => {
+      for (const v of ['hidden', 'visible']) {
+        Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => v })
+        document.dispatchEvent(new Event('visibilitychange', { bubbles: true }))
+      }
+    })
+    await found
+    expect(state.creates).toBe(0)
+    await expect(add(page)).toHaveAttribute('aria-pressed', 'false')
+  })
+
+  test('이미 담은 레포(완료 포함)는 처음부터 ✓', async ({ page }) => {
+    const state = await mockTodoApi(page, {
+      unlocked: true,
+      seed: [makeTodo({ title: 'dream-num/univer', link: UNIVER, status: 'done' })],
+    })
+    await page.goto('/morning-signal')
+    await expect(add(page)).toHaveAttribute('aria-pressed', 'true')
+    await expect(add(page)).toContainText('TO-DO')
+    await add(page).click()
+    expect(state.creates).toBe(0)
+    await expect(page.locator('.picks [aria-label="TO-DO에 담기"]').nth(1)).toHaveAttribute(
+      'aria-pressed',
+      'false'
+    )
+  })
+
+  test('저장 실패면 토스트', async ({ page }) => {
+    const state = await mockTodoApi(page, { unlocked: true })
+    state.failNext = { op: 'create', status: 503, error: 'DB_DOWN' }
+    await page.goto('/morning-signal')
+    await add(page).click()
+    await expect(page.getByRole('status')).toContainText('저장하지 못했어요. 다시 시도해 주세요.')
+    await expect(add(page)).toHaveAttribute('aria-pressed', 'false')
+  })
+
+  test('풀려 있으면 마감 임박 할 일이 챙길 것에 붙는다', async ({ page }) => {
+    await page.clock.setFixedTime(new Date('2026-11-19T03:00:00Z'))
+    await mockTodoApi(page, {
+      unlocked: true,
+      seed: [
+        makeTodo({ title: '분기 보고서 제출', dueDate: '2026-11-20' }),
+        makeTodo({ title: '먼 일', dueDate: '2026-11-30' }),
+      ],
+    })
+    await page.goto('/morning-signal')
+    const rows = page.locator('[data-area="alert"] .rows > li')
+    await expect(rows.filter({ hasText: '분기 보고서 제출' })).toHaveCount(1)
+    await expect(rows.filter({ hasText: '먼 일' })).toHaveCount(0)
+  })
+
+  test('잠겨 있으면 PIN을 묻지 않고 마감 항목도 없다', async ({ page }) => {
+    await mockTodoApi(page, {
+      seed: [makeTodo({ title: '분기 보고서 제출', dueDate: '2026-11-19' })],
+    })
+    await page.goto('/morning-signal')
+    await expect(page.locator('[data-area="alert"] .rows > li').first()).toBeVisible()
+    await expect(page.locator('[data-area="alert"]')).not.toContainText('분기 보고서 제출')
+    await expect(page.locator('#pinDlg')).toHaveCount(0)
+  })
 })

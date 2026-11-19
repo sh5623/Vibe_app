@@ -4,6 +4,7 @@ import {
   continueList,
   dayHeading,
   dueText,
+  dueWithin,
   groupByCreatedDate,
   isDueSoon,
   kstToday,
@@ -117,5 +118,25 @@ describe('continueList', () => {
 
   it('목록이 아니면 null', () => {
     expect(continueList('그냥 글', 4)).toBeNull()
+  })
+})
+
+describe('dueWithin', () => {
+  const due = (dueDate: string | null, status: Todo['status'] = 'todo') => ({ dueDate, status })
+  it('오늘과 N일 뒤까지 true, 그 다음 날은 false', () => {
+    expect(dueWithin(due('2026-10-23'), TODAY, 3)).toBe(true)
+    expect(dueWithin(due('2026-10-26'), TODAY, 3)).toBe(true)
+    expect(dueWithin(due('2026-10-27'), TODAY, 3)).toBe(false)
+  })
+  it('지난 마감도 true', () => {
+    expect(dueWithin(due('2026-10-20'), TODAY, 1)).toBe(true)
+  })
+  it('days=1 이면 내일까지', () => {
+    expect(dueWithin(due('2026-10-24'), TODAY, 1)).toBe(true)
+    expect(dueWithin(due('2026-10-25'), TODAY, 1)).toBe(false)
+  })
+  it('완료나 마감 없음은 false', () => {
+    expect(dueWithin(due('2026-10-23', 'done'), TODAY, 3)).toBe(false)
+    expect(dueWithin(due(null), TODAY, 3)).toBe(false)
   })
 })

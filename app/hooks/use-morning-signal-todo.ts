@@ -312,6 +312,8 @@ export function useDeleteTodo(): UseMutationResult<void, TodoApiError, string> {
     },
     onSuccess: (_d, id) => {
       qc.removeQueries({ queryKey: todoKeys.detail(id) })
+      // 지운 레포의 「담음」 표시가 ＋ 로 돌아오게
+      invalidateFindDone(qc)
       return qc.invalidateQueries({ queryKey: todoKeys.list })
     },
     onError: (e) => onLocked(qc, e),

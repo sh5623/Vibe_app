@@ -99,9 +99,18 @@ export function dueText(t: Pick<Todo, 'dueDate' | 'dueTime'>): string | null {
   return t.dueTime ? `${base} ${t.dueTime}` : base
 }
 
-export function isDueSoon(t: Todo, today: string): boolean {
+/** 마감이 오늘부터 days 일 뒤까지(지난 것 포함)인 남은 일인가 — 완료·마감 없음은 false */
+export function dueWithin(
+  t: Pick<Todo, 'dueDate' | 'status'>,
+  today: string,
+  days: number
+): boolean {
   if (t.status === 'done' || !t.dueDate) return false
-  return daysBetween(t.dueDate, today) <= DUE_SOON_DAYS
+  return daysBetween(t.dueDate, today) <= days
+}
+
+export function isDueSoon(t: Todo, today: string): boolean {
+  return dueWithin(t, today, DUE_SOON_DAYS)
 }
 
 const LIST_LINE = /^(\s*)(?:([-*])|(\d+)([.)]))\s+(.*)$/

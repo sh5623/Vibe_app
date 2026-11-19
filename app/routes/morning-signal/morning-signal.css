@@ -910,6 +910,86 @@
   color: var(--ok);
   font-weight: 700;
 }
+/* TO-DO 담기 버튼(시안 grid.css .btn · views.css .pk-f .btn) */
+.ms .pk-f .btn {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 36px;
+  padding: 0 14px;
+  border-radius: var(--r-sm);
+  border: 1px solid var(--line);
+  background: var(--panel);
+  color: var(--fg);
+  font: 700 13px var(--f-body);
+  cursor: pointer;
+}
+.ms .pk-f .btn svg,
+.ms .pin-dlg .btn svg {
+  width: 17px;
+  height: 17px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.ms .pk-f .btn:focus-visible,
+.ms .pin-dlg .btn:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--navy) 45%, transparent);
+  outline-offset: 2px;
+}
+.ms .pk-f .btn[aria-pressed="true"] {
+  background: var(--ok-soft);
+  color: var(--ok);
+  border-color: transparent;
+}
+/* PIN 창(시안 base.css .pin) — 최상위 레이어라 상단 막대까지 덮는다 */
+.ms .pin-dlg {
+  border: 0;
+  border-radius: var(--r);
+  padding: 24px;
+  width: min(360px, calc(100vw - 32px));
+  background: var(--panel);
+  color: var(--fg);
+  box-shadow: 0 20px 40px -16px rgb(15 23 42 / 0.35);
+}
+.ms .pin-dlg::backdrop {
+  background: rgb(15 23 42 / 0.45);
+}
+.ms .pin-dlg h2 {
+  margin: 0 0 8px;
+  font-size: 18px;
+  font-weight: 800;
+}
+.ms .pin-dlg > p {
+  margin: 0;
+  font-size: 13.5px;
+  line-height: 1.6;
+  color: var(--muted);
+}
+.ms .pin-dlg .pin {
+  margin-top: 4px;
+}
+.ms .pin-dlg .acts {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 16px;
+}
+.ms .pin-dlg .btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  padding: 0 16px;
+  border-radius: var(--r-sm);
+  border: 1px solid var(--line);
+  background: var(--panel);
+  color: var(--fg);
+  font: 700 13px var(--f-body);
+  cursor: pointer;
+}
 .ms .lang {
   display: inline-flex;
   align-items: center;
