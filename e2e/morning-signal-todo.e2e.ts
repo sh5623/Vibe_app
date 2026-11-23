@@ -421,6 +421,35 @@ test('완료 기록 막대 — 날짜 M/D · 0건 막힘 · 오늘 표시 · 헤
   await expect(done.locator('.ph .cnt')).toHaveText('7일 2건')
 })
 
+test('날짜를 고른 채 완료 → 선택 유지 · 오늘 칸과 헤더 +1', async ({ page }) => {
+  await api(page, {
+    unlocked: true,
+    seed: [
+      ...seedDay(),
+      makeTodo({
+        title: '건강검진 예약',
+        status: 'done',
+        createdDate: '2026-10-15',
+        createdAt: '2026-10-15T02:00:00.000Z',
+        doneAt: '2026-10-19T01:00:00.000Z',
+      }),
+    ],
+  })
+  await page.goto('/morning-signal/todo')
+  const done = card(page, 'done')
+  const d19 = done.getByRole('button', { name: '10월 19일 완료 1건' })
+  await d19.click()
+  await pendingRows(page).first().getByRole('button', { name: '상태 바꾸기' }).click()
+  await page
+    .getByRole('dialog', { name: '상태 바꾸기' })
+    .getByRole('button', { name: /^완료/ })
+    .click()
+  await expect(done.locator('.ph .cnt')).toHaveText('7일 4건')
+  await expect(done.getByRole('button', { name: '10월 23일 완료 2건' })).toBeVisible()
+  await expect(d19).toHaveAttribute('aria-pressed', 'true')
+  await expect(done.locator('.dgrp-h .lb')).toHaveText(['10월 19일'])
+})
+
 test('휴대폰 폭(375): 완료 기록 막대가 넘치지 않는다', async ({ page }) => {
   await api(page, { unlocked: true, seed: seedDay() })
   await page.goto('/morning-signal/todo')
@@ -732,6 +761,18 @@ test('상태 색·글자는 한 벌 — 줄 아이콘 = 시트 아이콘 = 상�
   const todoIcon = await iconStyle(todo.locator('.si'))
   expect(todoIcon.pie?.opacity).toBe('0')
   expect(todoIcon.ring?.stroke).not.toBe('rgb(219, 229, 246)')
+  // 흰 바탕 대비 3:1 이상(컨트롤 테두리)
+  const ringContrast = await todo.locator('.si-ring').evaluate((el) => {
+    const c = getComputedStyle(el).stroke
+    const n = (c.match(/[\d.]+/g) ?? []).map(Number)
+    const v = c.startsWith('color(') ? n.slice(0, 3).map((x) => x * 255) : n.slice(0, 3)
+    const [r = 0, g = 0, b = 0] = v.map((x) => {
+      const y = x / 255
+      return y <= 0.03928 ? y / 12.92 : ((y + 0.055) / 1.055) ** 2.4
+    })
+    return 1.05 / (0.2126 * r + 0.7152 * g + 0.0722 * b + 0.05)
+  })
+  expect(ringContrast).toBeGreaterThanOrEqual(3)
   expect(todoIcon.disc?.transform).not.toBe('none')
   expect(todoIcon.chk?.['stroke-dashoffset']).toBe('13px')
   // 진행 중 — 시트의 진행 중 옵션과 같은 색·모양

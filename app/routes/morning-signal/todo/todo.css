@@ -937,7 +937,8 @@
 }
 .ms .tasks .s-todo .si-ring {
   stroke-width: 1.6;
-  stroke: color-mix(in srgb, var(--st-todo) 55%, var(--line));
+  /* 흰 바탕 대비 약 3.5:1(컨트롤 테두리 3:1 이상) */
+  stroke: color-mix(in srgb, var(--st-todo) 70%, var(--line));
 }
 @media (hover: hover) {
   .ms .tasks .trow.s-todo .trow-ck:hover .si-chk {
