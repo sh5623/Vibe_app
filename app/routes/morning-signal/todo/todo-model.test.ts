@@ -2,7 +2,10 @@ import { describe, expect, it } from 'vitest'
 import type { Todo } from '../../../../api/morning-signal-todo'
 import {
   continueList,
+  doneDays,
   doneGroups,
+  doneSpan,
+  doneTime,
   doneToday,
   dueLeft,
   dueText,
@@ -38,7 +41,7 @@ function todo(id: string, over: Partial<Todo> = {}): Todo {
 
 describe('todo-model', () => {
   it('STATUS_LABEL', () => {
-    expect(STATUS_LABEL).toEqual({ todo: 'TODO', in_progress: 'IN PROGRESS', done: 'DONE' })
+    expect(STATUS_LABEL).toEqual({ todo: '할 일', in_progress: '진행 중', done: '완료' })
   })
 
   it('splitPending orders by due then created', () => {
@@ -173,6 +176,61 @@ describe('doneGroups', () => {
   })
   it('완료 시각이 없으면 뺀다', () => {
     expect(doneGroups([done('x', null)], T)).toEqual([])
+  })
+  it('묶음마다 KST 날짜를 싣는다', () => {
+    const g = doneGroups(
+      [done('y', '2026-11-18T03:00:00.000Z'), done('t-early', '2026-11-18T16:00:00.000Z')],
+      T
+    )
+    expect(g.map((x) => x.date)).toEqual(['2026-11-19', '2026-11-18'])
+  })
+})
+
+describe('doneDays', () => {
+  const T = '2026-11-19'
+  const done = (id: string, doneAt: string | null) => todo(id, { status: 'done', doneAt })
+  it('오늘−6 … 오늘 7칸(오래된 날 먼저) · M/D · 그날(KST) 완료 수 · 7칸 밖은 세지 않는다', () => {
+    const d = doneDays(
+      [
+        done('old', '2026-11-12T03:00:00.000Z'),
+        done('y', '2026-11-18T03:00:00.000Z'),
+        done('t-late', '2026-11-19T08:00:00.000Z'),
+        done('t-early', '2026-11-18T16:00:00.000Z'),
+        done('none', null),
+      ],
+      T
+    )
+    expect(d.map((x) => [x.date, x.md, x.count, x.isToday])).toEqual([
+      ['2026-11-13', '11/13', 0, false],
+      ['2026-11-14', '11/14', 0, false],
+      ['2026-11-15', '11/15', 0, false],
+      ['2026-11-16', '11/16', 0, false],
+      ['2026-11-17', '11/17', 0, false],
+      ['2026-11-18', '11/18', 1, false],
+      ['2026-11-19', '11/19', 2, true],
+    ])
+  })
+  it('칸 수와 달 경계', () => {
+    expect(doneDays([], '2026-11-02', 3).map((x) => x.md)).toEqual(['10/31', '11/1', '11/2'])
+  })
+})
+
+describe('doneTime · doneSpan', () => {
+  const done = (over: Partial<Todo>) => todo('d', { status: 'done', ...over })
+  it('완료 시각은 KST HH:MM', () => {
+    expect(doneTime(done({ doneAt: '2026-11-18T16:00:00.000Z' }))).toBe('01:00')
+    expect(doneTime(done({ doneAt: '2026-10-23T02:05:00.000Z' }))).toBe('11:05')
+    expect(doneTime(done({ doneAt: null }))).toBe('')
+  })
+  it('처리 기간 — 같은 날이면 당일 처리, 아니면 등록 후 N일, 모르면 빈 글자', () => {
+    expect(doneSpan(done({ createdDate: '2026-11-19', doneAt: '2026-11-18T16:00:00.000Z' }))).toBe(
+      '당일 처리'
+    )
+    expect(doneSpan(done({ createdDate: '2026-10-15', doneAt: '2026-10-19T01:00:00.000Z' }))).toBe(
+      '등록 후 4일'
+    )
+    expect(doneSpan(done({ createdDate: '', doneAt: '2026-10-19T01:00:00.000Z' }))).toBe('')
+    expect(doneSpan(done({ doneAt: null }))).toBe('')
   })
 })
 

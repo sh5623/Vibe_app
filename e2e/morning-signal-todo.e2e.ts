@@ -281,6 +281,10 @@ test('중요·마감 임박·완료 기록이 비면 안내 문구', async ({ pa
   await expect(card(page, 'imp')).toContainText('중요 표시한 일이 없어요')
   await expect(card(page, 'due')).toContainText('3일 안에 마감인 일이 없어요')
   await expect(card(page, 'done')).toContainText('최근 7일 완료한 일이 없어요')
+  // 7일 모두 0건 — 막대 7칸은 그대로(전부 막힘) · 헤더 건수는 숨긴다(중요 카드와 같다)
+  await expect(card(page, 'done').locator('.dbar')).toHaveCount(7)
+  await expect(card(page, 'done').locator('.dbar:disabled')).toHaveCount(7)
+  await expect(card(page, 'done').locator('.ph .cnt')).toHaveCount(0)
 })
 
 test('남은 일은 접지 않고 진행 중 → 할 일, 줄마다 상태 칩', async ({ page }) => {
@@ -336,7 +340,7 @@ test('거르기에 맞는 일이 없으면 안내', async ({ page }) => {
   await expect(card(page, 'list')).toContainText('이 상태의 할 일이 없어요')
 })
 
-test('완료 기록은 최근 7일만, 날짜 라벨', async ({ page }) => {
+test('완료 기록은 막대 7칸(10/17~10/23)만, 날짜 라벨', async ({ page }) => {
   await api(page, {
     unlocked: true,
     seed: [
@@ -347,9 +351,84 @@ test('완료 기록은 최근 7일만, 날짜 라벨', async ({ page }) => {
   })
   await page.goto('/morning-signal/todo')
   const done = card(page, 'done')
-  await expect(done.locator('h3')).toHaveText(['오늘', '어제', '10월 16일'])
-  await expect(done.locator('ul.done').first()).toHaveText('민수 축의금 보내기')
+  await expect(done.locator('.dgrp-h .lb')).toHaveText(['오늘', '어제'])
+  await expect(done.locator('.dtl').first().locator('.lk')).toHaveText('민수 축의금 보내기')
+  // 조회 범위(지금−7일)에는 걸리지만 막대 7칸 밖인 날(10/16)은 보이지 않는다
+  await expect(done).not.toContainText('일주일 전')
   await expect(done).not.toContainText('너무 오래 전')
+})
+
+test('완료 기록 막대 — 날짜 M/D · 0건 막힘 · 오늘 표시 · 헤더 7일 N건 · 줄마다 시각과 처리 기간', async ({
+  page,
+}) => {
+  await api(page, {
+    unlocked: true,
+    seed: [
+      ...seedDay(),
+      makeTodo({
+        title: '건강검진 예약',
+        status: 'done',
+        createdDate: '2026-10-15',
+        createdAt: '2026-10-15T02:00:00.000Z',
+        doneAt: '2026-10-19T01:00:00.000Z',
+      }),
+    ],
+  })
+  await page.goto('/morning-signal/todo')
+  const done = card(page, 'done')
+  await expect(done.locator('.ph .cnt')).toHaveText('7일 3건')
+  await expect(done.locator('.dbar .dbar-d')).toHaveText([
+    '10/17',
+    '10/18',
+    '10/19',
+    '10/20',
+    '10/21',
+    '10/22',
+    '10/23',
+  ])
+  await expect(done.locator('.dbar:disabled')).toHaveCount(4)
+  await expect(done.locator('.dbar[aria-pressed="true"]')).toHaveCount(0)
+  await expect(done.locator('.dbar.is-today .dbar-d')).toHaveText('10/23')
+  await expect(done.getByRole('button', { name: '10월 19일 완료 1건' })).toBeEnabled()
+  await expect(done.locator('.dgrp-h .lb')).toHaveText(['오늘', '어제', '10월 19일'])
+  await expect(done.locator('.dgrp-h b')).toHaveText(['1', '1', '1'])
+  await expect(done.locator('.dtl > li .dtl-t')).toHaveText(['11:00', '14:00', '10:00'])
+  await expect(done.locator('.dtl > li .dtl-s')).toHaveText([
+    '당일 처리',
+    '당일 처리',
+    '등록 후 4일',
+  ])
+  // 날짜를 누르면 그날만 · 다시 누르면 전체
+  const d19 = done.getByRole('button', { name: '10월 19일 완료 1건' })
+  await d19.click()
+  await expect(d19).toHaveAttribute('aria-pressed', 'true')
+  await expect(done.locator('.dgrp-h .lb')).toHaveText(['10월 19일'])
+  await expect(done.locator('.ph .cnt')).toHaveText('7일 3건')
+  await d19.click()
+  await expect(d19).toHaveAttribute('aria-pressed', 'false')
+  await expect(done.locator('.dgrp-h .lb')).toHaveText(['오늘', '어제', '10월 19일'])
+  // 고른 날의 유일한 완료를 되돌리면 그날이 0건 → 선택이 풀리고 전체로 돌아온다
+  await d19.click()
+  await done.getByRole('button', { name: '건강검진 예약' }).click()
+  const detail = page.getByRole('dialog', { name: '할 일 상세' })
+  await detail.getByRole('radio', { name: '할 일' }).click()
+  await page.keyboard.press('Escape')
+  await expect(detail).toBeHidden()
+  await expect(pendingRows(page).filter({ hasText: '건강검진 예약' })).toHaveCount(1)
+  await expect(done.locator('.dbar[aria-pressed="true"]')).toHaveCount(0)
+  await expect(done.locator('.dbar[data-day="2026-10-19"]')).toBeDisabled()
+  await expect(done.locator('.dgrp-h .lb')).toHaveText(['오늘', '어제'])
+  await expect(done.locator('.ph .cnt')).toHaveText('7일 2건')
+})
+
+test('휴대폰 폭(375): 완료 기록 막대가 넘치지 않는다', async ({ page }) => {
+  await api(page, { unlocked: true, seed: seedDay() })
+  await page.goto('/morning-signal/todo')
+  await expect(card(page, 'done').locator('.dbar')).toHaveCount(7)
+  await noHorizontalScroll(page)
+  const box = await card(page, 'done').locator('.dbars').boundingBox()
+  const cardBox = await card(page, 'done').boundingBox()
+  expect(box && cardBox && box.x + box.width <= cardBox.x + cardBox.width).toBe(true)
 })
 
 test('완료 기록에서 열어 할 일로 되돌리면 남은 일로 돌아온다', async ({ page }) => {
@@ -357,7 +436,7 @@ test('완료 기록에서 열어 할 일로 되돌리면 남은 일로 돌아온
   await page.goto('/morning-signal/todo')
   await card(page, 'done').getByRole('button', { name: '민수 축의금 보내기' }).click()
   const detail = page.getByRole('dialog', { name: '할 일 상세' })
-  await detail.getByRole('radio', { name: 'TODO' }).click()
+  await detail.getByRole('radio', { name: '할 일' }).click()
   await page.keyboard.press('Escape')
   await expect(detail).toBeHidden()
   await expect(pendingRows(page).filter({ hasText: '민수 축의금 보내기' })).toHaveCount(1)
@@ -600,8 +679,8 @@ test('status to DONE leaves pending and lands in today done history', async ({ p
   await pendingRows(page).first().getByRole('button', { name: '상태 바꾸기' }).click()
   const sheet = page.getByRole('dialog', { name: '상태 바꾸기' })
   await expect(sheet).toBeVisible()
-  await expect(sheet.getByRole('button', { name: /IN PROGRESS/ })).toContainText('현재')
-  await sheet.getByRole('button', { name: /^DONE/ }).click()
+  await expect(sheet.getByRole('button', { name: /진행 중/ })).toContainText('현재')
+  await sheet.getByRole('button', { name: /^완료/ }).click()
   // DONE이 되는 순간 스프링 모션(react-bits SpringCheck) — 줄에 data-spring 이 붙고 원이 스프링 값으로 채워진다
   await expect(
     pendingRows(page)
@@ -613,8 +692,11 @@ test('status to DONE leaves pending and lands in today done history', async ({ p
     timeout: 3000,
   })
   const done = card(page, 'done')
-  await expect(done.locator('h3').first()).toHaveText('오늘')
-  await expect(done.locator('ul.done').first()).toContainText('자동차 보험 갱신 비교')
+  await expect(done.locator('.dgrp-h .lb').first()).toHaveText('오늘')
+  await expect(done.locator('.dtl').first()).toContainText('자동차 보험 갱신 비교')
+  // 막대 오늘 칸 +1 · 헤더 +1
+  await expect(done.getByRole('button', { name: '10월 23일 완료 2건' })).toBeVisible()
+  await expect(done.locator('.ph .cnt')).toHaveText('7일 3건')
 })
 
 /** 줄 아이콘·시트 옵션 아이콘의 비교용 계산 스타일 */
@@ -635,7 +717,7 @@ async function iconStyle(icon: import('@playwright/test').Locator) {
   })
 }
 
-test('row icon matches the status sheet icon for 진행 중 and 완료, 할 일 keeps its look', async ({
+test('상태 색·글자는 한 벌 — 줄 아이콘 = 시트 아이콘 = 상태 카드 범례(할 일 회색 · 진행 중 파랑 · 완료 진초록)', async ({
   page,
 }) => {
   await api(page, { unlocked: true, seed: seedDay() })
@@ -646,21 +728,35 @@ test('row icon matches the status sheet icon for 진행 중 and 완료, 할 일 
   const todo = pendingRows(page)
     .filter({ has: page.locator('.chip:not(.ai)') })
     .first()
-  // 할 일 — 반 찬 원·체크 원은 숨고 옅은 선 원만
+  // 할 일 — 반 찬 원·체크 원은 숨고 회색 계열의 가는 선 원만(옛 --line 옅은 선이 아니다)
   const todoIcon = await iconStyle(todo.locator('.si'))
   expect(todoIcon.pie?.opacity).toBe('0')
+  expect(todoIcon.ring?.stroke).not.toBe('rgb(219, 229, 246)')
   expect(todoIcon.disc?.transform).not.toBe('none')
   expect(todoIcon.chk?.['stroke-dashoffset']).toBe('13px')
-  // 진행 중 — 시트의 IN PROGRESS 옵션과 같은 색·모양
+  // 진행 중 — 시트의 진행 중 옵션과 같은 색·모양
   const progIcon = await iconStyle(prog.locator('.si'))
+  const legend = await card(page, 'stat')
+    .locator('.legend li i')
+    .evaluateAll((els) => els.map((el) => getComputedStyle(el).backgroundColor))
+  expect(legend).toEqual(['rgb(37, 99, 235)', 'rgb(82, 96, 122)', 'rgb(21, 128, 61)'])
   await todo.getByRole('button', { name: '상태 바꾸기' }).click()
   const sheet = page.getByRole('dialog', { name: '상태 바꾸기' })
+  await expect(sheet.locator('.todo-opt span')).toHaveText(['할 일', '진행 중', '완료'])
+  const sheetFont = await sheet
+    .locator('.todo-opt')
+    .first()
+    .evaluate((el) => getComputedStyle(el).fontFamily)
+  expect(sheetFont).not.toMatch(/JetBrains/)
+  const sheetTodo = await iconStyle(sheet.locator('.todo-opt.s-todo .si'))
   const sheetProg = await iconStyle(sheet.locator('.todo-opt.s-progress .si'))
   const sheetDone = await iconStyle(sheet.locator('.todo-opt.s-done .si'))
   expect(progIcon).toEqual(sheetProg)
   expect(progIcon.pie?.opacity).toBe('1')
+  // 시트 = 범례 색
+  expect([sheetProg.pie?.fill, sheetTodo.ring?.stroke, sheetDone.disc?.fill]).toEqual(legend)
   // 완료 — 줄이 접히기 전(leaving 동안)의 아이콘이 시트의 DONE 옵션과 같다
-  await sheet.getByRole('button', { name: /^DONE/ }).click()
+  await sheet.getByRole('button', { name: /^완료/ }).click()
   const doneRow = page.locator('.todo-pending .trow.s-done').first()
   await expect(doneRow.locator('.si-disc')).toHaveCSS('fill', sheetDone.disc?.fill ?? '')
   await expect(doneRow.locator('.si-ring')).toHaveCSS('stroke', sheetDone.ring?.stroke ?? '')
@@ -674,7 +770,7 @@ test('status to IN PROGRESS moves the row into that group', async ({ page }) => 
   await row.getByRole('button', { name: '상태 바꾸기' }).click()
   await page
     .getByRole('dialog', { name: '상태 바꾸기' })
-    .getByRole('button', { name: /IN PROGRESS/ })
+    .getByRole('button', { name: /진행 중/ })
     .click()
   // 진행 중 안 정렬: 마감 있는 「자동차」 → 먼저 추가한(10-20) 「겨울 이불」 → 「주말 장보기」(10-23)
   await expect(pendingRows(page).nth(1)).toContainText('겨울 이불 세탁 맡기기')
@@ -698,7 +794,7 @@ test('expired session returns to PIN', async ({ page }) => {
   await pendingRows(page).first().getByRole('button', { name: '상태 바꾸기' }).click()
   await page
     .getByRole('dialog', { name: '상태 바꾸기' })
-    .getByRole('button', { name: /^DONE/ })
+    .getByRole('button', { name: /^완료/ })
     .click()
   await expect(page.getByText('본인 확인')).toBeVisible()
 })
@@ -713,7 +809,7 @@ test('long title wraps without horizontal scroll', async ({ page }) => {
   })
   await page.goto('/morning-signal/todo')
   await expect(pendingRows(page)).toHaveCount(1)
-  await expect(card(page, 'done').locator('ul.done li')).toHaveCount(1)
+  await expect(card(page, 'done').locator('.dtl > li')).toHaveCount(1)
   await noHorizontalScroll(page)
 })
 
@@ -906,8 +1002,14 @@ test('detail shows fields and changes status', async ({ page }) => {
   for (const k of ['날짜', '링크', '추가'])
     await expect(detail.getByText(k, { exact: true })).toBeVisible()
   await expect(detail.getByText('10/27 (화) 10:00')).toBeVisible()
-  await detail.getByRole('radio', { name: 'IN PROGRESS' }).click()
-  await expect(detail.getByRole('radio', { name: 'IN PROGRESS' })).toBeChecked()
+  await detail.getByRole('radio', { name: '진행 중' }).click()
+  await expect(detail.getByRole('radio', { name: '진행 중' })).toBeChecked()
+  // 상세 상태 버튼 — 글자 한국어 · 고른 칸 배경 = 상태 카드 범례의 진행 중(파랑)
+  await expect(detail.locator('.todo-segs label')).toHaveText(['할 일', '진행 중', '완료'])
+  await expect(detail.locator('.todo-segs label.on')).toHaveCSS(
+    'background-color',
+    'rgb(37, 99, 235)'
+  )
   await page.keyboard.press('Escape')
   await expect(detail).toBeHidden()
   await expect(

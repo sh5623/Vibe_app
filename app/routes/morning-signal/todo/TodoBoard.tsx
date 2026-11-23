@@ -1,11 +1,14 @@
-import { type CSSProperties, Fragment, useState } from 'react'
+import { type CSSProperties, useState } from 'react'
 import StarBorder from '@/components/react-bits/StarBorder'
 import { useDoneHistory, useTodoList } from '@/hooks/use-morning-signal-todo'
 import type { Todo } from '../../../../api/morning-signal-todo'
 import Card, { Ticks } from '../Card'
 import TodoList, { STAR_ICON, STATUS_CHIP, TodoLoader } from './TodoList'
 import {
+  doneDays,
   doneGroups,
+  doneSpan,
+  doneTime,
   doneToday,
   dueLeft,
   dueText,
@@ -43,6 +46,12 @@ const PLUS = (
     <path d="M12 5v14M5 12h14" />
   </svg>
 )
+/** 완료 기록 타임라인 체크 */
+const CHECK = (
+  <svg viewBox="0 0 24 24" aria-hidden="true">
+    <path d="m6 12.5 4 4 8-8.5" />
+  </svg>
+)
 
 /** 「중요」 카드 테두리 별빛 색 — 캔버스에 칠하므로 CSS 변수가 아니라 실제 색이어야 한다(--td-imp 와 같은 값) */
 const IMP_STAR = '#8b5cf6'
@@ -74,6 +83,8 @@ export default function TodoBoard({
   const list = useTodoList(true)
   const done = useDoneHistory(DONE_DAYS, true)
   const [filter, setFilter] = useState<PendingFilter>('all')
+  /** 완료 기록에서 고른 날(KST `YYYY-MM-DD`, 없으면 전체) */
+  const [doneDay, setDoneDay] = useState<string | null>(null)
 
   if (list.isPending) {
     return (
@@ -101,7 +112,14 @@ export default function TodoBoard({
   const nDone = doneToday(done.data ?? [], today)
   const imp = importantPending(pending)
   const soon = pending.filter((t) => dueWithin(t, today, DUE_DAYS)).sort(byDue)
-  const groups = doneGroups(done.data ?? [], today)
+  // 완료 기록 — 막대 7칸(오늘−6 … 오늘) · 막대 밖(−7일)에 걸린 완료는 보이지 않는다 · 고른 날이 0건이 되면 선택을 푼다
+  const days = doneDays(done.data ?? [], today, DONE_DAYS)
+  const doneTotal = days.reduce((n, d) => n + d.count, 0)
+  const doneMax = Math.max(1, ...days.map((d) => d.count))
+  const pickedDay = doneDay && days.some((d) => d.date === doneDay && d.count > 0) ? doneDay : null
+  const groups = doneGroups(done.data ?? [], today).filter(
+    (g) => g.date >= (days[0]?.date ?? '') && (!pickedDay || g.date === pickedDay)
+  )
 
   const legend = [
     { label: '진행 중', n: nProg, c: 'var(--ai)' },
@@ -240,24 +258,80 @@ export default function TodoBoard({
         />
       </Card>
 
-      <Card area="done" title="완료 기록" className="ms-sticky">
+      <Card
+        area="done"
+        title="완료 기록"
+        className="ms-sticky"
+        aux={
+          !done.isPending && !done.isError && doneTotal > 0 ? (
+            <span className="cnt">
+              {DONE_DAYS}일 {doneTotal}건
+            </span>
+          ) : undefined
+        }
+      >
         {done.isPending ? (
           <TodoLoader label="완료 기록 불러오는 중" />
         ) : done.isError ? (
           <p className="empty">완료 기록을 불러오지 못했어요</p>
-        ) : groups.length === 0 ? (
-          <p className="empty">최근 {DONE_DAYS}일 완료한 일이 없어요</p>
         ) : (
-          groups.map((g) => (
-            <Fragment key={g.label}>
-              <h3 className="sub first">{g.label}</h3>
-              <ul className="done">
-                {g.items.map((t) => (
-                  <li key={t.id}>{open(t)}</li>
-                ))}
-              </ul>
-            </Fragment>
-          ))
+          <>
+            {/* 날짜 막대 — 그날 완료 수 · 누르면 그날만, 다시 누르면 전체 · 0건은 막힘(이름 있는 group = fieldset, 거르기와 같다) */}
+            <fieldset className={pickedDay ? 'dbars picked' : 'dbars'} aria-label="날짜별 완료 수">
+              {days.map((d) => {
+                const [, m, dd] = d.date.split('-').map(Number)
+                const h = d.count ? Math.max(12, Math.round((d.count / doneMax) * 100)) : 0
+                const bar: CssVars = { '--h': `${h}%` }
+                return (
+                  <button
+                    key={d.date}
+                    type="button"
+                    className={d.isToday ? 'dbar is-today' : 'dbar'}
+                    data-day={d.date}
+                    aria-pressed={pickedDay === d.date}
+                    aria-label={`${m}월 ${dd}일 완료 ${d.count}건`}
+                    title={`${m}월 ${dd}일 · ${d.count}건`}
+                    disabled={d.count === 0}
+                    onClick={() => setDoneDay(pickedDay === d.date ? null : d.date)}
+                  >
+                    <span className="dbar-col">
+                      <i style={bar} />
+                    </span>
+                    <span className="dbar-d">{d.md}</span>
+                  </button>
+                )
+              })}
+            </fieldset>
+            {groups.length === 0 ? (
+              <p className="empty">최근 {DONE_DAYS}일 완료한 일이 없어요</p>
+            ) : (
+              groups.map((g) => (
+                <section key={g.date} className="dgrp" data-day={g.date}>
+                  <h3 className="dgrp-h">
+                    <span className="lb">{g.label}</span>
+                    <b>{g.items.length}</b>
+                  </h3>
+                  <ol className="dtl">
+                    {g.items.map((t) => {
+                      const span = doneSpan(t)
+                      return (
+                        <li key={t.id}>
+                          <span className="dtl-ck" aria-hidden="true">
+                            {CHECK}
+                          </span>
+                          {open(t)}
+                          <time className="dtl-t" dateTime={t.doneAt ?? undefined}>
+                            {doneTime(t)}
+                          </time>
+                          {span ? <span className="dtl-s">{span}</span> : null}
+                        </li>
+                      )
+                    })}
+                  </ol>
+                </section>
+              ))
+            )}
+          </>
         )}
       </Card>
     </div>

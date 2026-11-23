@@ -11,6 +11,7 @@ import {
   kstToday,
   type PendingFilter,
   pendingGroup,
+  STATUS_LABEL,
   splitPending,
 } from './todo-model'
 
@@ -20,11 +21,11 @@ import {
 /** DONE 이 된 줄이 「남은 일」에서 빠지기까지 — 체크 모션(~0.45s) + 접힘(0.36s) + 여유 */
 const LEAVE_MS = 850
 const ENTER_MS = 900
-/** 줄 끝 상태 칩 — 시안 todo.js ST(할 일 · 진행 중). 빠지는 동안의 DONE 은 완료 */
+/** 줄 끝 상태 칩 — 글자는 STATUS_LABEL, 색은 상태 카드 범례와 같은 계열(할 일 회색 · 진행 중 파랑 · 완료 진초록). 빠지는 동안의 DONE 은 완료 */
 export const STATUS_CHIP: Record<TodoStatus, { label: string; cls: string }> = {
-  todo: { label: '할 일', cls: 'chip' },
-  in_progress: { label: '진행 중', cls: 'chip ai' },
-  done: { label: '완료', cls: 'chip ok' },
+  todo: { label: STATUS_LABEL.todo, cls: 'chip' },
+  in_progress: { label: STATUS_LABEL.in_progress, cls: 'chip ai' },
+  done: { label: STATUS_LABEL.done, cls: 'chip ok' },
 }
 
 /** 시안 todo.js STAR — 중요 표시 */

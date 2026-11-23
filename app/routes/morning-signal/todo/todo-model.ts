@@ -2,10 +2,11 @@ import type { Todo, TodoStatus } from '../../../../api/morning-signal-todo'
 
 // TO-DO 화면 계산(순수 함수). 날짜는 전부 KST `YYYY-MM-DD` 문자열로 다룬다.
 
-export const STATUS_LABEL: Record<TodoStatus, 'TODO' | 'IN PROGRESS' | 'DONE'> = {
-  todo: 'TODO',
-  in_progress: 'IN PROGRESS',
-  done: 'DONE',
+/** 상태 글자 — 보드(범례·칩·거르기)·상태 시트·상세가 모두 이 글자를 쓴다(2026-11-23 통일) */
+export const STATUS_LABEL: Record<TodoStatus, '할 일' | '진행 중' | '완료'> = {
+  todo: '할 일',
+  in_progress: '진행 중',
+  done: '완료',
 }
 
 /** 마감까지 이 일수 이하(지난 것 포함)면 날짜를 빨갛게 */
@@ -102,7 +103,10 @@ export function doneToday(list: Todo[], today: string): number {
 }
 
 /** 완료 기록 — 완료 시각(doneAt)의 KST 날짜별 묶음. 최신 날짜 먼저, 묶음 안도 최근 완료가 위. 라벨은 오늘 · 어제 · M월 D일 */
-export function doneGroups(list: Todo[], today: string): { label: string; items: Todo[] }[] {
+export function doneGroups(
+  list: Todo[],
+  today: string
+): { date: string; label: string; items: Todo[] }[] {
   const map = new Map<string, Todo[]>()
   for (const t of list) {
     if (!t.doneAt) continue
@@ -116,8 +120,57 @@ export function doneGroups(list: Todo[], today: string): { label: string; items:
       const d = utcDate(date)
       const label =
         n === 0 ? '오늘' : n === 1 ? '어제' : `${d.getUTCMonth() + 1}월 ${d.getUTCDate()}일`
-      return { label, items: items.sort((a, b) => (b.doneAt ?? '').localeCompare(a.doneAt ?? '')) }
+      return {
+        date,
+        label,
+        items: items.sort((a, b) => (b.doneAt ?? '').localeCompare(a.doneAt ?? '')),
+      }
     })
+}
+
+/** 완료 기록 막대 한 칸 */
+export interface DoneDay {
+  /** KST `YYYY-MM-DD` */
+  date: string
+  /** `M/D` */
+  md: string
+  count: number
+  isToday: boolean
+}
+
+/** 완료 기록 막대 — 오늘−(days−1) … 오늘(오래된 날 먼저). 칸마다 그날(KST) 완료 수 */
+export function doneDays(list: Todo[], today: string, days = 7): DoneDay[] {
+  const count = new Map<string, number>()
+  for (const t of list) {
+    if (!t.doneAt) continue
+    const k = kstToday(new Date(t.doneAt))
+    count.set(k, (count.get(k) ?? 0) + 1)
+  }
+  return Array.from({ length: days }, (_, i) => {
+    const d = utcDate(today)
+    d.setUTCDate(d.getUTCDate() - (days - 1 - i))
+    const date = d.toISOString().slice(0, 10)
+    return {
+      date,
+      md: `${d.getUTCMonth() + 1}/${d.getUTCDate()}`,
+      count: count.get(date) ?? 0,
+      isToday: date === today,
+    }
+  })
+}
+
+/** 완료 시각 KST `HH:MM` — 완료 시각이 없으면 빈 글자 */
+export function doneTime(t: Todo): string {
+  return t.doneAt
+    ? new Date(new Date(t.doneAt).getTime() + KST_OFFSET_MS).toISOString().slice(11, 16)
+    : ''
+}
+
+/** 처리 기간 — 등록일과 완료일(KST)이 같으면 「당일 처리」, 아니면 「등록 후 N일」. 둘 중 하나라도 없으면 빈 글자 */
+export function doneSpan(t: Todo): string {
+  if (!t.doneAt || !t.createdDate) return ''
+  const n = daysBetween(kstToday(new Date(t.doneAt)), t.createdDate)
+  return n <= 0 ? '당일 처리' : `등록 후 ${n}일`
 }
 
 const LIST_LINE = /^(\s*)(?:([-*])|(\d+)([.)]))\s+(.*)$/
